@@ -1,2 +1,5 @@
 # IntelliJ project files
 .idea
+
+# python pickle
+**/*.pickle

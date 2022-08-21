@@ -1,4 +1,5 @@
 import os
+import pickle
 import re
 import time
 from urllib.parse import urljoin
@@ -13,6 +14,9 @@ base_url = 'https://w.linovelib.com/novel'
 book_id = 682
 book_url = f'{base_url}/{book_id}.html'
 book_catalog_url = f'{base_url}/{book_id}/catalog'
+
+divide_volume = False
+download_image = True
 
 
 def crawl_book_basic_info(url):
@@ -36,7 +40,12 @@ def crawl_book_basic_info(url):
     return None
 
 
-def crawl_book_catalog(catalog_url):
+def extract_chapter_id(chapter_link):
+    # https://w.linovelib.com/novel/682/32792.html => chapter_id is 32792
+    return chapter_link.split('/')[-1][:-5]
+
+
+def crawl_book_content(catalog_url):
     # todo retry mechanism
     book_catalog_rs = None
     try:
@@ -73,17 +82,23 @@ def crawl_book_catalog(catalog_url):
         # step 2: convert catalog array to catalog dict(table of contents)
         catalog_dict = convert_to_catalog_dict(catalog_lis)
 
-        paginated_catalog_dict = dict()
-        pictures = dict()
+        paginated_content_dict = dict()
+        image_dict = dict()
         url_next = ''
 
         for volume in catalog_dict:
             print(f'volume: {volume}')
+            image_dict.setdefault(volume, [])
+
+            chapter_id = -1
             for chapter in catalog_dict[volume]:
+                chapter_content = ''
                 chapter_title = chapter[0]
+                chapter_id += 1
+                # print(f'chapter_id: {chapter_id}')
 
                 print(f'chapter : {chapter_title}')
-                paginated_catalog_dict.setdefault(volume, []).append([chapter_title])
+                paginated_content_dict.setdefault(volume, []).append([chapter_title])
 
                 # if chapter[1] is valid link, assign it to url_next
                 # if chapter[1] is not a valid link, use url_next
@@ -120,7 +135,44 @@ def crawl_book_catalog(catalog_url):
                     else:
                         break
 
-        return paginated_catalog_dict
+                # handle page content(text and img)
+                for page_link in chapter[1:]:
+                    for i in range(6):
+                        if i >= 5:
+                            print("stop.")
+                            os._exit(0)
+                        try:
+                            soup = BeautifulSoup(session.get(page_link, timeout=5).text, "lxml")
+                        except:
+                            print(f"It's the {i + 1} time request failed, retry...")
+                            print(e)
+                            time.sleep(3)
+                        else:
+                            break
+
+                    images = soup.find_all('img')
+                    article = str(soup.find(id="acontent"))
+                    for _, image in enumerate(images):
+                        # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
+                        # src format: https://img.linovelib.com/0/682/117078/50677.jpg
+                        # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
+                        image_src = image['src']
+                        # print(f'image_src: {image_src}')
+                        image_dict[volume].append(image_src)
+
+                        # goal: https://img.linovelib.com/0/682/117077/50675.jpg => file/0-682-117078-50677.jpg
+
+                        src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
+                        replace_value = 'file/' + "-".join(src_value.group().split("/")[-4:])
+                        local_article = article.replace(str(src_value.group()), str(replace_value))
+                        # cache per chapter
+                        chapter_content += local_article
+
+                    print(f'Processing page... {page_link}')
+
+                paginated_content_dict[volume][chapter_id].append(chapter_content)
+
+        return paginated_content_dict, image_dict
 
     else:
         print(f'Failed to get the catalog of book_id: {book_id}')
@@ -164,7 +216,15 @@ def is_valid_chapter_link(href):
 if __name__ == '__main__':
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
-        # print(book_basic_info)
-        book_catalog = crawl_book_catalog(book_catalog_url)
-        if book_catalog:
-            print(book_catalog)
+        book_title, author, book_summary, book_cover = book_basic_info
+        print(book_title, author, book_summary, book_cover)
+        with open('../pickle/basic_info.pickle', 'wb') as f:
+            pickle.dump([book_title, author, book_cover, divide_volume, download_image], f)
+
+    book_content = crawl_book_content(book_catalog_url)
+    if book_content:
+        paginated_content_dict, image_dict = book_content
+        with open('../pickle/paginated_content_dict.pickle', 'wb') as f:
+            pickle.dump(paginated_content_dict, f)
+        with open('../pickle/image_dict.pickle', 'wb') as f:
+            pickle.dump(image_dict, f)
