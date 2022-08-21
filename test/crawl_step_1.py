@@ -1,4 +1,6 @@
+import os
 import re
+import time
 from urllib.parse import urljoin
 
 import demjson
@@ -66,12 +68,59 @@ def crawl_book_catalog(catalog_url):
         # (’第二卷 咏唱少女将往何方‘,[...])
 
         # step 1: fix broken links in place(catalog_lis) if exits
-        catalog_lis_fix = try_fix_broken_chapter_links(catalog_lis)
+        # catalog_lis_fix = try_fix_broken_chapter_links(catalog_lis)
 
         # step 2: convert catalog array to catalog dict(table of contents)
-        catalog_dict = convert_to_catalog_dict(catalog_lis_fix)
+        catalog_dict = convert_to_catalog_dict(catalog_lis)
 
-        return catalog_dict
+        paginated_catalog_dict = dict()
+        pictures = dict()
+        url_next = ''
+
+        for volume in catalog_dict:
+            print(f'volume: {volume}')
+            for chapter in catalog_dict[volume]:
+                chapter_title = chapter[0]
+
+                print(f'chapter : {chapter_title}')
+                paginated_catalog_dict.setdefault(volume, []).append([chapter_title])
+
+                # if chapter[1] is valid link, assign it to url_next
+                # if chapter[1] is not a valid link, use url_next
+                # handle case like: "javascript:cid(0)" etc.
+                if not is_valid_chapter_link(chapter[1]):
+                    # now the url_next value is the correct link of of chapter[1].
+                    chapter[1] = url_next
+                else:
+                    url_next = chapter[1]
+
+                while True:
+                    for i in range(6):
+                        if i >= 5:
+                            print("Retry has no effect, stop.")
+                            os._exit(0)
+                        try:
+                            soup = BeautifulSoup(session.get(url_next, timeout=5).text, "lxml")
+                        except (Exception,) as e:
+                            print(f"It's the {i + 1} time request failed, retry...")
+                            print(e)
+                            time.sleep(3)
+                        else:
+                            # when there is no error, break for loop
+                            break
+
+                    first_script = soup.find("body", {"id": "aread"}).find("script")
+                    first_script_text = first_script.text
+                    read_params_text = first_script_text[len('var ReadParams='):]
+                    read_params_json = demjson.decode(read_params_text)
+                    url_next = urljoin(base_url, read_params_json['url_next'])
+
+                    if '_' in url_next:
+                        chapter.append(url_next)
+                    else:
+                        break
+
+        return paginated_catalog_dict
 
     else:
         print(f'Failed to get the catalog of book_id: {book_id}')
@@ -79,14 +128,14 @@ def crawl_book_catalog(catalog_url):
     return None
 
 
-def convert_to_catalog_dict(catalog_lis_fix):
-    catalog_lis_fix_tmp = catalog_lis_fix
+def convert_to_catalog_dict(catalog_lis):
+    catalog_lis_tmp = catalog_lis
 
     catalog_dict = dict()
     current_volume = []
-    current_volume_text = catalog_lis_fix_tmp[0].text
+    current_volume_text = catalog_lis_tmp[0].text
 
-    for index, catalog_li in enumerate(catalog_lis_fix_tmp):
+    for index, catalog_li in enumerate(catalog_lis_tmp):
         catalog_li_text = catalog_li.text
         # is volume name
         if 'chapter-bar' in catalog_li['class']:
@@ -103,41 +152,11 @@ def convert_to_catalog_dict(catalog_lis_fix):
     return catalog_dict
 
 
-def try_fix_broken_chapter_links(catalog_lis):
-    catalog_lis_fix = catalog_lis
-    for index, catalog_li in enumerate(catalog_lis_fix):
-        catalog_li_text = catalog_li.text
-        # is volume name
-        if 'chapter-bar' in catalog_li['class']:
-            pass
-        # is normal chapter
-        else:
-            href = catalog_li.find("a")["href"]
-            if not is_valid_catalog_link(href):
-                # print(f'Broken link found: {href} in chapter {catalog_li_text}.')
-                # We use the previous chapter to fix the broken link.
-                previous_chapter_link = catalog_lis[index - 1].find("a")["href"]
-                if is_valid_catalog_link(previous_chapter_link):
-                    whole_previous_chapter_link = urljoin(base_url, previous_chapter_link)
-                    # print(f'Try to use the valid previous chapter link {previous_chapter_link} to fix.')
-                    # todo retry mechanism
-                    soup = BeautifulSoup(session.get(whole_previous_chapter_link, timeout=5).text, "lxml")
-                    first_script = soup.find("body", {"id": "aread"}).find("script")
-                    first_script_text = first_script.text
-                    read_params_text = first_script_text[len('var ReadParams='):]
-                    read_params_json = demjson.decode(read_params_text)
-                    url_next = read_params_json['url_next']
-                    repaired_url = url_next
-                    # write the repaired url to its original place in catalog_lis
-                    catalog_li.find("a")["href"] = repaired_url
-    return catalog_lis_fix
-
-
-def is_valid_catalog_link(href):
+def is_valid_chapter_link(href):
     # normal link example: /novel/682/117086.html
     # broken link example: javascript: cid(0)
     # use https://regex101.com/ to debug regular expression
-    reg = "/novel/\d+/\d+\.html"
+    reg = "\S+/novel/\d+/\S+\.html"
     re_match = bool(re.match(reg, href))
     return re_match
 
@@ -145,7 +164,7 @@ def is_valid_catalog_link(href):
 if __name__ == '__main__':
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
-        print(book_basic_info)
+        # print(book_basic_info)
         book_catalog = crawl_book_catalog(book_catalog_url)
         if book_catalog:
             print(book_catalog)
