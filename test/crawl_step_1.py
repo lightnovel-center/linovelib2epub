@@ -347,7 +347,7 @@ def download_images(urls=None, pool_size=os.cpu_count()):
 
 
 def write_epub(title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
-               divide_volume=False):
+               divide_volume=False, has_illustration=True):
     book = epub.EpubBook()
     book.set_identifier(str(uuid.uuid4()))
     book.set_title(title)
@@ -409,26 +409,27 @@ def write_epub(title, author, content, cover_filename, cover_file, images_folder
 
     print('Now book_content(text) is ready.')
 
-    image_files = os.listdir(images_folder)
-    for image_file in image_files:
-        if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
-            continue
+    if has_illustration:
+        image_files = os.listdir(images_folder)
+        for image_file in image_files:
+            if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
+                continue
 
-        try:
-            img = Image.open(images_folder + '/' + image_file)
-        except (Exception,) as e:
-            continue
+            try:
+                img = Image.open(images_folder + '/' + image_file)
+            except (Exception,) as e:
+                continue
 
-        b = io.BytesIO()
-        img = img.convert('RGB')
-        img.save(b, 'jpeg')
-        data_img = b.getvalue()
+            b = io.BytesIO()
+            img = img.convert('RGB')
+            img.save(b, 'jpeg')
+            data_img = b.getvalue()
 
-        new_image_file = image_file.replace('png', 'jpg')
-        img = epub.EpubItem(file_name="file/%s" % new_image_file, media_type="image/jpeg", content=data_img)
-        book.add_item(img)
+            new_image_file = image_file.replace('png', 'jpg')
+            img = epub.EpubItem(file_name="file/%s" % new_image_file, media_type="image/jpeg", content=data_img)
+            book.add_item(img)
 
-    print('Now all images in book_content are ready.')
+        print('Now all images in book_content are ready.')
 
     folder = ''
     if output_folder is None:
@@ -475,6 +476,7 @@ def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True
     # divide_volume(2) x download_image(2) = 4 choices
 
     book_title, author, book_summary, book_cover = book_basic_info
+    cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
 
     if download_image:
         # handle all image stuff
@@ -482,7 +484,6 @@ def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True
         image_list = extract_image_list(image_dict)
         image_list.append(book_cover)
         download_images(image_list)
-        cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
 
         if not divide_volume:
             write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder)
@@ -492,16 +493,17 @@ def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True
                 write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
                            image_download_folder, book_title, True)
 
-    if not download_image and not divide_volume:
-        # 文件存在 = os.path.exists("file") #判断路径是否存在
-        # if not 文件存在:
-        #     # 如果不存在则创建目录
-        #     os.makedirs("file")
-        # 下载文件(封面URL)
-        # 写到书本(书名, 作者, 内容, "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file")
-        pass
-    if not download_image and divide_volume:
-        pass
+    if not download_image:
+        create_folder_if_not_exists(image_download_folder)
+        # download only book_cover
+        download_images([book_cover])
+
+        if not divide_volume:
+            print('here')
+            write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder,
+                       has_illustration=False)
+        else:
+            pass
 
 
 if __name__ == '__main__':
@@ -542,4 +544,4 @@ if __name__ == '__main__':
     if book_basic_info and paginated_content_dict and image_dict:
         print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
         print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
-        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image, divide_volume=True)
+        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=False, divide_volume=False)
