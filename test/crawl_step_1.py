@@ -23,7 +23,7 @@ book_id = 3211
 book_url = f'{base_url}/{book_id}.html'
 book_catalog_url = f'{base_url}/{book_id}/catalog'
 
-divide_volume = False
+divide_volume = True
 download_image = True
 
 image_download_folder = 'file'
@@ -471,32 +471,27 @@ def fresh_crawl():
     return book_basic_info, paginated_content_dict, image_dict
 
 
-def make_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=True, divide_volume=False):
+def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True, divide_volume=False):
     # divide_volume(2) x download_image(2) = 4 choices
 
     book_title, author, book_summary, book_cover = book_basic_info
 
-    if download_image and (not divide_volume):
+    if download_image:
+        # handle all image stuff
         create_folder_if_not_exists(image_download_folder)
         image_list = extract_image_list(image_dict)
         image_list.append(book_cover)
-
         download_images(image_list)
-
         cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
-        write_epub(book_title, author, paginated_content_dict, 'cover', cover_file, image_download_folder)
 
-    if download_image and divide_volume:
-        create_folder_if_not_exists(image_download_folder)
-        create_folder_if_not_exists(f'{book_title}')
+        if not divide_volume:
+            write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder)
+        else:
+            create_folder_if_not_exists(f'{book_title}')
+            for volume in content_dict:
+                write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
+                           image_download_folder, book_title, True)
 
-        for volume in paginated_content_dict:
-            volume_images = image_dict[volume]
-            download_images(volume_images)
-
-            #         写到书本(书名+"_"+volume, 作者, 内容[volume], "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file", 书名, True)
-            print('TODO: write every volume.')
-            print('TODO: clean file folder.')
     if not download_image and not divide_volume:
         # 文件存在 = os.path.exists("file") #判断路径是否存在
         # if not 文件存在:
@@ -547,4 +542,4 @@ if __name__ == '__main__':
     if book_basic_info and paginated_content_dict and image_dict:
         print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
         print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
-        make_ebook(book_basic_info, paginated_content_dict, image_dict, download_image, divide_volume)
+        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image, divide_volume=True)
