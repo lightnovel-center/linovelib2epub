@@ -13,6 +13,8 @@ import uuid
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from PIL import Image
+import multiprocessing
+from rich.prompt import Confirm
 
 session = requests.Session()
 
@@ -23,6 +25,8 @@ book_catalog_url = f'{base_url}/{book_id}/catalog'
 
 divide_volume = False
 download_image = True
+
+image_download_folder = 'file'
 
 
 def crawl_book_basic_info(url):
@@ -158,6 +162,7 @@ def crawl_book_content(catalog_url):
 
                     images = soup.find_all('img')
                     article = str(soup.find(id="acontent"))
+
                     for _, image in enumerate(images):
                         # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
                         # src format: https://img.linovelib.com/0/682/117078/50677.jpg
@@ -170,9 +175,10 @@ def crawl_book_content(catalog_url):
 
                         src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
                         replace_value = 'file/' + "-".join(src_value.group().split("/")[-4:])
-                        local_article = article.replace(str(src_value.group()), str(replace_value))
-                        # cache per chapter
-                        chapter_content += local_article
+                        article = article.replace(str(src_value.group()), str(replace_value))
+
+                    # print(article)
+                    chapter_content += article
 
                     print(f'Processing page... {page_link}')
 
@@ -245,7 +251,7 @@ def is_valid_link(link):
     return flag
 
 
-def download_file(urls, folder='../file'):
+def download_file(urls, folder=image_download_folder):
     if isinstance(urls, str):
         # check if the link is valid
         if not is_valid_link(urls): return
@@ -320,27 +326,28 @@ def download_file(urls, folder='../file'):
         return error_urls
 
 
-def download_images(urls, pool_size=os.cpu_count()):
+def download_images(urls=None, pool_size=os.cpu_count()):
+    if urls is None:
+        urls = []
     thread_pool = Pool(int(pool_size))
     error_links = thread_pool.map(download_file, urls)
-    if len(error_links) > 0:
-        print('Some errors occurred when download images. Retry those links that failed to request.')
-        print(f'Error image links size: {len(error_links)}')
-        print(f'Error image links: {error_links}')
-
     # if everything is perfect, error_links array will be []
     # if some error occurred, error_links will be those links that failed to request.
 
-    # may be useless sort
-    sorted_error_links = sorted(error_links)
+    # remove None element from array, only retain error link
+    sorted_error_links = sorted(list(filter(None, error_links)))
 
     # for loop until all files are downloaded successfully.
-    while sorted_error_links:
+    while len(sorted_error_links) > 0:
+        print('Some errors occurred when download images. Retry those links that failed to request.')
+        print(f'Error image links size: {len(sorted_error_links)}')
+        print(f'Error image links: {sorted_error_links}')
+
         sorted_error_links = download_file(sorted_error_links)
 
 
-def write_ebook(title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
-                divide_volume=False):
+def write_epub(title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
+               divide_volume=False):
     book = epub.EpubBook()
     book.set_identifier(str(uuid.uuid4()))
     book.set_title(title)
@@ -436,14 +443,13 @@ def write_ebook(title, author, content, cover_filename, cover_file, images_folde
     epub.write_epub(folder + title + '.epub', book)
 
 
-if __name__ == '__main__':
-    create_folder_if_not_exists('../pickle/')
+def fresh_crawl():
+    create_folder_if_not_exists('pickle/')
 
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
         book_title, author, book_summary, book_cover = book_basic_info
         print(book_title, author, book_summary, book_cover)
-        basic_info_pickle_path = f'../pickle/{book_id}_basic_info.pickle'
         with open(basic_info_pickle_path, 'wb') as f:
             pickle.dump([book_title, author, book_cover, divide_volume, download_image], f)
             print(f'[Milestone]: save {basic_info_pickle_path} done.')
@@ -453,35 +459,36 @@ if __name__ == '__main__':
     book_content = crawl_book_content(book_catalog_url)
     if book_content:
         paginated_content_dict, image_dict = book_content
-        content_dict_pickle_path = f'../pickle/{book_id}_content_dict.pickle'
         with open(content_dict_pickle_path, 'wb') as f:
             pickle.dump(paginated_content_dict, f)
             print(f'[Milestone]: save {content_dict_pickle_path} done.')
-
-        dict_pickle_path = f'../pickle/{book_id}_image_dict.pickle'
-        with open(dict_pickle_path, 'wb') as f:
+        with open(image_dict_pickle_path, 'wb') as f:
             pickle.dump(image_dict, f)
-            print(f'[Milestone]: save {dict_pickle_path} done.')
-
+            print(f'[Milestone]: save {image_dict_pickle_path} done.')
     else:
         raise Exception(f'Fetch book_content of {book_id} failed.')
 
-    print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
+    return book_basic_info, paginated_content_dict, image_dict
 
+
+def make_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=True, divide_volume=False):
     # divide_volume(2) x download_image(2) = 4 choices
+
+    book_title, author, book_summary, book_cover = book_basic_info
+
     if download_image and (not divide_volume):
-        create_folder_if_not_exists('../file')
+        create_folder_if_not_exists(image_download_folder)
         image_list = extract_image_list(image_dict)
+        image_list.append(book_cover)
 
         download_images(image_list)
-        download_images(book_cover)
 
-        print('TODO: write book.')
-        # 写到书本(书名, 作者, 内容, "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file")
+        cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
+        write_epub(book_title, author, paginated_content_dict, 'cover', cover_file, image_download_folder)
 
     if download_image and divide_volume:
-        create_folder_if_not_exists('../file')
-        create_folder_if_not_exists(f'../{book_title}')
+        create_folder_if_not_exists(image_download_folder)
+        create_folder_if_not_exists(f'{book_title}')
 
         for volume in paginated_content_dict:
             volume_images = image_dict[volume]
@@ -490,7 +497,6 @@ if __name__ == '__main__':
             #         写到书本(书名+"_"+volume, 作者, 内容[volume], "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file", 书名, True)
             print('TODO: write every volume.')
             print('TODO: clean file folder.')
-
     if not download_image and not divide_volume:
         # 文件存在 = os.path.exists("file") #判断路径是否存在
         # if not 文件存在:
@@ -499,6 +505,46 @@ if __name__ == '__main__':
         # 下载文件(封面URL)
         # 写到书本(书名, 作者, 内容, "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file")
         pass
-
     if not download_image and divide_volume:
         pass
+
+
+if __name__ == '__main__':
+    #  The "freeze_support()" line can be omitted if the program is not going to be frozen to produce an executable.
+    multiprocessing.freeze_support()
+
+    # recover from last work.
+    basic_info_pickle_path = f'pickle/{book_id}_basic_info.pickle'
+    content_dict_pickle_path = f'pickle/{book_id}_content_dict.pickle'
+    image_dict_pickle_path = f'pickle/{book_id}_image_dict.pickle'
+
+    basic_info_pickle = Path(basic_info_pickle_path)
+    content_dict_pickle = Path(content_dict_pickle_path)
+    image_dict_pickle = Path(image_dict_pickle_path)
+
+    book_basic_info = None
+    paginated_content_dict = None
+    image_dict = None
+
+    if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
+        if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
+            with open(basic_info_pickle_path, 'rb') as f:
+                book_title, author, book_cover, divide_volume, download_image = pickle.load(f)
+                book_basic_info = book_title, author, None, book_cover
+            with open(content_dict_pickle_path, 'rb') as f:
+                paginated_content_dict = pickle.load(f)
+            with open(image_dict_pickle_path, 'rb') as f:
+                image_dict = pickle.load(f)
+
+        else:
+            os.remove(basic_info_pickle_path)
+            os.remove(content_dict_pickle_path)
+            os.remove(image_dict_pickle_path)
+            book_basic_info, paginated_content_dict, image_dict = fresh_crawl()
+    else:
+        book_basic_info, paginated_content_dict, image_dict = fresh_crawl()
+
+    if book_basic_info and paginated_content_dict and image_dict:
+        print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
+        print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
+        make_ebook(book_basic_info, paginated_content_dict, image_dict, download_image, divide_volume)

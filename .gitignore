@@ -4,3 +4,6 @@
 # python pickle
 pickle
 file/
+
+# test artifacts
+test/*.epub
