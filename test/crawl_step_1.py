@@ -499,11 +499,13 @@ def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True
         download_images([book_cover])
 
         if not divide_volume:
-            print('here')
             write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder,
-                       has_illustration=False)
+                       divide_volume=False, has_illustration=False)
         else:
-            pass
+            create_folder_if_not_exists(f'{book_title}')
+            for volume in content_dict:
+                write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
+                           image_download_folder, book_title, divide_volume=True, has_illustration=False)
 
 
 if __name__ == '__main__':
@@ -544,4 +546,4 @@ if __name__ == '__main__':
     if book_basic_info and paginated_content_dict and image_dict:
         print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
         print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
-        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=False, divide_volume=False)
+        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=False, divide_volume=True)
