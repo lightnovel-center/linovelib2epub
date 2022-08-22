@@ -2,6 +2,8 @@ import os
 import pickle
 import re
 import time
+from multiprocessing import Pool
+from pathlib import Path
 from urllib.parse import urljoin
 
 import demjson
@@ -213,18 +215,164 @@ def is_valid_chapter_link(href):
     return re_match
 
 
+def create_folder_if_not_exists(path):
+    path_exists = os.path.exists(path)
+    if not path_exists:
+        os.makedirs(path)
+
+
+def extract_image_list(image_dict=None):
+    image_url_list = []
+    for volume_images in image_dict.values():
+        for index in range(0, len(volume_images)):
+            image_url_list.append(volume_images[index])
+
+    return image_url_list
+
+
+def is_valid_link(link):
+    flag = True
+
+    if "http" not in link:
+        flag = False
+    if " " in link:
+        flag = False
+
+    return flag
+
+
+def download_file(urls, folder='file'):
+    if isinstance(urls, str):
+        # check if the link is valid
+        if not is_valid_link(urls): return
+
+        # if url is not desired format, return
+        try:
+            filename = '-'.join(urls.split("/")[-4:])
+        except (Exception,) as e:
+            return
+
+        save_path = f"{folder}/{filename}"
+
+        # the file already exists, return
+        filename_exists = Path(save_path)
+        if filename_exists.exists():
+            return
+
+        # url is valid and never downloaded
+        try:
+            resp = session.get(urls, headers={})
+            # TODO check file integrity by HTTP header content-length
+        except (Exception,) as e:
+            print(f'Error occurred when download image of {urls}.')
+            print(e)
+            try:
+                os.remove(save_path)
+            except (Exception, e) as e:
+                print(e)
+            # must return urls for next try
+            return urls
+        else:
+            print(f"正在下载: [dark_slate_gray2]{urls}[/dark_slate_gray2]")
+            with open(save_path, "wb") as f:
+                # use binary format(resp.content) for image file
+                f.write(resp.content)
+
+    if isinstance(urls, list):
+        error_urls = []
+
+        for url in urls:
+            # No need to check links format
+
+            try:
+                filename = '-'.join(url.split("/")[-4:])
+            except (Exception,) as e:
+                return
+
+            save_path = f"{folder}/{filename}"
+
+            filename_exists = Path(save_path)
+            if filename_exists.exists():
+                return
+
+            try:
+                resp = requests.get(url, headers={})
+            except (Exception,) as e:
+                print(f'Error occurred when download image of {urls}.')
+                print(e)
+                try:
+                    os.remove(save_path)
+                except (Exception, e) as e:
+                    print(e)
+                # collect error link
+                error_urls.append(url)
+            else:
+                print(f"正在下载: [dark_slate_gray2]{url}[/dark_slate_gray2]")
+                with open(save_path, "wb") as f:
+                    f.write(resp.content)
+
+        return error_urls
+
+
+def download_images(urls, pool_size=os.cpu_count()):
+    thread_pool = Pool(int(pool_size))
+    error_links = thread_pool.map(download_file, urls)
+    # if everything is perfect, error_links array will be []
+    # if some error occurred, error_links will be those links that failed to request.
+
+    # may be useless sort
+    sorted_error_links = sorted(list(filter(None, error_links)))
+
+    # for loop until all files are downloaded successfully.
+    while sorted_error_links:
+        sorted_error_links = download_file(sorted_error_links)
+
+
 if __name__ == '__main__':
+
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
         book_title, author, book_summary, book_cover = book_basic_info
         print(book_title, author, book_summary, book_cover)
-        with open('../pickle/basic_info.pickle', 'wb') as f:
+        with open(f'../pickle/{book_id}_basic_info.pickle', 'wb') as f:
             pickle.dump([book_title, author, book_cover, divide_volume, download_image], f)
+    else:
+        raise Exception(f'Fetch book_basic_info of {book_id} failed.')
 
     book_content = crawl_book_content(book_catalog_url)
     if book_content:
         paginated_content_dict, image_dict = book_content
-        with open('../pickle/paginated_content_dict.pickle', 'wb') as f:
+        with open(f'../pickle/{book_id}_content_dict.pickle', 'wb') as f:
             pickle.dump(paginated_content_dict, f)
-        with open('../pickle/image_dict.pickle', 'wb') as f:
+        with open(f'../pickle/{book_id}_image_dict.pickle', 'wb') as f:
             pickle.dump(image_dict, f)
+    else:
+        raise Exception(f'Fetch book_content of {book_id} failed.')
+
+    print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
+
+    # divide_volume(2) x download_image(2) = 4 choices
+    if download_image and (not divide_volume):
+        create_folder_if_not_exists('file')
+        image_list = extract_image_list(image_dict)
+        download_images(image_list)
+
+        print('TODO: write book.')
+
+    if download_image and divide_volume:
+        create_folder_if_not_exists('file')
+        create_folder_if_not_exists(book_title)
+
+        for volume in paginated_content_dict:
+            volume_images = image_dict[volume]
+            download_images(volume_images)
+
+            #         写到书本(书名+"_"+卷名, 作者, 内容[卷名], "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file", 书名, True)
+            print('TODO: write every volume.')
+            print('TODO: clean file folder.')
+
+    if not download_image and not divide_volume:
+        pass
+
+    if not download_image and divide_volume:
+        pass
