@@ -472,13 +472,13 @@ def fresh_crawl():
     return book_basic_info, paginated_content_dict, image_dict
 
 
-def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True, divide_volume=False):
+def prepare_ebook(book_basic_info, content_dict, image_dict, has_illustration=True, divide_volume=False):
     # divide_volume(2) x download_image(2) = 4 choices
 
     book_title, author, book_summary, book_cover = book_basic_info
     cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
 
-    if download_image:
+    if has_illustration:
         # handle all image stuff
         create_folder_if_not_exists(image_download_folder)
         image_list = extract_image_list(image_dict)
@@ -486,14 +486,15 @@ def prepare_ebook(book_basic_info, content_dict, image_dict, download_image=True
         download_images(image_list)
 
         if not divide_volume:
-            write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder)
+            write_epub(book_title, author, content_dict, 'cover', cover_file, image_download_folder,
+                       has_illustration=True, divide_volume=False)
         else:
             create_folder_if_not_exists(f'{book_title}')
             for volume in content_dict:
                 write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
-                           image_download_folder, book_title, True)
+                           image_download_folder, book_title, has_illustration=True, divide_volume=True)
 
-    if not download_image:
+    if not has_illustration:
         create_folder_if_not_exists(image_download_folder)
         # download only book_cover
         download_images([book_cover])
@@ -546,4 +547,4 @@ if __name__ == '__main__':
     if book_basic_info and paginated_content_dict and image_dict:
         print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
         print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
-        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, download_image=False, divide_volume=True)
+        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, has_illustration=False, divide_volume=True)
