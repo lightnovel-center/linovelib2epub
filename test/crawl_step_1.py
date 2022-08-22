@@ -1,3 +1,4 @@
+import io
 import os
 import pickle
 import re
@@ -8,12 +9,15 @@ from urllib.parse import urljoin
 
 import demjson
 import requests
+import uuid
 from bs4 import BeautifulSoup
+from ebooklib import epub
+from PIL import Image
 
 session = requests.Session()
 
 base_url = 'https://w.linovelib.com/novel'
-book_id = 682
+book_id = 3211
 book_url = f'{base_url}/{book_id}.html'
 book_catalog_url = f'{base_url}/{book_id}/catalog'
 
@@ -145,7 +149,7 @@ def crawl_book_content(catalog_url):
                             os._exit(0)
                         try:
                             soup = BeautifulSoup(session.get(page_link, timeout=5).text, "lxml")
-                        except:
+                        except (Exception,) as e:
                             print(f"It's the {i + 1} time request failed, retry...")
                             print(e)
                             time.sleep(3)
@@ -241,7 +245,7 @@ def is_valid_link(link):
     return flag
 
 
-def download_file(urls, folder='file'):
+def download_file(urls, folder='../file'):
     if isinstance(urls, str):
         # check if the link is valid
         if not is_valid_link(urls): return
@@ -265,6 +269,8 @@ def download_file(urls, folder='file'):
             # TODO check file integrity by HTTP header content-length
         except (Exception,) as e:
             print(f'Error occurred when download image of {urls}.')
+            # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded with url:
+            # /3/3211/163938/193295.jpg (Caused by ProxyError('Cannot connect to proxy.', OSError(0, 'Error')))
             print(e)
             try:
                 os.remove(save_path)
@@ -273,9 +279,8 @@ def download_file(urls, folder='file'):
             # must return urls for next try
             return urls
         else:
-            print(f"正在下载: [dark_slate_gray2]{urls}[/dark_slate_gray2]")
+            print(f"downloading image: {urls}")
             with open(save_path, "wb") as f:
-                # use binary format(resp.content) for image file
                 f.write(resp.content)
 
     if isinstance(urls, list):
@@ -297,6 +302,7 @@ def download_file(urls, folder='file'):
 
             try:
                 resp = requests.get(url, headers={})
+                # TODO check file integrity by HTTP header content-length
             except (Exception,) as e:
                 print(f'Error occurred when download image of {urls}.')
                 print(e)
@@ -317,35 +323,146 @@ def download_file(urls, folder='file'):
 def download_images(urls, pool_size=os.cpu_count()):
     thread_pool = Pool(int(pool_size))
     error_links = thread_pool.map(download_file, urls)
+    if len(error_links) > 0:
+        print('Some errors occurred when download images. Retry those links that failed to request.')
+        print(f'Error image links size: {len(error_links)}')
+        print(f'Error image links: {error_links}')
+
     # if everything is perfect, error_links array will be []
     # if some error occurred, error_links will be those links that failed to request.
 
     # may be useless sort
-    sorted_error_links = sorted(list(filter(None, error_links)))
+    sorted_error_links = sorted(error_links)
 
     # for loop until all files are downloaded successfully.
     while sorted_error_links:
         sorted_error_links = download_file(sorted_error_links)
 
 
+def write_ebook(title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
+                divide_volume=False):
+    book = epub.EpubBook()
+    book.set_identifier(str(uuid.uuid4()))
+    book.set_title(title)
+    book.set_language('zh')
+    book.add_author(author)
+    cover_type = cover_file.split('.')[-1]
+    book.set_cover(cover_filename + '.' + cover_type, open(cover_file, 'rb').read())
+    write_content = ""
+    book.spine = ["nav", ]
+    chapter_id = -1
+    file_index = -1
+
+    if not divide_volume:
+        for volume in content:
+            print("volume: " + volume)
+            volume_title = "<h1>" + volume + "</h1>"
+            write_content += volume_title
+            book.toc.append([epub.Section(volume), []])
+            chapter_id += 1
+
+            for chapter in content[volume]:
+                print("chapter: " + chapter[0])
+                file_index += 1
+                page = epub.EpubHtml(title=chapter[0], file_name=f"{file_index}.xhtml", lang="zh")
+                chapter_title = "<h2>" + chapter[0] + "</h2>"
+                write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">", "")
+                write_content = write_content.replace('png', 'jpg')
+                css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
+                write_content += css
+                page.set_content(write_content)
+                book.add_item(page)
+
+                # refer ebooklib docs
+                book.toc[chapter_id][1].append(page)
+                book.spine.append(page)
+
+                write_content = ""
+    else:
+        print("volume: " + title)
+        volume_title = "<h1>" + title + "</h1>"
+        write_content += volume_title
+        book.toc.append([epub.Section(title), []])
+        chapter_id += 1
+
+        for chapter in content:
+            print("chapter: " + chapter[0])
+            file_index += 1
+            page = epub.EpubHtml(title=chapter[0], file_name=f"{file_index}.xhtml", lang="zh")
+            chapter_title = "<h2>" + chapter[0] + "</h2>"
+            write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">", "")
+            write_content = write_content.replace('png', 'jpg')
+            css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
+            write_content += css
+            page.set_content(write_content)
+            book.add_item(page)
+            book.toc[chapter_id][1].append(page)
+            book.spine.append(page)
+            write_content = ""
+
+    print('Now book_content(text) is ready.')
+
+    image_files = os.listdir(images_folder)
+    for image_file in image_files:
+        if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
+            continue
+
+        try:
+            img = Image.open(images_folder + '/' + image_file)
+        except (Exception,) as e:
+            continue
+
+        b = io.BytesIO()
+        img = img.convert('RGB')
+        img.save(b, 'jpeg')
+        data_img = b.getvalue()
+
+        new_image_file = image_file.replace('png', 'jpg')
+        img = epub.EpubItem(file_name="file/%s" % new_image_file, media_type="image/jpeg", content=data_img)
+        book.add_item(img)
+
+    print('Now all images in book_content are ready.')
+
+    folder = ''
+    if output_folder is None:
+        folder = ''
+    else:
+        create_folder_if_not_exists(output_folder)
+        folder = str(output_folder) + '/'
+
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+
+    epub.write_epub(folder + title + '.epub', book)
+
+
 if __name__ == '__main__':
+    create_folder_if_not_exists('../pickle/')
 
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
         book_title, author, book_summary, book_cover = book_basic_info
         print(book_title, author, book_summary, book_cover)
-        with open(f'../pickle/{book_id}_basic_info.pickle', 'wb') as f:
+        basic_info_pickle_path = f'../pickle/{book_id}_basic_info.pickle'
+        with open(basic_info_pickle_path, 'wb') as f:
             pickle.dump([book_title, author, book_cover, divide_volume, download_image], f)
+            print(f'[Milestone]: save {basic_info_pickle_path} done.')
     else:
         raise Exception(f'Fetch book_basic_info of {book_id} failed.')
 
     book_content = crawl_book_content(book_catalog_url)
     if book_content:
         paginated_content_dict, image_dict = book_content
-        with open(f'../pickle/{book_id}_content_dict.pickle', 'wb') as f:
+        content_dict_pickle_path = f'../pickle/{book_id}_content_dict.pickle'
+        with open(content_dict_pickle_path, 'wb') as f:
             pickle.dump(paginated_content_dict, f)
-        with open(f'../pickle/{book_id}_image_dict.pickle', 'wb') as f:
+            print(f'[Milestone]: save {content_dict_pickle_path} done.')
+
+        dict_pickle_path = f'../pickle/{book_id}_image_dict.pickle'
+        with open(dict_pickle_path, 'wb') as f:
             pickle.dump(image_dict, f)
+            print(f'[Milestone]: save {dict_pickle_path} done.')
+
     else:
         raise Exception(f'Fetch book_content of {book_id} failed.')
 
@@ -353,25 +470,34 @@ if __name__ == '__main__':
 
     # divide_volume(2) x download_image(2) = 4 choices
     if download_image and (not divide_volume):
-        create_folder_if_not_exists('file')
+        create_folder_if_not_exists('../file')
         image_list = extract_image_list(image_dict)
+
         download_images(image_list)
+        download_images(book_cover)
 
         print('TODO: write book.')
+        # 写到书本(书名, 作者, 内容, "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file")
 
     if download_image and divide_volume:
-        create_folder_if_not_exists('file')
-        create_folder_if_not_exists(book_title)
+        create_folder_if_not_exists('../file')
+        create_folder_if_not_exists(f'../{book_title}')
 
         for volume in paginated_content_dict:
             volume_images = image_dict[volume]
             download_images(volume_images)
 
-            #         写到书本(书名+"_"+卷名, 作者, 内容[卷名], "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file", 书名, True)
+            #         写到书本(书名+"_"+volume, 作者, 内容[volume], "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file", 书名, True)
             print('TODO: write every volume.')
             print('TODO: clean file folder.')
 
     if not download_image and not divide_volume:
+        # 文件存在 = os.path.exists("file") #判断路径是否存在
+        # if not 文件存在:
+        #     # 如果不存在则创建目录
+        #     os.makedirs("file")
+        # 下载文件(封面URL)
+        # 写到书本(书名, 作者, 内容, "cover", "file/" + "-".join(封面URL.split("/")[-4:]), "file")
         pass
 
     if not download_image and divide_volume:
