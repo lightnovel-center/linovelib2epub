@@ -1,5 +1,5 @@
 # download_images('https://w.linovelib.com/files/article/image/3/3211/3211s.jpg')
-from test.crawl_step_1 import download_images
+from src.crawl_step_1 import download_images
 
 download_images('https://img.linovelib.com/3/3211/163938/193293.jpg')
 

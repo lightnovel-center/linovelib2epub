@@ -18,3 +18,7 @@ pip install -r requirement.txt --proxy=http://127.0.0.1:7890
 - [ ] (devops) publish this library to pip 
 - [ ] (feature) command line dry-run mode
 - [ ] (feature) download a certain chapter of a book
+
+## known issues
+
+See `docs/` folder.

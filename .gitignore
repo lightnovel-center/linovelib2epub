@@ -7,3 +7,4 @@ file/
 
 # test artifacts
 test/*.epub
+/test/images/

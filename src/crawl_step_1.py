@@ -1,5 +1,7 @@
 import io
 import os
+import shutil
+
 import pickle
 import re
 import time
@@ -24,7 +26,7 @@ book_url = f'{base_url}/{book_id}.html'
 book_catalog_url = f'{base_url}/{book_id}/catalog'
 
 divide_volume = True
-download_image = True
+has_illustration = True
 
 image_download_folder = 'file'
 
@@ -174,7 +176,7 @@ def crawl_book_content(catalog_url):
                         # goal: https://img.linovelib.com/0/682/117077/50675.jpg => file/0-682-117078-50677.jpg
 
                         src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
-                        replace_value = 'file/' + "-".join(src_value.group().split("/")[-4:])
+                        replace_value = f'{image_download_folder}/' + "-".join(src_value.group().split("/")[-4:])
                         article = article.replace(str(src_value.group()), str(replace_value))
 
                     # print(article)
@@ -426,7 +428,8 @@ def write_epub(title, author, content, cover_filename, cover_file, images_folder
             data_img = b.getvalue()
 
             new_image_file = image_file.replace('png', 'jpg')
-            img = epub.EpubItem(file_name="file/%s" % new_image_file, media_type="image/jpeg", content=data_img)
+            img = epub.EpubItem(file_name=f"{image_download_folder}/%s" % new_image_file, media_type="image/jpeg",
+                                content=data_img)
             book.add_item(img)
 
         print('Now all images in book_content are ready.')
@@ -452,7 +455,7 @@ def fresh_crawl():
         book_title, author, book_summary, book_cover = book_basic_info
         print(book_title, author, book_summary, book_cover)
         with open(basic_info_pickle_path, 'wb') as f:
-            pickle.dump([book_title, author, book_cover, divide_volume, download_image], f)
+            pickle.dump([book_title, author, book_cover, divide_volume, has_illustration], f)
             print(f'[Milestone]: save {basic_info_pickle_path} done.')
     else:
         raise Exception(f'Fetch book_basic_info of {book_id} failed.')
@@ -473,11 +476,12 @@ def fresh_crawl():
 
 
 def prepare_ebook(book_basic_info, content_dict, image_dict, has_illustration=True, divide_volume=False):
-    # divide_volume(2) x download_image(2) = 4 choices
+    print(f'[Config]: has_illustration: {has_illustration}; divide_volume: {divide_volume}')
 
     book_title, author, book_summary, book_cover = book_basic_info
     cover_file = image_download_folder + '/' + '-'.join(book_cover.split('/')[-4:])
 
+    # divide_volume(2) x download_image(2) = 4 choices
     if has_illustration:
         # handle all image stuff
         create_folder_if_not_exists(image_download_folder)
@@ -529,7 +533,7 @@ if __name__ == '__main__':
     if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
         if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
             with open(basic_info_pickle_path, 'rb') as f:
-                book_title, author, book_cover, divide_volume, download_image = pickle.load(f)
+                book_title, author, book_cover, divide_volume, has_illustration = pickle.load(f)
                 book_basic_info = book_title, author, None, book_cover
             with open(content_dict_pickle_path, 'rb') as f:
                 paginated_content_dict = pickle.load(f)
@@ -546,5 +550,14 @@ if __name__ == '__main__':
 
     if book_basic_info and paginated_content_dict and image_dict:
         print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
-        print(f'[Config]: download_image: {download_image}; divide_volume: {divide_volume}')
-        prepare_ebook(book_basic_info, paginated_content_dict, image_dict, has_illustration=False, divide_volume=True)
+        prepare_ebook(book_basic_info, paginated_content_dict, image_dict,
+                      has_illustration=has_illustration, divide_volume=divide_volume)
+
+        # clean temporary files
+        try:
+            shutil.rmtree('file')
+            os.remove(basic_info_pickle_path)
+            os.remove(content_dict_pickle_path)
+            os.remove(image_dict_pickle_path)
+        except (Exception,) as e:
+            pass
