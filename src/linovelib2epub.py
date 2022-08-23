@@ -1,23 +1,23 @@
 import io
+import multiprocessing
 import os
-import shutil
-
-import pickle
 import re
+import shutil
 import time
+import uuid
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
-from fake_useragent import UserAgent
 
 import demjson
 import requests
-import uuid
+from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
-from PIL import Image
-import multiprocessing
+from fake_useragent import UserAgent
 from rich.prompt import Confirm
+
+import pickle
 
 session = requests.Session()
 
@@ -307,6 +307,13 @@ def is_valid_link(link):
 
 
 def download_file(urls, folder=image_download_folder):
+    """
+    If a image url download failed, return its url. else return None.
+
+    :param urls: single url string or url array.
+    :param folder: image download folder
+    :return:
+    """
     if isinstance(urls, str):
         # check if the link is valid
         if not is_valid_link(urls): return
@@ -327,29 +334,14 @@ def download_file(urls, folder=image_download_folder):
         # url is valid and never downloaded
         try:
             resp = session.get(urls, headers=request_headers(), timeout=http_timeout)
-
-            # check file integrity by comparing HTTP header content-length and real request tell()
-            expected_length = resp.headers.get('Content-Length')
-            actual_length = resp.raw.tell()  # len(resp.content)
-
-            if expected_length and actual_length:
-                # expected_length: 31949; actual_length: 31949
-                # print(f'expected_length: {expected_length}; actual_length: {actual_length}')
-                if int(actual_length) < int(expected_length):
-                    raise IOError(
-                        'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
-                    )
-
+            check_image_integrity(resp)
         except (Exception,) as e:
             print(f'Error occurred when download image of {urls}.')
-            # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded with url:
-            # /3/3211/163938/193295.jpg (Caused by ProxyError('Cannot connect to proxy.', OSError(0, 'Error')))
             print(e)
             try:
                 os.remove(save_path)
             except (Exception, e) as e:
                 print(e)
-            # must return urls for next try
             return urls
         else:
             print(f"downloading image: {urls}")
@@ -361,7 +353,6 @@ def download_file(urls, folder=image_download_folder):
 
         for url in urls:
             # No need to check links format
-
             try:
                 filename = '-'.join(url.split("/")[-4:])
             except (Exception,) as e:
@@ -375,6 +366,7 @@ def download_file(urls, folder=image_download_folder):
 
             try:
                 resp = session.get(url, headers=request_headers(), timeout=http_timeout)
+                check_image_integrity(resp)
             except (Exception,) as e:
                 print(f'Error occurred when download image of {urls}.')
                 print(e)
@@ -382,14 +374,26 @@ def download_file(urls, folder=image_download_folder):
                     os.remove(save_path)
                 except (Exception, e) as e:
                     print(e)
-                # collect error link
                 error_urls.append(url)
             else:
-                print(f"正在下载: [dark_slate_gray2]{url}[/dark_slate_gray2]")
+                print(f"downloading image: {url}")
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
 
         return error_urls
+
+
+def check_image_integrity(resp):
+    # check file integrity by comparing HTTP header content-length and real request tell()
+    expected_length = resp.headers.get('Content-Length')
+    actual_length = resp.raw.tell()  # len(resp.content)
+    if expected_length and actual_length:
+        # expected_length: 31949; actual_length: 31949
+        # print(f'expected_length: {expected_length}; actual_length: {actual_length}')
+        if int(actual_length) < int(expected_length):
+            raise IOError(
+                'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
+            )
 
 
 def download_images(urls=None, pool_size=os.cpu_count()):
@@ -618,10 +622,10 @@ if __name__ == '__main__':
                       has_illustration=has_illustration, divide_volume=divide_volume)
 
         # clean temporary files
-        # try:
-        #     shutil.rmtree('file')
-        #     os.remove(basic_info_pickle_path)
-        #     os.remove(content_dict_pickle_path)
-        #     os.remove(image_dict_pickle_path)
-        # except (Exception,) as e:
-        #     pass
+        try:
+            shutil.rmtree('file')
+            os.remove(basic_info_pickle_path)
+            os.remove(content_dict_pickle_path)
+            os.remove(image_dict_pickle_path)
+        except (Exception,) as e:
+            pass
