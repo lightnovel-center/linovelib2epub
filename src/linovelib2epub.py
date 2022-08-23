@@ -92,8 +92,8 @@ def request_with_retry(url, retry_max=5, timeout=5):
             print(f'ERROR: request {url}', e)
             time.sleep(2)
 
-            current_num_of_request += 1
-            print('current_num_of_request: ', current_num_of_request)
+        current_num_of_request += 1
+        print('current_num_of_request: ', current_num_of_request)
 
     return None
 

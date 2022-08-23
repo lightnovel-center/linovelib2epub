@@ -11,8 +11,9 @@ def fetch_page(url, retry_max=3):
             2/0
         except Exception as e:
             time.sleep(3)
-            current_num_of_request += 1
-            print('current_num_of_request: ', current_num_of_request)
+
+        current_num_of_request += 1
+        print('current_num_of_request: ', current_num_of_request)
 
     return None
 
