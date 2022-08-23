@@ -113,3 +113,9 @@ If you want to purge a certain dep, type
 pip install pip-autoremove
 pip-autoremove [certain-dep] -y
 ```
+
+## Using pipdeptree to write requirements.txt file 
+```bash
+pipdeptree -f --warn silence | grep -E '^[a-zA-Z0-9\-]+' > requirements.txt
+```
+> If you are on windows (powershell) you can run pipdeptree --warn silence | Select-String -Pattern '^\w+' instead of grep

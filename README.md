@@ -11,20 +11,24 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 - [x] use multi-thread to download images
 
 ## Usage
-Install dependencies with proxy(optional)
+Install dependencies:
+```
+pip install -r requirement.txt
+```
+Install dependencies with proxy(For example, clash 7890 port):
 ```
 pip install -r requirement.txt --proxy=http://127.0.0.1:7890
 ```
 
 ## todo
 
-- [ ] utilize sigil to debug CSS rules for book style beautification
 - [ ] (feat) settings file and command parameters
+- [ ] (feat) utilize sigil to debug CSS rules for book style beautification
 - [ ] (feat) enable to set custom cookie
 - [ ] (docs) write user guide
-- [ ] (devops) publish this library to pip
-- [ ] (feature) download a certain chapter of a book
+- [ ] (feature) download a certain volume of a book
 - [ ] (chore) Investigate the release of Helloworld library
+- [ ] (devops) publish this library to pip
 
 ## known issues
 
