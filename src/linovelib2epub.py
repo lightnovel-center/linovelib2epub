@@ -18,25 +18,30 @@ from fake_useragent import UserAgent
 from rich.prompt import Confirm
 
 import pickle
+import settings
 
 session = requests.Session()
 
-base_url = 'https://w.linovelib.com/novel'
-book_id = 3211  # API
-book_url = f'{base_url}/{book_id}.html'
-book_catalog_url = f'{base_url}/{book_id}/catalog'
+# -----------use user settings to override---------------------
 
-divide_volume = False
-has_illustration = True
+base_url = settings.base_url or 'https://w.linovelib.com/novel'
+book_id = settings.book_id or 3211
 
-image_download_folder = 'file'
+divide_volume = settings.divide_volume or False
+has_illustration = settings.has_illustration or True
 
-http_timeout = 5
-http_retries = 5
-custom_cookie = ''
+image_download_folder = settings.image_download_folder or 'file'
+pickle_temp_folder = settings.pickle_temp_folder or 'pickle'
+
+http_timeout = settings.http_timeout or 10
+http_retries = settings.http_retries or 5
+custom_cookie = settings.custom_cookie or ''
 
 
-def request_headers(referer='', cookie='', random_ua=True):
+# ----------------------------------------------
+
+
+def request_headers(referer='', cookie=custom_cookie, random_ua=True):
     """
         :authority: w.linovelib.com
         :method: GET
@@ -77,7 +82,7 @@ def random_useragent():
         return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
 
 
-def request_with_retry(url, retry_max=5, timeout=5):
+def request_with_retry(url, retry_max=http_retries, timeout=5):
     current_num_of_request = 0
 
     while current_num_of_request <= retry_max:
@@ -129,7 +134,7 @@ def crawl_book_content(catalog_url):
     try:
         book_catalog_rs = request_with_retry(catalog_url)
     except (Exception,) as e:
-        print(f'Failed to get normal response of {book_catalog_url}. It may be a network issue.')
+        print(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
     if book_catalog_rs and book_catalog_rs.status_code == 200:
         print(f'Succeed to get the catalog of book_id: {book_id}')
@@ -238,7 +243,6 @@ def crawl_book_content(catalog_url):
 
                 paginated_content_dict[volume][chapter_id].append(chapter_content)
 
-        print(f'paginated_content_dict(inner): {paginated_content_dict}')
         return paginated_content_dict, image_dict
 
     else:
@@ -515,8 +519,11 @@ def write_epub(title, author, content, cover_filename, cover_file, images_folder
     epub.write_epub(folder + title + '.epub', book)
 
 
-def fresh_crawl():
-    create_folder_if_not_exists('pickle/')
+def fresh_crawl(book_id=None):
+    book_url = f'{base_url}/{book_id}.html'
+    book_catalog_url = f'{base_url}/{book_id}/catalog'
+
+    create_folder_if_not_exists(pickle_temp_folder)
 
     book_basic_info = crawl_book_basic_info(book_url)
     if book_basic_info:
@@ -532,7 +539,6 @@ def fresh_crawl():
     if book_content:
         paginated_content_dict, image_dict = book_content
         with open(content_dict_pickle_path, 'wb') as f:
-            # TODO find why content has \r and \n characters
             pickle.dump(paginated_content_dict, f)
             print(f'[Milestone]: save {content_dict_pickle_path} done.')
         with open(image_dict_pickle_path, 'wb') as f:
@@ -587,9 +593,9 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
 
     # recover from last work.
-    basic_info_pickle_path = f'pickle/{book_id}_basic_info.pickle'
-    content_dict_pickle_path = f'pickle/{book_id}_content_dict.pickle'
-    image_dict_pickle_path = f'pickle/{book_id}_image_dict.pickle'
+    basic_info_pickle_path = f'{pickle_temp_folder}/{book_id}_basic_info.pickle'
+    content_dict_pickle_path = f'{pickle_temp_folder}/{book_id}_content_dict.pickle'
+    image_dict_pickle_path = f'{pickle_temp_folder}/{book_id}_image_dict.pickle'
 
     basic_info_pickle = Path(basic_info_pickle_path)
     content_dict_pickle = Path(content_dict_pickle_path)
@@ -612,12 +618,12 @@ if __name__ == '__main__':
             os.remove(basic_info_pickle_path)
             os.remove(content_dict_pickle_path)
             os.remove(image_dict_pickle_path)
-            book_basic_info, paginated_content_dict, image_dict = fresh_crawl()
+            book_basic_info, paginated_content_dict, image_dict = fresh_crawl(book_id)
     else:
-        book_basic_info, paginated_content_dict, image_dict = fresh_crawl()
+        book_basic_info, paginated_content_dict, image_dict = fresh_crawl(book_id)
 
     if book_basic_info and paginated_content_dict and image_dict:
-        print(f'[INFO]: All the data of book(id={book_id}) is ready. Start making an ebook now.')
+        print(f'[INFO]: All the data of book(id={book_id}) except image files is ready. Start making an ebook now.')
         prepare_ebook(book_basic_info, paginated_content_dict, image_dict,
                       has_illustration=has_illustration, divide_volume=divide_volume)
 

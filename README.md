@@ -24,10 +24,6 @@ pip install -r requirement.txt --proxy=http://127.0.0.1:7890
 
 - [ ] (feat) settings file and command parameters
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
-- [ ] (feat) enable to set custom cookie
-- [ ] (docs) write user guide
-- [ ] (feature) download a certain volume of a book
-- [ ] (chore) Investigate the release of Helloworld library
 - [ ] (devops) publish this library to pip
 
 ## known issues
