@@ -1,10 +1,11 @@
 # IntelliJ project files
 .idea
 
-# python pickle
-pickle
-file/
-
 # test artifacts
-test/*.epub
+/test/*.epub
 /test/images/
+
+# src artifacts
+/src/*.epub
+/src/pickle
+/src/file

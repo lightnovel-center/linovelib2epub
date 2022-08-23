@@ -1,0 +1,20 @@
+{
+  'Date': 'Tue, 23 Aug 2022 06:21:24 GMT',
+  'Content-Type': 'image/jpeg',
+  'Content-Length': '42419',
+  'Connection': 'keep-alive',
+  'last-modified': 'Fri, 29 Jul 2022 08:51:35 GMT',
+  'etag': '"62e39f97-a5b3"',
+  'expires': 'Tue, 20 Sep 2022 13:09:35 GMT',
+  'Cache-Control': 'max-age=2678400',
+  'CF-Cache-Status': 'HIT',
+  'Age': '148309',
+  'Accept-Ranges': 'bytes',
+  'Expect-CT': 'max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"',
+  'Report-To': '{"endpoints":[{"url":"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=tJKvK6D5hZWpNwgeobQMAPQkWwX%2FbmnpW7A8d5m6rxuMlL3fLXPHDq64N4oUYUcWGZ6u02iGqkcynbogozA4ypiK8sROU2zdcUe4kzy4VVXJw5%2FFjBcgFcMOtA6x%2Fk2YpeeaNg%3D%3D"}],"group":"cf-nel","max_age":604800}',
+  'NEL': '{"success_fraction":0,"report_to":"cf-nel","max_age":604800}',
+  'Vary': 'Accept-Encoding',
+  'Server': 'cloudflare',
+  'CF-RAY': '73f1bf733ce98b60-HKG',
+  'alt-svc': 'h3=":443"; ma=86400, h3-29=":443"; ma=86400'
+}

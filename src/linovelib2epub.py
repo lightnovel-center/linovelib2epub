@@ -8,6 +8,7 @@ import time
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
+from fake_useragent import UserAgent
 
 import demjson
 import requests
@@ -21,20 +22,82 @@ from rich.prompt import Confirm
 session = requests.Session()
 
 base_url = 'https://w.linovelib.com/novel'
-book_id = 3211
+book_id = 3211  # API
 book_url = f'{base_url}/{book_id}.html'
 book_catalog_url = f'{base_url}/{book_id}/catalog'
 
-divide_volume = True
+divide_volume = False
 has_illustration = True
 
 image_download_folder = 'file'
 
+http_timeout = 5
+
+
+def request_headers(referer='', cookie='', random_ua=True):
+    """
+        :authority: w.linovelib.com
+        :method: GET
+        :path: /
+        :scheme: https
+        accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+        accept-encoding: gzip, deflate, br
+        accept-language: en,zh-CN;q=0.9,zh;q=0.8
+        cache-control: max-age=0
+        cookie: night=0
+        referer: https://www.google.com/
+        sec-ch-ua: "Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"
+        sec-ch-ua-mobile: ?0
+        sec-ch-ua-platform: "Windows"
+        sec-fetch-dest: document
+        sec-fetch-mode: navigate
+        sec-fetch-site: cross-site
+        sec-fetch-user: ?1
+        upgrade-insecure-requests: 1
+        user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36
+    """
+    default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+    default_cookie = 'night=0;'
+    default_referer = 'https://w.linovelib.com'
+    headers = {
+        # ! don't set any accept fields
+        'referer': referer if referer else default_referer,
+        'cookie': cookie if cookie else default_cookie,
+        'user-agent': random_useragent() if random_ua else default_ua
+    }
+    return headers
+
+
+def random_useragent():
+    ua = UserAgent()
+    return ua.random
+
+
+def request_with_retry(url, retry_max=5, timeout=5):
+    current_num_of_request = 0
+
+    while current_num_of_request <= retry_max:
+        try:
+            response = session.get(url, headers=request_headers(), timeout=timeout)
+            if response:
+                return response
+            else:
+                print(f'WARN: request {url} succeed but data is empty.')
+                return None
+        except (Exception,) as e:
+            print(f'ERROR: request {url}', e)
+            time.sleep(2)
+
+            current_num_of_request += 1
+            print('current_num_of_request: ', current_num_of_request)
+
+    return None
+
 
 def crawl_book_basic_info(url):
-    # todo retry mechanism
-    result = session.get(url)
-    if result.status_code == 200:
+    result = request_with_retry(url)
+
+    if result and result.status_code == 200:
         print(f'Succeed to get the novel of book_id: {book_id}')
 
         # pass html text to beautiful soup parser
@@ -58,10 +121,9 @@ def extract_chapter_id(chapter_link):
 
 
 def crawl_book_content(catalog_url):
-    # todo retry mechanism
     book_catalog_rs = None
     try:
-        book_catalog_rs = session.get(catalog_url)
+        book_catalog_rs = request_with_retry(catalog_url)
     except (Exception,) as e:
         print(f'Failed to get normal response of {book_catalog_url}. It may be a network issue.')
 
@@ -122,19 +184,11 @@ def crawl_book_content(catalog_url):
                     url_next = chapter[1]
 
                 while True:
-                    for i in range(6):
-                        if i >= 5:
-                            print("Retry has no effect, stop.")
-                            os._exit(0)
-                        try:
-                            soup = BeautifulSoup(session.get(url_next, timeout=5).text, "lxml")
-                        except (Exception,) as e:
-                            print(f"It's the {i + 1} time request failed, retry...")
-                            print(e)
-                            time.sleep(3)
-                        else:
-                            # when there is no error, break for loop
-                            break
+                    resp = request_with_retry(url_next)
+                    if resp:
+                        soup = BeautifulSoup(resp.text, 'lxml')
+                    else:
+                        raise Exception(f'[ERROR]: request {url_next} failed.')
 
                     first_script = soup.find("body", {"id": "aread"}).find("script")
                     first_script_text = first_script.text
@@ -149,18 +203,11 @@ def crawl_book_content(catalog_url):
 
                 # handle page content(text and img)
                 for page_link in chapter[1:]:
-                    for i in range(6):
-                        if i >= 5:
-                            print("stop.")
-                            os._exit(0)
-                        try:
-                            soup = BeautifulSoup(session.get(page_link, timeout=5).text, "lxml")
-                        except (Exception,) as e:
-                            print(f"It's the {i + 1} time request failed, retry...")
-                            print(e)
-                            time.sleep(3)
-                        else:
-                            break
+                    page_resp = request_with_retry(page_link)
+                    if page_resp:
+                        soup = BeautifulSoup(page_resp.text, 'lxml')
+                    else:
+                        raise Exception(f'[ERROR]: request {page_link} failed.')
 
                     images = soup.find_all('img')
                     article = str(soup.find(id="acontent"))
@@ -273,8 +320,20 @@ def download_file(urls, folder=image_download_folder):
 
         # url is valid and never downloaded
         try:
-            resp = session.get(urls, headers={})
-            # TODO check file integrity by HTTP header content-length
+            resp = session.get(urls, headers=request_headers(), timeout=http_timeout)
+
+            # check file integrity by comparing HTTP header content-length and real request tell()
+            expected_length = resp.headers.get('Content-Length')
+            actual_length = resp.raw.tell()  # len(resp.content)
+
+            if expected_length and actual_length:
+                # expected_length: 31949; actual_length: 31949
+                # print(f'expected_length: {expected_length}; actual_length: {actual_length}')
+                if int(actual_length) < int(expected_length):
+                    raise IOError(
+                        'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
+                    )
+
         except (Exception,) as e:
             print(f'Error occurred when download image of {urls}.')
             # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded with url:
@@ -309,8 +368,7 @@ def download_file(urls, folder=image_download_folder):
                 return
 
             try:
-                resp = requests.get(url, headers={})
-                # TODO check file integrity by HTTP header content-length
+                resp = session.get(url, headers=request_headers(), timeout=http_timeout)
             except (Exception,) as e:
                 print(f'Error occurred when download image of {urls}.')
                 print(e)
