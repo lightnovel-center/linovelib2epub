@@ -32,6 +32,8 @@ has_illustration = True
 image_download_folder = 'file'
 
 http_timeout = 5
+http_retries = 5
+custom_cookie = ''
 
 
 def request_headers(referer='', cookie='', random_ua=True):
@@ -69,8 +71,10 @@ def request_headers(referer='', cookie='', random_ua=True):
 
 
 def random_useragent():
-    ua = UserAgent()
-    return ua.random
+    try:
+        return UserAgent().random
+    except:
+        return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
 
 
 def request_with_retry(url, retry_max=5, timeout=5):
@@ -83,7 +87,7 @@ def request_with_retry(url, retry_max=5, timeout=5):
                 return response
             else:
                 print(f'WARN: request {url} succeed but data is empty.')
-                return None
+                time.sleep(2)
         except (Exception,) as e:
             print(f'ERROR: request {url}', e)
             time.sleep(2)
@@ -228,11 +232,13 @@ def crawl_book_content(catalog_url):
 
                     # print(article)
                     chapter_content += article
-
+                    # sanitize html: replace all \r to " " has no effect for ☆ display
+                    # chapter_content = chapter_content.replace('\r', "")
                     print(f'Processing page... {page_link}')
 
                 paginated_content_dict[volume][chapter_id].append(chapter_content)
 
+        print(f'paginated_content_dict(inner): {paginated_content_dict}')
         return paginated_content_dict, image_dict
 
     else:
@@ -513,7 +519,7 @@ def fresh_crawl():
         book_title, author, book_summary, book_cover = book_basic_info
         print(book_title, author, book_summary, book_cover)
         with open(basic_info_pickle_path, 'wb') as f:
-            pickle.dump([book_title, author, book_cover, divide_volume, has_illustration], f)
+            pickle.dump([book_title, author, book_summary, book_cover], f)
             print(f'[Milestone]: save {basic_info_pickle_path} done.')
     else:
         raise Exception(f'Fetch book_basic_info of {book_id} failed.')
@@ -522,6 +528,7 @@ def fresh_crawl():
     if book_content:
         paginated_content_dict, image_dict = book_content
         with open(content_dict_pickle_path, 'wb') as f:
+            # TODO find why content has \r and \n characters
             pickle.dump(paginated_content_dict, f)
             print(f'[Milestone]: save {content_dict_pickle_path} done.')
         with open(image_dict_pickle_path, 'wb') as f:
@@ -591,8 +598,7 @@ if __name__ == '__main__':
     if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
         if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
             with open(basic_info_pickle_path, 'rb') as f:
-                book_title, author, book_cover, divide_volume, has_illustration = pickle.load(f)
-                book_basic_info = book_title, author, None, book_cover
+                book_basic_info = pickle.load(f)
             with open(content_dict_pickle_path, 'rb') as f:
                 paginated_content_dict = pickle.load(f)
             with open(image_dict_pickle_path, 'rb') as f:
@@ -612,10 +618,10 @@ if __name__ == '__main__':
                       has_illustration=has_illustration, divide_volume=divide_volume)
 
         # clean temporary files
-        try:
-            shutil.rmtree('file')
-            os.remove(basic_info_pickle_path)
-            os.remove(content_dict_pickle_path)
-            os.remove(image_dict_pickle_path)
-        except (Exception,) as e:
-            pass
+        # try:
+        #     shutil.rmtree('file')
+        #     os.remove(basic_info_pickle_path)
+        #     os.remove(content_dict_pickle_path)
+        #     os.remove(image_dict_pickle_path)
+        # except (Exception,) as e:
+        #     pass
