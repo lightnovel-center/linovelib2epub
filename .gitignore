@@ -6,6 +6,6 @@
 /test/images/
 
 # src artifacts
-/src/*.epub
-/src/pickle
-/src/file
+/src/linovelib2epub/*.epub
+/src/linovelib2epub/pickle
+/src/linovelib2epub/images

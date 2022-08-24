@@ -1,10 +1,10 @@
-# -----------USER SETTINGS---------------------
+# -----------DEFAULT USER SETTINGS---------------------
 
 # 主页URL
 base_url = 'https://w.linovelib.com/novel'
 
 # 书籍ID
-book_id = 3211
+# book_id = 3211
 
 # 是否分卷：分卷(True), 不分卷(False)
 divide_volume = False
@@ -13,7 +13,7 @@ divide_volume = False
 has_illustration = True
 
 # 图片下载临时文件夹. 不允许以相对路径../开头。一般不建议修改。
-image_download_folder = 'file'
+image_download_folder = 'images'
 
 # pickle临时数据保存的文件夹。一般不建议修改。
 pickle_temp_folder = 'pickle'
@@ -24,7 +24,7 @@ http_timeout = 10
 # 当一个HTTP请求失败后，重试的最大次数。
 http_retries = 5
 
-# 自定义用户cookie。一般不需要设置。
-custom_cookie = ''
+# 自定义HTTP cookie。一般不需要设置。
+http_cookie = ''
 
 # ----------------------------------------------
