@@ -385,6 +385,8 @@ class Linovelib2Epub():
                     print(f'Image {save_path} Save failed. Rollback {urls} for next try.')
                     return urls
 
+        # this if branch is @deprecated, can't be remove after confirmation.
+        # Only for sync sequential http requests, POOR performance.
         if isinstance(urls, list):
             error_urls = []
 
@@ -447,7 +449,13 @@ class Linovelib2Epub():
             print(f'Error image links size: {len(sorted_error_links)}')
             print(f'Error image links: {sorted_error_links}')
 
-            sorted_error_links = self._download_image(sorted_error_links)
+            # here is sync sequential http requests, poor performance.
+            # sorted_error_links = self._download_image(sorted_error_links)
+            # print(f'sorted_error_links: {sorted_error_links}')
+
+            # multi-thread
+            error_links = thread_pool.map(self._download_image, sorted_error_links)
+            sorted_error_links = sorted(list(filter(None, error_links)))
             print(f'sorted_error_links: {sorted_error_links}')
 
     def _write_epub(self, title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
@@ -652,7 +660,7 @@ class Linovelib2Epub():
             print('Write epub finished. Now delete all the artifacts.')
             # clean temporary files
             try:
-                shutil.rmtree('file')
+                shutil.rmtree(self.image_download_folder)
                 os.remove(self.basic_info_pickle_path)
                 os.remove(self.content_dict_pickle_path)
                 os.remove(self.image_dict_pickle_path)
@@ -661,5 +669,5 @@ class Linovelib2Epub():
 
 
 if __name__ == '__main__':
-    linovelib_epub = Linovelib2Epub(book_id=682)
+    linovelib_epub = Linovelib2Epub(book_id=3211)
     linovelib_epub.run()
