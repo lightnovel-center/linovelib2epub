@@ -371,10 +371,10 @@ class Linovelib2Epub():
 
                 # HTTPSConnectionPool(host='img.linovelib.com', port=443): Read timed out. (read timeout=10)
                 print(e)
-                try:
-                    os.remove(save_path)
-                except (Exception,) as e:
-                    print(e)
+                # try:
+                #     os.remove(save_path)
+                # except (Exception,) as e:
+                #     print(e)
                 return urls
             else:
                 try:
@@ -409,10 +409,10 @@ class Linovelib2Epub():
                 except (Exception, MaxRetryError, ProxyError,) as e:
                     print(f'Error occurred when download image of {urls}.')
                     print(e)
-                    try:
-                        os.remove(save_path)
-                    except (Exception,) as e:
-                        print(e)
+                    # try:
+                    #     os.remove(save_path)
+                    # except (Exception,) as e:
+                    #     print(e)
                     error_urls.append(url)
                 else:
                     try:
@@ -429,10 +429,12 @@ class Linovelib2Epub():
         if urls is None:
             urls = []
         print(f'len(images urls) = {len(urls)}')
-        # TODO it has duplicate image urls. USE　set
+        # remove duplicate image urls to reduce download work
+        urls_set = set(urls)
+        print(f'len(urls_set) = {len(urls_set)}')
 
         thread_pool = Pool(processes=int(pool_size))
-        error_links = thread_pool.map(self._download_image, urls)
+        error_links = thread_pool.map(self._download_image, urls_set)
         # if everything is perfect, error_links array will be []
         # if some error occurred, error_links will be those links that failed to request.
 
@@ -659,5 +661,5 @@ class Linovelib2Epub():
 
 
 if __name__ == '__main__':
-    linovelib_epub = Linovelib2Epub(book_id=3211)
+    linovelib_epub = Linovelib2Epub(book_id=682)
     linovelib_epub.run()
