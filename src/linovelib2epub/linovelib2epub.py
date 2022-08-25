@@ -60,6 +60,10 @@ class Linovelib2Epub():
         self.content_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_content_dict.pickle'
         self.image_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_image_dict.pickle'
 
+    def dump_settings(self):
+        
+        pass
+
     def _request_headers(self, referer='', random_ua=True):
         """
             :authority: w.linovelib.com
@@ -331,27 +335,25 @@ class Linovelib2Epub():
                     'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
                 )
 
-    def _download_image(self, urls):
+    def _download_image(self, url):
         """
         If a image url download failed, return its url. else return None.
 
-        :param urls: single url string or url array.
+        :param url: single url string
         :return:
         """
-        folder = self.image_download_folder
-
-        if isinstance(urls, str):
+        if isinstance(url, str):
             # check if the link is valid
-            if not self._is_valid_image_url(urls):
+            if not self._is_valid_image_url(url):
                 return
 
             # if url is not desired format, return
             try:
-                filename = '-'.join(urls.split("/")[-4:])
+                filename = '-'.join(url.split("/")[-4:])
             except (Exception,) as e:
                 return
 
-            save_path = f"{folder}/{filename}"
+            save_path = f"{self.image_download_folder}/{filename}"
 
             # the file already exists, return
             filename_exists = Path(save_path)
@@ -360,72 +362,23 @@ class Linovelib2Epub():
 
             # url is valid and never downloaded
             try:
-                print(f"downloading image: {urls}")
-                resp = self.session.get(urls, headers=self._request_headers(), timeout=self.http_timeout)
+                print(f"downloading image: {url}")
+                resp = self.session.get(url, headers=self._request_headers(), timeout=self.http_timeout)
                 self._check_image_integrity(resp)
             except (Exception, MaxRetryError, ProxyError,) as e:
-                print(f'Error occurred when download image of {urls}.')
-                # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded with url:
-                # /2/2428/146739/175227.jpg (Caused by ProxyError('Cannot connect to proxy.',
-                # RemoteDisconnected('Remote end closed connection without response')))
-
+                print(f'Error occurred when download image of {url}.')
+                # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded...
                 # HTTPSConnectionPool(host='img.linovelib.com', port=443): Read timed out. (read timeout=10)
                 print(e)
-                # try:
-                #     os.remove(save_path)
-                # except (Exception,) as e:
-                #     print(e)
-                return urls
+                return url
             else:
                 try:
                     with open(save_path, "wb") as f:
                         f.write(resp.content)
                     print(f'Image {save_path} Saved.')
                 except:
-                    print(f'Image {save_path} Save failed. Rollback {urls} for next try.')
-                    return urls
-
-        # this if branch is @deprecated, can't be remove after confirmation.
-        # Only for sync sequential http requests, POOR performance.
-        if isinstance(urls, list):
-            error_urls = []
-
-            for url in urls:
-                # No need to check links format
-                try:
-                    filename = '-'.join(url.split("/")[-4:])
-                except (Exception,) as e:
-                    return
-
-                save_path = f"{folder}/{filename}"
-
-                filename_exists = Path(save_path)
-                if filename_exists.exists():
-                    print(f'filename_exists: {filename_exists}')
-                    return
-
-                try:
-                    print(f"Retry downloading image: {url}")
-                    resp = self.session.get(url, headers=self._request_headers(), timeout=self.http_timeout)
-                    self._check_image_integrity(resp)
-                except (Exception, MaxRetryError, ProxyError,) as e:
-                    print(f'Error occurred when download image of {urls}.')
-                    print(e)
-                    # try:
-                    #     os.remove(save_path)
-                    # except (Exception,) as e:
-                    #     print(e)
-                    error_urls.append(url)
-                else:
-                    try:
-                        with open(save_path, "wb") as f:
-                            f.write(resp.content)
-                        print(f'Image {save_path} Saved.')
-                    except:
-                        print(f'Image {save_path} Save failed. Rollback {urls} for next try.')
-                        error_urls.append(url)
-
-            return error_urls
+                    print(f'Image {save_path} Save failed. Rollback {url} for next try.')
+                    return url
 
     def _download_images(self, urls=None, pool_size=os.cpu_count()):
         if urls is None:
