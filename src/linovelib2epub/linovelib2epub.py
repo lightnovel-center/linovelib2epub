@@ -61,7 +61,7 @@ class Linovelib2Epub():
         self.image_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_image_dict.pickle'
 
     def dump_settings(self):
-        
+
         pass
 
     def _request_headers(self, referer='', random_ua=True):
@@ -207,6 +207,7 @@ class Linovelib2Epub():
                     else:
                         url_next = chapter[1]
 
+                    # goal: solve all page links of a certain chapter
                     while True:
                         resp = self._request_with_retry(url_next)
                         if resp:
@@ -224,6 +225,9 @@ class Linovelib2Epub():
                             chapter.append(url_next)
                         else:
                             break
+
+                    # To think: after solving all page links of catalog. It's possible to utilize multi-thread tech
+                    # to fetch page content?
 
                     # handle page content(text and img)
                     for page_link in chapter[1:]:

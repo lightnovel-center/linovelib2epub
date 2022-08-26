@@ -2,8 +2,8 @@
 .idea
 
 # test artifacts
-/test/*.epub
-/test/images/
+/test/**/*.epub
+#/test/epub/images/
 
 # src artifacts
 /src/linovelib2epub/*.epub
