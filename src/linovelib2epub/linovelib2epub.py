@@ -22,6 +22,11 @@ import settings
 
 
 class Linovelib2Epub():
+    # TODO: use this method to update/override user settings
+    #         self.options = dict(self.DEFAULT_OPTIONS)
+    #         if options:
+    #             self.options.update(options)
+
     base_url = settings.base_url
 
     divide_volume = settings.divide_volume

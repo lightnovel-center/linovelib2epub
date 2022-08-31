@@ -1,5 +1,7 @@
 # coding=utf-8
+from pathlib import Path
 
+import six
 from ebooklib import epub
 
 if __name__ == '__main__':
@@ -13,7 +15,8 @@ if __name__ == '__main__':
     book.add_author('Aleksandar Erkalovic')
 
     # add cover image -> cover.xhtml
-    book.set_cover("image.jpg", open('images/image1.jpeg', 'rb').read())
+    # book.set_cover("image.jpg", open('images/image1.jpeg', 'rb').read())
+    book.set_cover("image.gif", open('images/13-28.gif', 'rb').read())
 
     intro_style = """
     <style>
@@ -46,7 +49,7 @@ if __name__ == '__main__':
 
     # about chapter
     c2 = epub.EpubHtml(title='About this book', file_name='about.xhtml')
-    c2.content = '<h1>About this book</h1><p>Helou, this is my book! There are many books, but this one is mine.</p><p><img src="image.jpg" alt="Cover Image"/></p>'
+    c2.content = '<h1>About this book</h1><p>Helou, this is my book! There are many books, but this one is mine.</p>'
 
     # add chapters to the book
     book.add_item(c1)
@@ -112,9 +115,20 @@ if __name__ == '__main__':
     # create spin, add cover page as first page
     book.spine = ['cover', 'nav', c1, c2]
 
+    # debug content
+    epub_cover = book.get_item_with_id('cover')
+    print(epub_cover.get_name(),epub_cover.get_content())
+    # call epub_cover.set_content() will be a workaround.
+
     # create epub file
     epub.write_epub('test.epub', book, {})
 
+    # issue1: now, nav xhtml is hard coded.
     # refer https://github.com/aerkalov/ebooklib/issues/14
-    # now, nav xhtml is hard coded.
+
+    # issue2: cover missing external css style
     # check this issue for custom external css style: https://github.com/aerkalov/ebooklib/issues/252
+
+    # https://github.com/aerkalov/ebooklib/issues/221#issuecomment-783769782
+    # EDIT: Nevermind, there is a way, calling add_item() on the EpubHtml instance
+    # -- still a bit unintuitive. I also hope to see this fixed!
