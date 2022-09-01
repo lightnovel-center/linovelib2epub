@@ -14,20 +14,30 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 - [x] use multi-thread to download images
 
 ## Usage
-Install dependencies:
+1. Install this package from pypi:
 ```
-pip install -r requirement.txt
+pip install linovelib2epub
 ```
-Install dependencies with proxy(For example, clash 7890 port):
-```
-pip install -r requirement.txt --proxy=http://127.0.0.1:7890
-```
+2. create a python file and edit the content as follows:
+```python
+from linovelib2epub.linovel import Linovelib2Epub
 
-## todo
+# warning!: must run within __main__ module guard due to process spawn issue.
+if __name__ == '__main__':
+    linovelib_epub = Linovelib2Epub(book_id=3279)
+    linovelib_epub.run()
+```
+If it finished without errors, you can see the epub file is under the folder where your python file is located.
+
+3. For more options. 
+> TODO
+
+## Todo
 
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
 - [ ] (devops) publish this library to PYPI not TestPyPI
+- [ ] logging level: info or succinct
 
-## known issues
+## Known issues
 
 See `docs/` folder.
