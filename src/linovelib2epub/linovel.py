@@ -18,8 +18,7 @@ from fake_useragent import UserAgent
 from rich.prompt import Confirm
 from urllib3.exceptions import MaxRetryError, ProxyError
 
-import settings
-
+from linovelib2epub import settings
 
 class Linovelib2Epub():
     # TODO: use this method to update/override user settings
@@ -597,6 +596,7 @@ class Linovelib2Epub():
         image_dict_pickle = Path(self.image_dict_pickle_path)
 
         if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
+            print(f'basic_info_pickle= {basic_info_pickle}')
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
                 with open(self.basic_info_pickle_path, 'rb') as f:
                     book_basic_info = pickle.load(f)

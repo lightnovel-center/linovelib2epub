@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "linovelib2epub"
+version = "0.0.4"
+authors = [
+    { name = "wdpm", email = "1137299673@qq.com" },
+]
+description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/wdpm/linovelib2epub"
+"Bug Tracker" = "https://github.com/wdpm/linovelib2epub/issues"

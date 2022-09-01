@@ -4,8 +4,12 @@
 # test artifacts
 /test/**/*.epub
 #/test/epub/images/
+/test/pickle/
 
 # src artifacts
 /src/linovelib2epub/*.epub
 /src/linovelib2epub/pickle
 /src/linovelib2epub/images
+
+# dist
+/dist/

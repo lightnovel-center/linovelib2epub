@@ -1,25 +1,23 @@
 # 如果发布一个python库到pip
 
-
-
 ## 教程资源
+
 - [Python Packaging User Guide](https://packaging.python.org/en/latest/#python-packaging-user-guide)
 - [pypa sample project](https://github.com/pypa/sampleproject/)
 - [Configuring a .pypirc File for Easier Python Packaging](https://truveris.github.io/articles/configuring-pypirc/)
-
-
 
 ## 过程描述
 
 1. 使用VCS管理项目文件Tree
 2. 使用TOML文件定义package的metadata，可以看作一系列的key-value pairs。
 3. 决定build artifacts的形式，sdist（源码形式）或者wheel（二进制形式）
-   1. sdist：A source distribution contains enough to install the package from source in an end user’s Python environment.
+    1. sdist：A source distribution contains enough to install the package from source in an end user’s Python
+       environment.
    ```bash
    python3 -m build --sdist source-tree-directory
    ```
-   
-   2. wheel：A built distribution contains only the files needed for an end user’s Python environment.
+
+    2. wheel：A built distribution contains only the files needed for an end user’s Python environment.
 
     ```bash
     python3 -m build --wheel source-tree-directory
@@ -36,8 +34,6 @@ twine upload dist/package-name-version.tar.gz dist/package-name-version-py3-none
 ```bash
 python3 -m pip install package-name
 ```
-
-   
 
 ## 使用pipenv管理依赖
 
@@ -121,8 +117,6 @@ total 2026
 
 其中activate和deactivate分别表示激活和反激活虚拟环境。
 
-
-
 ## package example project
 
 ```bash
@@ -148,8 +142,6 @@ def add_one(number):
 
 > take a few minutes to read over the [Python documentation for packages and modules](https://docs.python.org/3/tutorial/modules.html#packages).
 
-
-
 ### Edit pyprojejct.toml
 
 If using hatch:
@@ -168,8 +160,6 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 ```
 
-
-
 configure other metadata:
 
 ```toml
@@ -177,11 +167,11 @@ configure other metadata:
 name = "example_package_YOUR_USERNAME_HERE"
 version = "0.0.1"
 authors = [
-  { name="Example Author", email="author@example.com" },
+    { name = "Example Author", email = "author@example.com" },
 ]
 description = "A small example package"
 readme = "README.md"
-license = { file="LICENSE" }
+license = { file = "LICENSE" }
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -196,8 +186,6 @@ classifiers = [
 
 此外，常见的字段还有 `keywords` 来提高搜索度，和  `dependencies` 来定义你这个package的依赖库。
 
-
-
 ## build distribution files
 
 ```
@@ -206,6 +194,9 @@ py -m pip install --upgrade build
 
 ```
 py -m build
+
+# Only build wheel
+py -m build --wheel
 ```
 
 输出log：
@@ -235,15 +226,12 @@ dist/ 文件夹下生成了两个文件。分别对应源码模式(sdist)和二�
 drwxr-xr-x 1 wdpm 197121    0 Aug 24 17:10 src/
 ```
 
-发现VCS仓库的很多文件一并被打包进入了。这个是一个问题，后续将会优化该步骤。
-
-我们希望的是，精确地挑选需要打包的文件列表。
-
-
+发现VCS仓库的所有文件一并被打包进入了。这或许是一个问题， 更灵活的做法是精确地挑选需要打包的文件列表。
 
 ## Uploading the distribution archives
 
-前往 [testPYPI](https://test.pypi.org/account/register/) 注册一个账户。验证邮箱后在 https://test.pypi.org/manage/account/#api-tokens 页面创建一个全局的token。
+前往 [testPYPI](https://test.pypi.org/account/register/) 注册一个账户。验证邮箱后在 https://test.pypi.org/manage/account/#api-tokens
+页面创建一个全局的token。
 
 ```
 Token for "upload packages"
@@ -253,7 +241,10 @@ Scope: Entire account (all projects)
 pypi-AgENdGVzdC5weXBpLm9yZwIkMDg4NTNkZWUtZTg0Mi00NTIxLTlkNWQtMjdhNDJkNzFiNTQwAAIleyJwZXJtaXNzaW9ucyI6ICJ1c2VyIiwgInZlcnNpb24iOiAxfQAABiCdvE469IJiVlVxh_cuPbT38hPUgL7KdwFlf5wkxeAhQA
 ```
 
-For example, if you are using [Twine](https://pypi.org/project/twine/) to upload your projects to PyPI, set up your `$HOME/.pypirc` file like this:
+For example, if you are using [Twine](https://pypi.org/project/twine/) to upload your projects to PyPI, set up
+your `$HOME/.pypirc` file like this:
+
+> https://packaging.python.org/en/latest/specifications/pypirc/
 
 ```
 [testpypi]
@@ -263,8 +254,6 @@ For example, if you are using [Twine](https://pypi.org/project/twine/) to upload
 
 For further instructions on how to use this token, [visit the PyPI help page](https://test.pypi.org/help#apitoken).
 
-
-
 ### use [twine](https://packaging.python.org/en/latest/key_projects/#twine) to upload the distribution packages
 
 ```
@@ -273,6 +262,7 @@ py -m pip install --upgrade twine
 
 ```
 py -m twine upload --repository testpypi dist/*
+# py -m twine upload --repository testpypi dist/*.whl
 ```
 
 当询问账号和密码时，使用上面的账号和密码值。
@@ -292,3 +282,26 @@ Uploading example_package_wdpm-0.0.1.tar.gz
 View at:
 https://test.pypi.org/project/example-package-wdpm/0.0.1/
 ```
+
+## 一个注意点：源码根目录
+
+上面的例子中，源码是位于项目根目录下的`src`文件夹。 通过观察社区的一些开源python package，发现有两种流派。
+
+- 一种是采用src约定，所有源码位于src的子文件夹下。例如 `click`。
+  ```
+  ...
+  src/
+    click/
+      __init__.py
+  ```
+- 一种是舍弃src约定，所有源码直接位于项目根目录下，以package名称命名文件夹。例如：`ebooklib`。
+  ```
+  ...
+  ebooklib/
+    __init__.py
+  ```
+
+两种流派都是可行的，其中:
+
+- click 采用setup.cfg在配置文件夹指定src作为package_dir.
+- ebooklib 不需要做额外的指定。

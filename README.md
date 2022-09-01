@@ -24,6 +24,7 @@ pip install -r requirement.txt --proxy=http://127.0.0.1:7890
 
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
 - [ ] (devops) publish this library to pip
+- [ ] write setup.py
 
 ## known issues
 
