@@ -1,22 +1,77 @@
+# refer: https://github.com/pypa/hatch/blob/master/pyproject.toml
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.4.1"]
 build-backend = "hatchling.build"
 
 [project]
 name = "linovelib2epub"
-version = "0.0.4"
+description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
+readme = "README.md"
+#license = "AGPL"
+requires-python = ">=3.7"
+keywords = [
+    'ebook',
+    'epub',
+    'light novel',
+    '哔哩轻小说',
+    'library'
+]
+version = "0.0.5"
 authors = [
     { name = "wdpm", email = "1137299673@qq.com" },
 ]
-description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
-readme = "README.md"
-requires-python = ">=3.7"
+# refer: https://pypi.org/classifiers/
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Affero General Public License",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: Chinese (Traditional)",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries",
 ]
 
+dependencies = [
+    'bs4>=0.0.1',
+    'demjson>=2.2.4',
+    'EbookLib>=0.17.1',
+    'fake-useragent>=0.1.11',
+    'requests>=2.28.1',
+    'rich>=12.5.1',
+    'uuid>=1.30',
+]
+#dynamic = ["version"]
+
 [project.urls]
-"Homepage" = "https://github.com/wdpm/linovelib2epub"
-"Bug Tracker" = "https://github.com/wdpm/linovelib2epub/issues"
+Homepage = "https://github.com/wdpm/linovelib2epub"
+Source = "https://github.com/wdpm/linovelib2epub"
+Tracker = "https://github.com/wdpm/linovelib2epub/issues"
+
+#[tool.hatch.version]
+#path = "src/hatch/__about__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/analyze",
+  "/docs",
+  "/test",
+]
+
+[tool.hatch.build.targets.wheel]
+
+# python static type
+[tool.mypy]
+#disallow_untyped_defs = false
+#follow_imports = "normal"
+#ignore_missing_imports = true
+#pretty = true
+#show_column_numbers = true
+#warn_no_return = false
+#warn_unused_ignores = true

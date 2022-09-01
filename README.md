@@ -1,6 +1,9 @@
 # linovelib2epub
 Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub.
 
+[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
+
+
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
@@ -23,8 +26,7 @@ pip install -r requirement.txt --proxy=http://127.0.0.1:7890
 ## todo
 
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
-- [ ] (devops) publish this library to pip
-- [ ] write setup.py
+- [ ] (devops) publish this library to PYPI not TestPyPI
 
 ## known issues
 
