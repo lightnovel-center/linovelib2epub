@@ -1,5 +1,7 @@
 # 如果发布一个python库到pip
 
+这篇文章介绍的是使用toml配置(hatchling/setuptools)+ build + twine的工具链。
+
 ## 教程资源
 
 - [Python Packaging User Guide](https://packaging.python.org/en/latest/#python-packaging-user-guide)
