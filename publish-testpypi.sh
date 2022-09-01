@@ -1,3 +1,5 @@
+#!/bin/bash
+
 py -m build --wheel
 # TODO get the name of generated whl file
 
