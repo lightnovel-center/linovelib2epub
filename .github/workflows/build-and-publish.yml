@@ -6,9 +6,6 @@ on:
   # Triggers the workflow on push events but only for the main branch
   push:
     branches: [ main ]
-#  push:
-#    tags:
-#      - v*.*.*
 
 permissions:
   contents: read
@@ -20,8 +17,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7"]
-
-    if: "contains(github.event.head_commit.message, 'PUBLISH-NOW')"
+    # "PUBLISH-PYPI" or "PUBLISH-TESTPYPI" is treated as a command
+    if: "contains(github.event.head_commit.message, 'PUBLISH-')"
 
     steps:
     - uses: actions/checkout@v3
@@ -52,17 +49,18 @@ jobs:
         
     - name: Build package
       run: python -m build --wheel --outdir dist/
-      
-      
+
     - name: Publish distribution 📦 to Test PyPI
+      if: "contains(github.event.head_commit.message, 'PUBLISH-TESTPYPI')"
       uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
       with:
         user: __token__
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
         
-#    - name: Publish distribution 📦 to PYPI
-#      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-#      with:
-#        user: __token__
-#        password: ${{ secrets.PYPI_API_TOKEN }}
+    - name: Publish distribution 📦 to PYPI
+      if: "contains(github.event.head_commit.message, 'PUBLISH-PYPI')"
+      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
