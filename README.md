@@ -1,7 +1,8 @@
 # linovelib2epub
 Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub.
 
-[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
+[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)
+[![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)
 
 
 
@@ -57,6 +58,9 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (build) use github actions to build/publish
+- [ ] (docs) add more badges() on readme.
+   - github action/codecov/tests/lines of code/PyPI - Downloads/PYPI version
+   - GitHub commit activity
 
 
 
