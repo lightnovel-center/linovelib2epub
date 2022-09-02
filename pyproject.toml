@@ -17,7 +17,8 @@ keywords = [
     '哔哩轻小说',
     'library'
 ]
-version = "0.0.9"
+#version = "0.0.9"
+#version = { file = "VERSION" } # not work
 authors = [
     { name = "wdpm", email = "1137299673@qq.com" },
 ]
@@ -47,21 +48,21 @@ dependencies = [
     'rich>=12.5.1',
     'uuid>=1.30',
 ]
-#dynamic = ["version"]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/wdpm/linovelib2epub"
 Source = "https://github.com/wdpm/linovelib2epub"
 Tracker = "https://github.com/wdpm/linovelib2epub/issues"
 
-#[tool.hatch.version]
-#path = "src/hatch/__about__.py"
+[tool.hatch.version]
+path = "src/linovelib2epub/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-  "/analyze",
-  "/docs",
-  "/test",
+    "/analyze",
+    "/docs",
+    "/test",
 ]
 
 [tool.hatch.build.targets.wheel]
