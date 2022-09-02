@@ -4,6 +4,7 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
 
+
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
@@ -13,7 +14,10 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 - [x] built-in mechanism for saving temporary book data by pickle library
 - [x] use multi-thread to download images
 
+
+
 ## Usage
+
 1. Install this package from pypi:
 ```
 pip install linovelib2epub
@@ -29,14 +33,32 @@ if __name__ == '__main__':
 ```
 If it finished without errors, you can see the epub file is under the folder where your python file is located.
 
-3. For more options. 
-> TODO
+
+
+## Options
+
+| Parameters            | type    | required | default                         | description                                                 |
+| --------------------- | ------- | -------- | ------------------------------- | ----------------------------------------------------------- |
+| book_id               | number  | YES      | None                            | 书籍ID。                                                    |
+| base_url              | string  | NO       | 'https://w.linovelib.com/novel' | 哔哩轻小说主页URL                                           |
+| divide_volume         | boolean | NO       | False                           | 是否分卷                                                    |
+| has_illustration      | boolean | NO       | True                            | 是否下载插图                                                |
+| image_download_folder | string  | NO       | "images"                        | 图片下载临时文件夹. 不允许以相对路径../开头。               |
+| pickle_temp_folder    | string  | NO       | "pickle"                        | pickle临时数据保存的文件夹。                                |
+| http_timeout          | number  | NO       | 10                              | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。 |
+| http_retries          | number  | NO       | 5                               | 当一个HTTP请求失败后，重试的最大次数。                      |
+| http_cookie           | string  | NO       | ''                              | 自定义HTTP cookie。                                         |
+
+
 
 ## Todo
 
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
-- [ ] (devops) publish this library to PYPI not TestPyPI
-- [ ] logging level: info or succinct
+- [ ] (improvement) logging level: info or succinct
+- [ ] (feat) enable a download certain chapter of one book.
+- [ ] (build) use github actions to build/publish
+
+
 
 ## Known issues
 
