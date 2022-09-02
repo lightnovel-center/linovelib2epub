@@ -15,10 +15,10 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from fake_useragent import UserAgent
+from linovelib2epub import settings
 from rich.prompt import Confirm
 from urllib3.exceptions import MaxRetryError, ProxyError
 
-from linovelib2epub import settings
 
 class Linovelib2Epub():
     # TODO: use this method to update/override user settings
@@ -105,7 +105,7 @@ class Linovelib2Epub():
     def _random_useragent():
         try:
             return UserAgent().random
-        except:
+        except (Exception,):
             return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
 
     def _request_with_retry(self, url, retry_max=http_retries, timeout=5):
@@ -143,7 +143,7 @@ class Linovelib2Epub():
                 book_cover = soup.find('img', {'class': 'book-cover'})['src']
                 return book_title, author, book_summary, book_cover
 
-            except (Exception,) as e:
+            except (Exception,):
                 print(f'Failed to parse basic info of book_id: {self.book_id}')
 
         return None
@@ -152,7 +152,7 @@ class Linovelib2Epub():
         book_catalog_rs = None
         try:
             book_catalog_rs = self._request_with_retry(catalog_url)
-        except (Exception,) as e:
+        except (Exception,):
             print(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
         if book_catalog_rs and book_catalog_rs.status_code == 200:
@@ -160,7 +160,7 @@ class Linovelib2Epub():
 
             # parse catalog data
             soup_catalog = BeautifulSoup(book_catalog_rs.text, 'lxml')
-            chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
+            # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
             catalog_wrapper = soup_catalog.find('ol', {'id': 'volumes'})
             catalog_lis = catalog_wrapper.find_all('li')
 
@@ -299,7 +299,7 @@ class Linovelib2Epub():
         # normal link example: https://w.linovelib.com/novel/682/117077.html
         # broken link example: javascript: cid(0)
         # use https://regex101.com/ to debug regular expression
-        reg = "\S+/novel/\d+/\S+\.html"
+        reg = r"\S+/novel/\d+/\S+\.html"
         re_match = bool(re.match(reg, href))
         return re_match
 
@@ -324,7 +324,7 @@ class Linovelib2Epub():
         Example image link: https://img.linovelib.com/3/3211/163938/193293.jpg
         Refer: https://www.ietf.org/rfc/rfc2396.txt, https://stackoverflow.com/a/169631
 
-        ^https?://(?:[a-z0-9\-]+\.)+[a-z]{2,6}(?:/[^/#?]+)+\.(?:jpe?g|gif|png|webp|bmp|svg)$
+        ^https?://(?:[a-z0-9\-]+\.)+[a-z]{2,6}(?:/[^/#?]+)+\.(?:jpe?g|gif|png|webp|bmp|svg)$    # noqa
                  |-------- domain -----------|--- path ------|--------- --extension -----|
         """
         image_pattern = r"^https?://(?:[a-z0-9\-]+\.)+[a-z]{2,6}(?:/[^/#?]+)+\.(?:jpe?g|gif|png|webp|bmp|svg)$"
@@ -358,7 +358,7 @@ class Linovelib2Epub():
             # if url is not desired format, return
             try:
                 filename = '-'.join(url.split("/")[-4:])
-            except (Exception,) as e:
+            except (Exception,):
                 return
 
             save_path = f"{self.image_download_folder}/{filename}"
@@ -384,7 +384,7 @@ class Linovelib2Epub():
                     with open(save_path, "wb") as f:
                         f.write(resp.content)
                     print(f'Image {save_path} Saved.')
-                except:
+                except (Exception,):
                     print(f'Image {save_path} Save failed. Rollback {url} for next try.')
                     return url
 
@@ -491,7 +491,7 @@ class Linovelib2Epub():
 
                 try:
                     img = Image.open(images_folder + '/' + image_file)
-                except (Exception,) as e:
+                except (Exception,):
                     continue
 
                 b = io.BytesIO()
@@ -626,7 +626,7 @@ class Linovelib2Epub():
                 os.remove(self.basic_info_pickle_path)
                 os.remove(self.content_dict_pickle_path)
                 os.remove(self.image_dict_pickle_path)
-            except (Exception,) as e:
+            except (Exception,):
                 pass
 
 
