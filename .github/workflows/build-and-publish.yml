@@ -1,13 +1,11 @@
 # https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
 
-name: Build and Upload Python Package
+name: Build and Publish Python Package
 
 on:
   push:
     tags:
       - v*.*.*
-#  release:
-#    types: [published]
 
 permissions:
   contents: read
@@ -18,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7"]
 
     steps:
     - uses: actions/checkout@v3
