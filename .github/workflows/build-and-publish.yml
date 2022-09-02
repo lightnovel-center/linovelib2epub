@@ -1,6 +1,6 @@
 # https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
 
-name: Build and Publish Python Package
+name: Build and Publish
 
 on:
   # Triggers the workflow on push events but only for the main branch
