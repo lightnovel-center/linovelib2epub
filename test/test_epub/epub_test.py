@@ -1,7 +1,5 @@
 # coding=utf-8
-from pathlib import Path
 
-import six
 from ebooklib import epub
 
 if __name__ == '__main__':
@@ -65,13 +63,36 @@ if __name__ == '__main__':
                 (epub.Section('Languages'),
                  (c1, c2))
                 )
-    # TODO: add `<link href="./style/nav.css" rel="stylesheet" type="text/css" />` to nav.xhtml
+
+
+
+    intro_css = epub.EpubItem(uid="style_intro", file_name="style/intro.css", media_type="text/css",
+                              content=intro_style)
+    book.add_item(intro_css)
+
+    with open('Fonts/LXGWWenKai-Regular.ttf', 'rb') as f:
+        font_content = f.read()
+
+    # <item href=”Fonts/<FONT NAME>.otf” id=”<FONT NAME>.otf” media-type=”application/vnd.ms-opentype” />
+    font_item = epub.EpubItem(uid='LXGWWenKai-Regular', file_name='Fonts/LXGWWenKai-Regular.ttf',
+                              media_type='application/vnd.ms-opentype', content=font_content)
+    book.add_item(font_item)
+
+    # create spin, add cover page as first page
+    book.spine = ['cover', 'nav', c1, c2]
 
     # add navigation files
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
 
-    # define css style
+    # add cover css
+    cover_style = 'body { background-color: #e1e1e1e;}'
+    cover_css = epub.EpubItem(uid="style_cover", file_name="style/cover.css", media_type="text/css", content=cover_style)
+    cover_html = book.get_item_with_id('cover')
+    cover_html.add_item(cover_css)
+    book.add_item(cover_css)
+
+    # add nav css
     nav_style = '''
             @namespace epub "http://www.idpf.org/2007/ops";
             body {
@@ -80,7 +101,7 @@ if __name__ == '__main__':
             h2 {
                  text-align: left;
                  text-transform: uppercase;
-                 font-weight: 200;     
+                 font-weight: 200;
             }
             ol {
                   list-style-type: none;
@@ -96,39 +117,10 @@ if __name__ == '__main__':
                     margin-top: 0.3em;
             }
             '''
-
-    # add css file
     nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=nav_style)
-    intro_css = epub.EpubItem(uid="style_intro", file_name="style/intro.css", media_type="text/css",
-                              content=intro_style)
+    nav_html = book.get_item_with_id('nav')
+    nav_html.add_item(nav_css)
     book.add_item(nav_css)
-    book.add_item(intro_css)
-
-    with open('Fonts/LXGWWenKai-Regular.ttf', 'rb') as f:
-        font_content = f.read()
-
-    # <item href=”Fonts/<FONT NAME>.otf” id=”<FONT NAME>.otf” media-type=”application/vnd.ms-opentype” />
-    font_item = epub.EpubItem(uid='LXGWWenKai-Regular', file_name='Fonts/LXGWWenKai-Regular.ttf',
-                              media_type='application/vnd.ms-opentype', content=font_content)
-    book.add_item(font_item)
-
-    # create spin, add cover page as first page
-    book.spine = ['cover', 'nav', c1, c2]
-
-    # debug content
-    epub_cover = book.get_item_with_id('cover')
-    print(epub_cover.get_name(),epub_cover.get_content())
-    # call epub_cover.set_content() will be a workaround.
 
     # create epub file
     epub.write_epub('test.epub', book, {})
-
-    # issue1: now, nav xhtml is hard coded.
-    # refer https://github.com/aerkalov/ebooklib/issues/14
-
-    # issue2: cover missing external css style
-    # check this issue for custom external css style: https://github.com/aerkalov/ebooklib/issues/252
-
-    # https://github.com/aerkalov/ebooklib/issues/221#issuecomment-783769782
-    # EDIT: Nevermind, there is a way, calling add_item() on the EpubHtml instance
-    # -- still a bit unintuitive. I also hope to see this fixed!

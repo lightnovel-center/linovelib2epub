@@ -59,10 +59,8 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (docs) add more badges() on readme.
-   - github action/codecov/tests/lines of code/PyPI - Downloads/PYPI version
-   - GitHub commit activity
-
-
+   - GitHub commit activity/codecov/tests/lines of code/PyPI - Downloads/PYPI version
+  
 
 ## Known issues
 

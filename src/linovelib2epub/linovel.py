@@ -419,6 +419,7 @@ class Linovelib2Epub():
             sorted_error_links = sorted(list(filter(None, error_links)))
             print(f'sorted_error_links: {sorted_error_links}')
 
+    # todo remove divide_volume and has_illustration params
     def _write_epub(self, title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
                     divide_volume=False, has_illustration=True):
         book = epub.EpubBook()
@@ -507,7 +508,6 @@ class Linovelib2Epub():
 
             print('Now all images in book_content are ready.')
 
-        folder = ''
         if output_folder is None:
             folder = ''
         else:
@@ -614,8 +614,8 @@ class Linovelib2Epub():
             book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
 
         if book_basic_info and paginated_content_dict and image_dict:
-            print(
-                f'[INFO]: All the data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
+            print(f'[INFO]: The data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
+            # TODO remove has_illustration and divide_volume params
             self._prepare_epub(book_basic_info, paginated_content_dict, image_dict,
                                has_illustration=self.has_illustration, divide_volume=self.divide_volume)
 
