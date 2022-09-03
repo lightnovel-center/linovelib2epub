@@ -4,6 +4,10 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)
 [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)
 [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)
+![PyPI](https://img.shields.io/pypi/v/linovelib2epub)
+![Lines of code](https://img.shields.io/tokei/lines/github/lightnovel-center/linovelib2epub)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
 
 
 
@@ -59,7 +63,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (docs) add more badges() on readme.
-   - GitHub commit activity/codecov/tests/lines of code/PyPI - Downloads/PYPI version
+   - /codecov/pytests/
   
 
 ## Known issues
