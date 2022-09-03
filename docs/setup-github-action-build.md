@@ -6,7 +6,7 @@
 > - https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-python
 
 ## trigger github actions
-### by a specific commit message
+### 1. by a specific commit message
 ```yml
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
 ```
 The workflow will run, then skip if the commit message contains "PUBLISH-".
 
-### by a specific file changed
+### 2. by a specific file changed
 > - https://stackoverflow.com/a/72617099
 > - https://docs.github.com/cn/actions/using-workflows/triggering-a-workflow#accessing-and-using-event-properties
 
@@ -41,11 +41,24 @@ path = "src/linovelib2epub/__about__.py"
 ```
 这里，使用了src/linovelib2epub/__about__.py作为VERSION BUMP的唯一源头。
 
-那么，现在就可以更改github action的build file了。
+现在就可以更改github action的build file了。
+
+目标：当 __about__.py 文件发生更改时，触发PUBLISH流程。
 ```yml
 on:
   push:
     paths:
-      - '**__about__.py'
-```
+      - 'src/linovelib2epub/__about__.py'
 
+...
+```
+这里有一个明显的弊端/隐患，**这里将`__about__.py`文件内容的变更等同于视为其中__version__字段的变更**
+，这种假设不合理。因为有时`__about__.py`会因为编辑器配置或者添加注释等其他行为而改变，
+此时，也会触发PUBLISH流程。
+
+更好的做法是github action能够在`on->push`字段下存在一种检测机制：检测某个特定文件的某个字段是否变更。
+否则，优雅地根据version字段触发更新就无从谈起。
+
+### 小结
+根据上面的讨论，`by a specific file changed`这种机制目前而言还是残缺状态，因此推荐第一种方式：`by a specific commit message`,
+即使它存在需要先运行然后退出的额外负担，但是它很简单，语义性很强。
