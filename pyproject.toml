@@ -39,6 +39,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+# alternatives: use hatch plugin to read requirement.txt
+# now is manual work
 dependencies = [
     'bs4>=0.0.1',
     'demjson>=2.2.4',

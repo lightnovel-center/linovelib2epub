@@ -13,3 +13,6 @@
 
 # dist
 /dist/
+
+# py cache
+**/__pycache__
