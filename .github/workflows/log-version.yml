@@ -13,14 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-            clean: false
+          clean: false
+
       - uses: actions/setup-python@v2
-      - name: Open Web Client Directory
+
+      - name: print version
         working-directory: src/linovelib2epub
         run: |
-          ls -la
-      # - uses: jannekem/run-python-script-action@v1
-      #  with:
-      #    script: |
-      #      with open('../../src/linovelib2epub/__about__.py', encoding='utf8') as fd:
-      #          print(fd.read())
+          cat __about__.py
