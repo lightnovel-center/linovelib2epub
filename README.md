@@ -10,7 +10,6 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
 
 
-
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
@@ -62,10 +61,8 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (feat) utilize sigil to debug CSS rules for book style beautification
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
-- [ ] (docs) add more badges() on readme.
-   - /codecov/pytests/
-  
+- [ ] (quality) setup pytests and codecov
 
-## Known issues
+## Acknowledgements
 
-See `docs/` folder.
+- [biliNovel2Epub](https://github.com/fangxx3863/biliNovel2Epub)
