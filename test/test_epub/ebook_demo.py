@@ -26,26 +26,18 @@ c1 = epub.EpubHtml(title='Intro', file_name='chap_01.xhtml', lang='zh')
 # title tag in head will be hardcoded to Intro, because title in head in meaningless.
 c1.content = """
 <body>
-<h1>Intro heading 2</h1>
-<p>☆</p>
-<p>呦☆</p>
-<p>☆呦</p>
-<p>呦☆呦</p>
-<p> when ☆ is not surrounded by certain characters, it can't show properly.<p/>
-<p>围绕♪者你总算可以显示了吧，好家伙</p>
-<p>「Hello—♪闪亮登场，翻车，去掉Hello</p>
-<p>「♪闪亮登场</p>
+<h2>Chapter 1</h2>
+<p> chapter 1 content</p>
 </body>
 """
 # https://github.com/aerkalov/ebooklib/issues/221#issuecomment-783769782
 # EDIT: Nevermind, there is a way, calling add_item() on the EpubHtml instance
 # -- still a bit unintuitive. I also hope to see this fixed!
 c1.add_item(chapter_css)
-# <p><img alt="image1" src="images/image1.jpeg"/><br/></p>
+book.add_item(chapter_css)
 
 # add chapter
 book.add_item(c1)
-book.add_item(chapter_css)
 
 # load Image file
 img1 = Image.open('images/image1.jpeg')  # 'image1.jpeg' should locate in current directory for this example

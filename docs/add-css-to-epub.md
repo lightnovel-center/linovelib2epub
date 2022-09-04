@@ -73,7 +73,7 @@ CSS美化的元素。然后就可以逐步进行相应CSS规则的编写了。
 > 注意：即使epub本身封装了良好的CSS美化样式，但是根据不同epub阅读器的渲染规则，得到了结果往往千差万别。
 > 后续，将会对epub阅读器的选择进行讨论。
 
-## epub文档结构
+## EpubBook 文档结构
 
 ### cover.xhtml
 ```xhtml
@@ -265,3 +265,30 @@ CSS美化的元素。然后就可以逐步进行相应CSS规则的编写了。
   ```
   可以通过 `p > img` 进行选择.
 
+### 自定义字体
+> WARNING: 抛弃此策略。将自定义字体的职责转移到epub阅读器中。
+
+```python
+with open('Fonts/LXGWWenKai-Regular.ttf', 'rb') as f:
+    font_content = f.read()
+
+# https://idpf.github.io/epub-cmt/v3/
+font_item = epub.EpubItem(uid='LXGWWenKai-Regular', file_name='Fonts/LXGWWenKai-Regular.ttf',
+                          media_type='application/font-sfnt', content=font_content)
+book.add_item(font_item)
+```
+这里只是以文件方式引入了字体，要将字体应用到书籍显示中，还需要在CSS规则中定义和使用。
+
+可以在全局CSS文件中定义字体，然后在body中启用字体：
+```css
+@font-face {
+   font-family: "LXGWWenKai-Regular";
+   font-weight: normal;
+   font-style: normal;
+   src: url(./Fonts/LXGWWenKai-Regular.ttf);
+}
+
+body {
+  font-family: "LXGWWenKai-Regular",sans-serif;
+}
+```

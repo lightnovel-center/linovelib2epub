@@ -13,37 +13,32 @@ if __name__ == '__main__':
     book.add_author('Aleksandar Erkalovic')
 
     # add cover image -> cover.xhtml
-    # book.set_cover("image.jpg", open('images/image1.jpeg', 'rb').read())
     book.set_cover("image.gif", open('images/13-28.gif', 'rb').read())
 
     intro_style = """
-    <style>
-          @font-face {
-             font-family: "LXGWWenKai-Regular";
-             font-weight: normal;
-             font-style: normal;
-             src: url(./Fonts/LXGWWenKai-Regular.ttf);
-          }
+      @font-face {
+         font-family: "LXGWWenKai-Regular";
+         font-weight: normal;
+         font-style: normal;
+         src: url("../Fonts/LXGWWenKai-Regular.ttf");
+      }
     
-          body {
-            font-family: "LXGWWenKai-Regular",sans-serif;
-            }
-    </style>
+      body {
+        font-family: "LXGWWenKai-Regular",sans-serif;
+        }
     """
+
 
     # intro chapter
     c1 = epub.EpubHtml(title='Introduction', file_name='intro.xhtml', lang='hr')
     c1.content = f"""
-            <html>
-            <head>
-            </head>
-            <body>
-            {intro_style}
             <h1>Introduction</h1>
             <p>Introduction paragraph where i explain what is happening.</p>
-            </body>
-            </html>
         """
+    intro_css = epub.EpubItem(uid="style_intro", file_name="style/intro.css", media_type="text/css",
+                              content=intro_style)
+    c1.add_item(intro_css)
+    book.add_item(intro_css)
 
     # about chapter
     c2 = epub.EpubHtml(title='About this book', file_name='about.xhtml')
@@ -66,16 +61,13 @@ if __name__ == '__main__':
 
 
 
-    intro_css = epub.EpubItem(uid="style_intro", file_name="style/intro.css", media_type="text/css",
-                              content=intro_style)
-    book.add_item(intro_css)
-
+    # add font item
     with open('Fonts/LXGWWenKai-Regular.ttf', 'rb') as f:
         font_content = f.read()
 
-    # <item href=”Fonts/<FONT NAME>.otf” id=”<FONT NAME>.otf” media-type=”application/vnd.ms-opentype” />
+    # font-sfnt
     font_item = epub.EpubItem(uid='LXGWWenKai-Regular', file_name='Fonts/LXGWWenKai-Regular.ttf',
-                              media_type='application/vnd.ms-opentype', content=font_content)
+                              media_type='application/font-sfnt', content=font_content)
     book.add_item(font_item)
 
     # create spin, add cover page as first page
@@ -86,7 +78,7 @@ if __name__ == '__main__':
     book.add_item(epub.EpubNav())
 
     # add cover css
-    cover_style = 'body { background-color: #e1e1e1e;}'
+    cover_style = 'body { background-color: #e1e1e1;}'
     cover_css = epub.EpubItem(uid="style_cover", file_name="style/cover.css", media_type="text/css", content=cover_style)
     cover_html = book.get_item_with_id('cover')
     cover_html.add_item(cover_css)
