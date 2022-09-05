@@ -5,6 +5,7 @@ import re
 import shutil
 import time
 import uuid
+import pkg_resources
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
@@ -441,7 +442,7 @@ class Linovelib2Epub():
         file_index = -1
 
         # add common chapter style
-        style_chapter = self._read_file('./styles/chapter.css')
+        style_chapter = self._read_pkg_resource('./styles/chapter.css')
         chapter_normal_css = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
                                            media_type="text/css", content=style_chapter)
 
@@ -536,7 +537,7 @@ class Linovelib2Epub():
         book.add_item(epub.EpubNav())
 
         # add cover css
-        style_cover = self._read_file('./styles/cover.css')
+        style_cover = self._read_pkg_resource('./styles/cover.css')
         cover_css = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
                                   content=style_cover)
         cover_html = book.get_item_with_id('cover')
@@ -544,7 +545,7 @@ class Linovelib2Epub():
         book.add_item(cover_css)
 
         # add nav css
-        style_nav = self._read_file('./styles/nav.css')
+        style_nav = self._read_pkg_resource('./styles/nav.css')
         nav_css = epub.EpubItem(uid="style_nav", file_name="styles/nav.css", media_type="text/css", content=style_nav)
         nav_html = book.get_item_with_id('nav')
         nav_html.add_item(nav_css)
@@ -553,9 +554,12 @@ class Linovelib2Epub():
         epub.write_epub(folder + title + '.epub', book)
 
     @staticmethod
-    def _read_file(file_path=''):
-        with open(file_path, 'r', encoding='utf8') as fd:
-            return fd.read()
+    def _read_pkg_resource(file_path=''):
+        # file_path example: "./styles/chapter.css"
+        pkg_resource = pkg_resources.resource_string(__name__, file_path)
+        return pkg_resource
+        # with open(file_path, 'r', encoding='utf8') as fd:
+        #     return fd.read()
 
     def _fresh_crawl(self, book_id=None):
         book_url = f'{self.base_url}/{self.book_id}.html'
@@ -623,6 +627,10 @@ class Linovelib2Epub():
                 for volume in content_dict:
                     self._write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
                                      self.image_download_folder, book_title, divide_volume=True, has_illustration=False)
+
+    def test_read_css(self):
+        my_data = pkg_resources.resource_string(__name__, "./styles/chapter.css")
+        print(my_data)
 
     def run(self):
         #  The "freeze_support()" line can be omitted if the program is not going to be frozen to produce an executable.
