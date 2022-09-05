@@ -431,6 +431,8 @@ class Linovelib2Epub():
         book.set_cover(cover_filename + '.' + cover_type, open(cover_file, 'rb').read())
         write_content = ""
         book.spine = ["nav", ]
+        # TODO: now chapter will be from 0 to ...
+        # better: reset count increment in every volume.
         chapter_id = -1
         file_index = -1
 

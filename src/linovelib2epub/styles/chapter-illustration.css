@@ -1,0 +1,38 @@
+/*
+  style for chapter which has many illustrations
+ */
+
+/* volume title */
+h1 {
+    background-color: red;
+}
+
+/* the title of a certain chapter */
+h2 {
+    background-color: yellow;
+}
+
+/* normal paragraph */
+p {
+    background-color: lightgray;
+    text-indent: 2em;
+    padding: 0;
+    margin: 0;
+}
+
+/* illustration */
+.divimage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: lightpink;
+}
+
+.divimage > img {
+    /* not exceed self 100% width*/
+    max-width: 100%;
+    /* view gap between two adjacent images.*/
+    margin-bottom: 12px;
+    border: 1px solid indigo;
+!important;
+}

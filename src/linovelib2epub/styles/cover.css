@@ -1,0 +1,17 @@
+/* make body can have at least 100vh height */
+body {
+    min-height: 100vh;
+}
+
+/* body as a flexbox, direct child is absolute centered. */
+body {
+    border: 1px solid red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* cover image */
+img[alt=Cover] {
+    max-width: 100%;
+}

@@ -1,0 +1,24 @@
+/*
+  style for normal chapter
+ */
+
+
+/* the title of a certain chapter */
+h2 {
+    background-color: yellow;
+}
+
+/* normal paragraph */
+p {
+    background-color: lightgray;
+}
+
+/* illustration in paragraph */
+p > img {
+    display: block;
+    /* not exceed self 100% width*/
+    max-width: 100%;
+    /* view gap between its surrounding elements.*/
+    margin: 4px auto;
+    border: 1px solid indigo;!important;
+}
