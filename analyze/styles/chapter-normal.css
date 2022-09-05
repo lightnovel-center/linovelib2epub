@@ -20,5 +20,5 @@ p > img {
     max-width: 100%;
     /* view gap between its surrounding elements.*/
     margin: 4px auto;
-    border: 1px solid indigo;!important;
+    border: 1px solid indigo!important;
 }

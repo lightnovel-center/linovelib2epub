@@ -33,6 +33,5 @@ p {
     max-width: 100%;
     /* view gap between two adjacent images.*/
     margin-bottom: 12px;
-    border: 1px solid indigo;
-!important;
+    border: 1px solid indigo !important;
 }

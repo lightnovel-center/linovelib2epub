@@ -479,6 +479,7 @@ class Linovelib2Epub():
                 css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
                 write_content += css
                 page.set_content(write_content)
+                # TODO page add chapter-XXX css file
                 book.add_item(page)
                 book.toc[chapter_id][1].append(page)
                 book.spine.append(page)
@@ -519,7 +520,11 @@ class Linovelib2Epub():
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
+        # TODO add nav css
+        # TODO add cover css
+
         epub.write_epub(folder + title + '.epub', book)
+
 
     def _fresh_crawl(self, book_id=None):
         book_url = f'{self.base_url}/{self.book_id}.html'
