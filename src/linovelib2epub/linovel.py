@@ -38,9 +38,12 @@ class Linovelib2Epub():
     http_retries = settings.http_retries
     http_cookie = settings.http_cookie
 
+    clean_artifacts = settings.clean_artifacts
+
     def __init__(self, book_id=None, base_url=base_url, divide_volume=divide_volume, has_illustration=has_illustration,
                  image_download_folder=image_download_folder, pickle_temp_folder=pickle_temp_folder,
-                 http_timeout=http_timeout, http_retries=http_retries, http_cookie=http_cookie):
+                 http_timeout=http_timeout, http_retries=http_retries, http_cookie=http_cookie,
+                 clean_artifacts=clean_artifacts):
 
         if not book_id:
             raise Exception('book_id parameter must be set.')
@@ -55,6 +58,7 @@ class Linovelib2Epub():
         self.http_timeout = http_timeout
         self.http_retries = http_retries
         self.http_cookie = http_cookie
+        self.clean_artifacts = clean_artifacts
 
         # new requests session
         self.session = requests.Session()
@@ -436,6 +440,11 @@ class Linovelib2Epub():
         chapter_id = -1
         file_index = -1
 
+        # add common chapter style
+        style_chapter = self._read_file('./styles/chapter.css')
+        chapter_normal_css = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
+                                           media_type="text/css", content=style_chapter)
+
         if not divide_volume:
             for volume in content:
                 print("volume: " + volume)
@@ -452,9 +461,11 @@ class Linovelib2Epub():
                     write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">",
                                                                              "")
                     write_content = write_content.replace('png', 'jpg')
-                    css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
-                    write_content += css
+                    # css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
+                    # write_content += css
                     page.set_content(write_content)
+                    # add `<link>` tag to page `<head>` section.
+                    page.add_item(chapter_normal_css)
                     book.add_item(page)
 
                     # refer ebooklib docs
@@ -476,14 +487,18 @@ class Linovelib2Epub():
                 chapter_title = "<h2>" + chapter[0] + "</h2>"
                 write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">", "")
                 write_content = write_content.replace('png', 'jpg')
-                css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
-                write_content += css
+                # css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
+                # write_content += css
                 page.set_content(write_content)
-                # TODO page add chapter-XXX css file
+                # add `<link>` tag to page `<head>` section.
+                page.add_item(chapter_normal_css)
                 book.add_item(page)
                 book.toc[chapter_id][1].append(page)
                 book.spine.append(page)
                 write_content = ""
+
+        # book instance save css file only once.
+        book.add_item(chapter_normal_css)
 
         print('Now book_content(text) is ready.')
 
@@ -520,11 +535,27 @@ class Linovelib2Epub():
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
-        # TODO add nav css
-        # TODO add cover css
+        # add cover css
+        style_cover = self._read_file('./styles/cover.css')
+        cover_css = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
+                                  content=style_cover)
+        cover_html = book.get_item_with_id('cover')
+        cover_html.add_item(cover_css)
+        book.add_item(cover_css)
+
+        # add nav css
+        style_nav = self._read_file('./styles/nav.css')
+        nav_css = epub.EpubItem(uid="style_nav", file_name="styles/nav.css", media_type="text/css", content=style_nav)
+        nav_html = book.get_item_with_id('nav')
+        nav_html.add_item(nav_css)
+        book.add_item(nav_css)
 
         epub.write_epub(folder + title + '.epub', book)
 
+    @staticmethod
+    def _read_file(file_path=''):
+        with open(file_path, 'r', encoding='utf8') as fd:
+            return fd.read()
 
     def _fresh_crawl(self, book_id=None):
         book_url = f'{self.base_url}/{self.book_id}.html'
@@ -621,20 +652,22 @@ class Linovelib2Epub():
             book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
 
         if book_basic_info and paginated_content_dict and image_dict:
-            print(f'[INFO]: The data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
+            print(
+                f'[INFO]: The data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
             # TODO remove has_illustration and divide_volume params
             self._prepare_epub(book_basic_info, paginated_content_dict, image_dict,
                                has_illustration=self.has_illustration, divide_volume=self.divide_volume)
 
             print('Write epub finished. Now delete all the artifacts.')
-            # clean temporary files
-            try:
-                shutil.rmtree(self.image_download_folder)
-                os.remove(self.basic_info_pickle_path)
-                os.remove(self.content_dict_pickle_path)
-                os.remove(self.image_dict_pickle_path)
-            except (Exception,):
-                pass
+            # clean temporary files if clean_artifacts option is set to True
+            if self.clean_artifacts:
+                try:
+                    shutil.rmtree(self.image_download_folder)
+                    os.remove(self.basic_info_pickle_path)
+                    os.remove(self.content_dict_pickle_path)
+                    os.remove(self.image_dict_pickle_path)
+                except (Exception,):
+                    pass
 
 
 if __name__ == '__main__':

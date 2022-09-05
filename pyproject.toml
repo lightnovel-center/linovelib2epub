@@ -8,7 +8,6 @@ build-backend = "hatchling.build"
 name = "linovelib2epub"
 description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
 readme = "README.md"
-#license = "AGPL"
 requires-python = ">=3.7"
 keywords = [
     'ebook',
@@ -18,7 +17,6 @@ keywords = [
     'library'
 ]
 #version = "0.0.9"
-#version = { file = "VERSION" } # not work
 authors = [
     { name = "wdpm", email = "1137299673@qq.com" },
 ]
@@ -66,6 +64,9 @@ exclude = [
     "/docs",
     "/test",
 ]
+
+[tool.hatch.build.force-include]
+#"./styles" = "src/linovelib2epub/styles"
 
 [tool.hatch.build.targets.wheel]
 

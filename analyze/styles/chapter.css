@@ -21,17 +21,38 @@ p {
 }
 
 /* illustration */
+.divimage:first-of-type{
+   margin-top: 12px;
+}
+
 .divimage {
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: lightpink;
+    /* view gap between two adjacent images.*/
+    margin-bottom: 12px;
 }
+
 
 .divimage > img {
     /* not exceed self 100% width*/
     max-width: 100%;
-    /* view gap between two adjacent images.*/
-    margin-bottom: 12px;
+    border: 1px solid indigo !important;
+}
+
+
+/*
+  additional style for normal chapter
+ */
+
+
+/* illustration in paragraph */
+p > img {
+    display: block;
+    /* not exceed self 100% width*/
+    max-width: 100%;
+    /* view gap between its surrounding elements.*/
+    margin: 4px auto;
     border: 1px solid indigo !important;
 }
