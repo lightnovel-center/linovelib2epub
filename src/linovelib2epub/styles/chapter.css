@@ -4,32 +4,28 @@
 
 /* volume title */
 h1 {
-    background-color: red;
 }
 
 /* the title of a certain chapter */
 h2 {
-    background-color: yellow;
 }
 
 /* normal paragraph */
 p {
-    background-color: lightgray;
     text-indent: 2em;
     padding: 0;
     margin: 0;
 }
 
 /* illustration */
-.divimage:first-of-type{
-   margin-top: 12px;
+.divimage:first-of-type {
+    margin-top: 12px;
 }
 
 .divimage {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: lightpink;
     /* view gap between two adjacent images.*/
     margin-bottom: 12px;
 }
@@ -38,14 +34,12 @@ p {
 .divimage > img {
     /* not exceed self 100% width*/
     max-width: 100%;
-    border: 1px solid indigo !important;
 }
 
 
 /*
   additional style for normal chapter
  */
-
 
 /* illustration in paragraph */
 p > img {
@@ -54,5 +48,4 @@ p > img {
     max-width: 100%;
     /* view gap between its surrounding elements.*/
     margin: 4px auto;
-    border: 1px solid indigo !important;
 }

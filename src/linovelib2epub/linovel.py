@@ -5,12 +5,12 @@ import re
 import shutil
 import time
 import uuid
-import pkg_resources
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
 
 import demjson
+import pkg_resources
 import requests
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -44,7 +44,8 @@ class Linovelib2Epub():
     def __init__(self, book_id=None, base_url=base_url, divide_volume=divide_volume, has_illustration=has_illustration,
                  image_download_folder=image_download_folder, pickle_temp_folder=pickle_temp_folder,
                  http_timeout=http_timeout, http_retries=http_retries, http_cookie=http_cookie,
-                 clean_artifacts=clean_artifacts):
+                 clean_artifacts=clean_artifacts, custom_style_cover=None, custom_style_nav=None,
+                 custom_style_chapter=None):
 
         if not book_id:
             raise Exception('book_id parameter must be set.')
@@ -60,6 +61,12 @@ class Linovelib2Epub():
         self.http_retries = http_retries
         self.http_cookie = http_cookie
         self.clean_artifacts = clean_artifacts
+
+        # custom css styles(binary format)
+        # function: append custom css after default css
+        self.custom_style_cover = custom_style_cover
+        self.custom_style_nav = custom_style_nav
+        self.custom_style_chapter = custom_style_chapter
 
         # new requests session
         self.session = requests.Session()
@@ -441,10 +448,15 @@ class Linovelib2Epub():
         chapter_id = -1
         file_index = -1
 
-        # add common chapter style
+        # default chapter style
         style_chapter = self._read_pkg_resource('./styles/chapter.css')
-        chapter_normal_css = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
-                                           media_type="text/css", content=style_chapter)
+        default_style_chapter = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
+                                              media_type="text/css", content=style_chapter)
+
+        # custom chapter style
+        if self.custom_style_chapter:
+            custom_style_chapter = epub.EpubItem(uid="style_chapter_custom", file_name="styles/chapter_custom.css",
+                                                 media_type="text/css", content=self.custom_style_chapter)
 
         if not divide_volume:
             for volume in content:
@@ -462,11 +474,11 @@ class Linovelib2Epub():
                     write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">",
                                                                              "")
                     write_content = write_content.replace('png', 'jpg')
-                    # css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
-                    # write_content += css
                     page.set_content(write_content)
                     # add `<link>` tag to page `<head>` section.
-                    page.add_item(chapter_normal_css)
+                    page.add_item(default_style_chapter)
+                    if custom_style_chapter:
+                        page.add_item(custom_style_chapter)
                     book.add_item(page)
 
                     # refer ebooklib docs
@@ -488,18 +500,20 @@ class Linovelib2Epub():
                 chapter_title = "<h2>" + chapter[0] + "</h2>"
                 write_content += chapter_title + str(chapter[1]).replace("<div class=\"acontent\" id=\"acontent\">", "")
                 write_content = write_content.replace('png', 'jpg')
-                # css = '<style>p{text-indent:2em; padding:0px; margin:0px;}</style>'
-                # write_content += css
                 page.set_content(write_content)
                 # add `<link>` tag to page `<head>` section.
-                page.add_item(chapter_normal_css)
+                page.add_item(default_style_chapter)
+                if custom_style_chapter:
+                    page.add_item(custom_style_chapter)
                 book.add_item(page)
                 book.toc[chapter_id][1].append(page)
                 book.spine.append(page)
                 write_content = ""
 
-        # book instance save css file only once.
-        book.add_item(chapter_normal_css)
+        # book instance save chpater files only once.
+        book.add_item(default_style_chapter)
+        if custom_style_chapter:
+            book.add_item(custom_style_chapter)
 
         print('Now book_content(text) is ready.')
 
@@ -536,20 +550,36 @@ class Linovelib2Epub():
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
-        # add cover css
-        style_cover = self._read_pkg_resource('./styles/cover.css')
-        cover_css = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
-                                  content=style_cover)
         cover_html = book.get_item_with_id('cover')
-        cover_html.add_item(cover_css)
-        book.add_item(cover_css)
 
-        # add nav css
-        style_nav = self._read_pkg_resource('./styles/nav.css')
-        nav_css = epub.EpubItem(uid="style_nav", file_name="styles/nav.css", media_type="text/css", content=style_nav)
+        # default cover style
+        default_style_cover_content = self._read_pkg_resource('./styles/cover.css')
+        default_style_cover = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
+                                  content=default_style_cover_content)
+        cover_html.add_item(default_style_cover)
+        book.add_item(default_style_cover)
+
+        # custom cover style
+        if self.custom_style_cover:
+            custom_style_cover = epub.EpubItem(uid="style_cover_custom", file_name="styles/cover_custom.css", media_type="text/css",
+                                      content=self.custom_style_cover)
+            cover_html.add_item(custom_style_cover)
+            book.add_item(custom_style_cover)
+
         nav_html = book.get_item_with_id('nav')
-        nav_html.add_item(nav_css)
-        book.add_item(nav_css)
+
+        # default nav style
+        default_style_nav_content = self._read_pkg_resource('./styles/nav.css')
+        default_style_nav = epub.EpubItem(uid="style_nav", file_name="styles/nav.css",
+                                          media_type="text/css", content=default_style_nav_content)
+        nav_html.add_item(default_style_nav)
+        book.add_item(default_style_nav)
+
+        if self.custom_style_nav:
+            custom_style_nav = epub.EpubItem(uid="style_nav_custom", file_name="styles/nav_custom.css",
+                                              media_type="text/css", content=self.custom_style_nav)
+            nav_html.add_item(custom_style_nav)
+            book.add_item(custom_style_nav)
 
         epub.write_epub(folder + title + '.epub', book)
 
@@ -558,8 +588,6 @@ class Linovelib2Epub():
         # file_path example: "./styles/chapter.css"
         pkg_resource = pkg_resources.resource_string(__name__, file_path)
         return pkg_resource
-        # with open(file_path, 'r', encoding='utf8') as fd:
-        #     return fd.read()
 
     def _fresh_crawl(self, book_id=None):
         book_url = f'{self.base_url}/{self.book_id}.html'
@@ -627,10 +655,6 @@ class Linovelib2Epub():
                 for volume in content_dict:
                     self._write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
                                      self.image_download_folder, book_title, divide_volume=True, has_illustration=False)
-
-    def test_read_css(self):
-        my_data = pkg_resources.resource_string(__name__, "./styles/chapter.css")
-        print(my_data)
 
     def run(self):
         #  The "freeze_support()" line can be omitted if the program is not going to be frozen to produce an executable.

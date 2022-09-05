@@ -5,7 +5,6 @@ body {
 
 /* body as a flexbox, direct child is absolute centered. */
 body {
-    border: 1px solid red;
     display: flex;
     justify-content: center;
     align-items: center;
