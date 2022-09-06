@@ -1,9 +1,4 @@
-def foo(*args, **kwargs):
-    print(type(args))
-    print(args)
+arr = [4, 66, 7]
 
-    print(type(kwargs))
-    print(kwargs)
-
-
-foo(1, 2, 3, 4,e=5,f=6)
+for _, item in enumerate(arr):
+    print(_, item)
