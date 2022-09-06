@@ -457,6 +457,8 @@ class Linovelib2Epub():
         if self.custom_style_chapter:
             custom_style_chapter = epub.EpubItem(uid="style_chapter_custom", file_name="styles/chapter_custom.css",
                                                  media_type="text/css", content=self.custom_style_chapter)
+        else:
+            custom_style_chapter = None
 
         if not divide_volume:
             for volume in content:
@@ -555,14 +557,15 @@ class Linovelib2Epub():
         # default cover style
         default_style_cover_content = self._read_pkg_resource('./styles/cover.css')
         default_style_cover = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
-                                  content=default_style_cover_content)
+                                            content=default_style_cover_content)
         cover_html.add_item(default_style_cover)
         book.add_item(default_style_cover)
 
         # custom cover style
         if self.custom_style_cover:
-            custom_style_cover = epub.EpubItem(uid="style_cover_custom", file_name="styles/cover_custom.css", media_type="text/css",
-                                      content=self.custom_style_cover)
+            custom_style_cover = epub.EpubItem(uid="style_cover_custom", file_name="styles/cover_custom.css",
+                                               media_type="text/css",
+                                               content=self.custom_style_cover)
             cover_html.add_item(custom_style_cover)
             book.add_item(custom_style_cover)
 
@@ -577,7 +580,7 @@ class Linovelib2Epub():
 
         if self.custom_style_nav:
             custom_style_nav = epub.EpubItem(uid="style_nav_custom", file_name="styles/nav_custom.css",
-                                              media_type="text/css", content=self.custom_style_nav)
+                                             media_type="text/css", content=self.custom_style_nav)
             nav_html.add_item(custom_style_nav)
             book.add_item(custom_style_nav)
 

@@ -18,7 +18,7 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 - [x] built-in strict integrity check about image download
 - [x] built-in mechanism for saving temporary book data by pickle library
 - [x] use multi-thread to download images
-
+- [x] support add custom css style to epub
 
 
 ## Usage
@@ -61,7 +61,6 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] (feat) utilize sigil to debug CSS rules for book style beautification
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (quality) setup pytests and codecov

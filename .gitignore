@@ -3,6 +3,7 @@
 
 # test artifacts
 /test/**/*.epub
+/test/**/*.svg
 /test/images
 /test/pickle
 
