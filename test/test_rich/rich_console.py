@@ -107,7 +107,7 @@ console3 = Console()
 # console.print('some text')
 # console.save_svg("example.svg", theme=MONOKAI)
 
-# todo https://rich.readthedocs.io/en/stable/console.html#error-console
+# https://rich.readthedocs.io/en/stable/console.html#error-console
 # error console
 # error_console = Console(stderr=True, style="bold red")
 # error_console.print('error')
