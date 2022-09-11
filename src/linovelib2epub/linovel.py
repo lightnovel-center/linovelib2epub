@@ -8,6 +8,7 @@ import uuid
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
+from http.cookies import SimpleCookie
 
 import demjson
 import pkg_resources
@@ -41,11 +42,23 @@ class Linovelib2Epub():
 
     clean_artifacts = settings.clean_artifacts
 
-    def __init__(self, book_id=None, base_url=base_url, divide_volume=divide_volume, has_illustration=has_illustration,
-                 image_download_folder=image_download_folder, pickle_temp_folder=pickle_temp_folder,
-                 http_timeout=http_timeout, http_retries=http_retries, http_cookie=http_cookie,
-                 clean_artifacts=clean_artifacts, custom_style_cover=None, custom_style_nav=None,
-                 custom_style_chapter=None):
+    disable_proxy = settings.disable_proxy
+
+    def __init__(self,
+                 book_id=None,
+                 base_url=base_url,
+                 divide_volume=divide_volume,
+                 has_illustration=has_illustration,
+                 image_download_folder=image_download_folder,
+                 pickle_temp_folder=pickle_temp_folder,
+                 http_timeout=http_timeout,
+                 http_retries=http_retries,
+                 http_cookie=http_cookie,
+                 clean_artifacts=clean_artifacts,
+                 custom_style_cover=None,
+                 custom_style_nav=None,
+                 custom_style_chapter=None,
+                 disable_proxy=disable_proxy):
 
         if not book_id:
             raise Exception('book_id parameter must be set.')
@@ -70,15 +83,75 @@ class Linovelib2Epub():
 
         # new requests session
         self.session = requests.Session()
+        # cookie example: PHPSESSID=...; night=0; jieqiUserInfo=...; jieqiVisitInfo=...
+        if self.http_cookie:
+            cookie_dict = self.cookiedict_from_str(self.http_cookie)
+            cookiejar = requests.utils.cookiejar_from_dict(cookie_dict)
+            self.session.cookies = cookiejar
+
+        if self.disable_proxy:
+            self.session.trust_env = False
 
         # pickle path
         self.basic_info_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_basic_info.pickle'
         self.content_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_content_dict.pickle'
         self.image_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_image_dict.pickle'
 
+    @staticmethod
+    def cookiedict_from_str(str=''):
+        cookie = SimpleCookie()
+        cookie.load(str)
+        cookie_dict = {k: v.value for k, v in cookie.items()}
+        return cookie_dict
+
     def dump_settings(self):
 
         pass
+
+    def run(self):
+        #  The "freeze_support()" line can be omitted if the program is not going to be frozen to produce an executable.
+        # multiprocessing.freeze_support()
+
+        # recover from last work.
+        basic_info_pickle = Path(self.basic_info_pickle_path)
+        content_dict_pickle = Path(self.content_dict_pickle_path)
+        image_dict_pickle = Path(self.image_dict_pickle_path)
+
+        if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
+            print(f'basic_info_pickle= {basic_info_pickle}')
+            if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
+                with open(self.basic_info_pickle_path, 'rb') as f:
+                    book_basic_info = pickle.load(f)
+                with open(self.content_dict_pickle_path, 'rb') as f:
+                    paginated_content_dict = pickle.load(f)
+                with open(self.image_dict_pickle_path, 'rb') as f:
+                    image_dict = pickle.load(f)
+
+            else:
+                os.remove(self.basic_info_pickle_path)
+                os.remove(self.content_dict_pickle_path)
+                os.remove(self.image_dict_pickle_path)
+                book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
+        else:
+            book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
+
+        if book_basic_info and paginated_content_dict and image_dict:
+            print(
+                f'[INFO]: The data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
+            # TODO remove has_illustration and divide_volume params
+            self._prepare_epub(book_basic_info, paginated_content_dict, image_dict,
+                               has_illustration=self.has_illustration, divide_volume=self.divide_volume)
+
+            print('Write epub finished. Now delete all the artifacts.')
+            # clean temporary files if clean_artifacts option is set to True
+            if self.clean_artifacts:
+                try:
+                    shutil.rmtree(self.image_download_folder)
+                    os.remove(self.basic_info_pickle_path)
+                    os.remove(self.content_dict_pickle_path)
+                    os.remove(self.image_dict_pickle_path)
+                except (Exception,):
+                    pass
 
     def _request_headers(self, referer='', random_ua=True):
         """
@@ -103,12 +176,13 @@ class Linovelib2Epub():
             user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36
         """
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
-        default_cookie = 'night=0;'
+        # default_cookie = 'night=0;'
         default_referer = 'https://w.linovelib.com'
         headers = {
             # ! don't set any accept fields
             'referer': referer if referer else default_referer,
-            'cookie': self.http_cookie if self.http_cookie else default_cookie,
+            # TODO wrong config: refer https://requests.readthedocs.io/en/latest/user/advanced/?highlight=session#session-objects
+            # 'cookie': self.http_cookie if self.http_cookie else default_cookie,
             'user-agent': self._random_useragent() if random_ua else default_ua
         }
         return headers
@@ -658,51 +732,6 @@ class Linovelib2Epub():
                 for volume in content_dict:
                     self._write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
                                      self.image_download_folder, book_title, divide_volume=True, has_illustration=False)
-
-    def run(self):
-        #  The "freeze_support()" line can be omitted if the program is not going to be frozen to produce an executable.
-        # multiprocessing.freeze_support()
-
-        # recover from last work.
-        basic_info_pickle = Path(self.basic_info_pickle_path)
-        content_dict_pickle = Path(self.content_dict_pickle_path)
-        image_dict_pickle = Path(self.image_dict_pickle_path)
-
-        if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
-            print(f'basic_info_pickle= {basic_info_pickle}')
-            if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
-                with open(self.basic_info_pickle_path, 'rb') as f:
-                    book_basic_info = pickle.load(f)
-                with open(self.content_dict_pickle_path, 'rb') as f:
-                    paginated_content_dict = pickle.load(f)
-                with open(self.image_dict_pickle_path, 'rb') as f:
-                    image_dict = pickle.load(f)
-
-            else:
-                os.remove(self.basic_info_pickle_path)
-                os.remove(self.content_dict_pickle_path)
-                os.remove(self.image_dict_pickle_path)
-                book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
-        else:
-            book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
-
-        if book_basic_info and paginated_content_dict and image_dict:
-            print(
-                f'[INFO]: The data of book(id={self.book_id}) except image files is ready. Start making an ebook now.')
-            # TODO remove has_illustration and divide_volume params
-            self._prepare_epub(book_basic_info, paginated_content_dict, image_dict,
-                               has_illustration=self.has_illustration, divide_volume=self.divide_volume)
-
-            print('Write epub finished. Now delete all the artifacts.')
-            # clean temporary files if clean_artifacts option is set to True
-            if self.clean_artifacts:
-                try:
-                    shutil.rmtree(self.image_download_folder)
-                    os.remove(self.basic_info_pickle_path)
-                    os.remove(self.content_dict_pickle_path)
-                    os.remove(self.image_dict_pickle_path)
-                except (Exception,):
-                    pass
 
 
 if __name__ == '__main__':

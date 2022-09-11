@@ -24,10 +24,13 @@ http_timeout = 10
 # 当一个HTTP请求失败后，重试的最大次数。
 http_retries = 5
 
-# 自定义HTTP cookie。一般不需要设置。
-http_cookie = ''
+# 自定义HTTP cookie
+http_cookie = 'night=0'
 
 # 删除临时数据/工件，这里指的是pickles和下载的图片文件
 clean_artifacts = True
+
+# disable http requests proxy
+disable_proxy = True
 
 # ----------------------------------------------

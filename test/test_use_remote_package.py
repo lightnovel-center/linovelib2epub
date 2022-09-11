@@ -31,5 +31,5 @@ def test_basic_run():
 
 # warning!: must run within __main__ module guard due to process spawn issue.
 if __name__ == '__main__':
-    # test_basic_run()
-    test_set_custom_style()
+    test_basic_run()
+    # test_set_custom_style()

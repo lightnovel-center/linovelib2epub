@@ -53,14 +53,15 @@ If it finished without errors, you can see the epub file is under the folder whe
 | http_timeout          | number  | NO       | 10                              | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。 |
 | http_retries          | number  | NO       | 5                               | 当一个HTTP请求失败后，重试的最大次数。                      |
 | http_cookie           | string  | NO       | ''                              | 自定义HTTP cookie。                                         |
-| custom_style_cover    | string  | NO       | [See source code]               | 自定义cover.xhtml的样式                                     |
-| custom_style_nav      | string  | NO       | [See source code]               | 自定义nav.xhtml的样式                                       |
-| custom_style_chapter  | string  | NO       | [See source code]               | 自定义每章(?.xhtml)的样式                                   |
-
+| custom_style_cover    | string  | NO       | ''               | 自定义cover.xhtml的样式                                     |
+| custom_style_nav      | string  | NO       | ''               | 自定义nav.xhtml的样式                                       |
+| custom_style_chapter  | string  | NO       | ''              | 自定义每章(?.xhtml)的样式                                   |
+|disable_proxy |boolean|NO| True| 是否禁用所在的代理环境，默认禁用|
 
 
 ## Todo
 
+- [ ] refactor code to several abstract level(user-input/http/crawl/write ebook)
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (quality) setup pytests and codecov
