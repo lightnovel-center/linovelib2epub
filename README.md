@@ -65,6 +65,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (quality) setup pytests and codecov
+- [ ] support more data provider：lightnovel and wenku8
 
 ## Acknowledgements
 
