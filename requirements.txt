@@ -1,7 +1,8 @@
 bs4==0.0.1
-demjson==2.2.4
+demjson3==3.0.5
 EbookLib==0.17.1
 fake-useragent==0.1.11
 requests==2.28.1
 rich==12.5.1
 uuid==1.30
+pillow==9.2.0

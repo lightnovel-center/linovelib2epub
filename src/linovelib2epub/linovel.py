@@ -5,21 +5,23 @@ import re
 import shutil
 import time
 import uuid
+from http.cookies import SimpleCookie
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
-from http.cookies import SimpleCookie
 
-import demjson
+import demjson3
 import pkg_resources
 import requests
 from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from fake_useragent import UserAgent
-from linovelib2epub import settings
 from rich.prompt import Confirm
 from urllib3.exceptions import MaxRetryError, ProxyError
+
+# from linovelib2epub import settings
+from . import settings
 
 
 class Linovelib2Epub():
@@ -60,7 +62,7 @@ class Linovelib2Epub():
                  custom_style_chapter=None,
                  disable_proxy=disable_proxy):
 
-        if not book_id:
+        if book_id is None:
             raise Exception('book_id parameter must be set.')
 
         # override settings
@@ -81,11 +83,14 @@ class Linovelib2Epub():
         self.custom_style_nav = custom_style_nav
         self.custom_style_chapter = custom_style_chapter
 
+        # random useragent should regard to a class instance, instead of every requests
+        # Is eagerly instantiates random agent is necessary?
+        self.random_useragent = self._random_useragent()
         # new requests session
         self.session = requests.Session()
         # cookie example: PHPSESSID=...; night=0; jieqiUserInfo=...; jieqiVisitInfo=...
         if self.http_cookie:
-            cookie_dict = self.cookiedict_from_str(self.http_cookie)
+            cookie_dict = self._cookiedict_from_str(self.http_cookie)
             cookiejar = requests.utils.cookiejar_from_dict(cookie_dict)
             self.session.cookies = cookiejar
 
@@ -98,14 +103,13 @@ class Linovelib2Epub():
         self.image_dict_pickle_path = f'{self.pickle_temp_folder}/{self.book_id}_image_dict.pickle'
 
     @staticmethod
-    def cookiedict_from_str(str=''):
+    def _cookiedict_from_str(str=''):
         cookie = SimpleCookie()
         cookie.load(str)
         cookie_dict = {k: v.value for k, v in cookie.items()}
         return cookie_dict
 
     def dump_settings(self):
-
         pass
 
     def run(self):
@@ -181,9 +185,7 @@ class Linovelib2Epub():
         headers = {
             # ! don't set any accept fields
             'referer': referer if referer else default_referer,
-            # TODO wrong config: refer https://requests.readthedocs.io/en/latest/user/advanced/?highlight=session#session-objects
-            # 'cookie': self.http_cookie if self.http_cookie else default_cookie,
-            'user-agent': self._random_useragent() if random_ua else default_ua
+            'user-agent': self.random_useragent if random_ua else default_ua
         }
         return headers
 
@@ -308,7 +310,7 @@ class Linovelib2Epub():
                         first_script = soup.find("body", {"id": "aread"}).find("script")
                         first_script_text = first_script.text
                         read_params_text = first_script_text[len('var ReadParams='):]
-                        read_params_json = demjson.decode(read_params_text)
+                        read_params_json = demjson3.decode(read_params_text)
                         url_next = urljoin(self.base_url, read_params_json['url_next'])
 
                         if '_' in url_next:
