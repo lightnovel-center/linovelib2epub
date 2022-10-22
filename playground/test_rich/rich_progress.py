@@ -1,12 +1,17 @@
 # For basic usage call the track() function, which accepts a sequence (such as a list or range object)
 # and an optional description of the job you are working on.
 # The track function will yield values from the sequence and update the progress information on each iteration.
+import time
+
+import rich.progress
+
+import time
+from rich.progress import track
+
 # for i in track(range(20), description="Processing..."):
 #     time.sleep(1)  # Simulate work being done
 
-import rich.progress
 from rich.progress import Progress
-
 # with Progress() as progress:
 #
 #     task1 = progress.add_task("[red]Downloading...", total=1000)
@@ -18,12 +23,14 @@ from rich.progress import Progress
 #         progress.update(task2, advance=0.3)
 #         progress.update(task3, advance=0.9)
 #         time.sleep(0.02)
+
 # transient
 # with Progress(transient=True) as progress:
 #     task = progress.add_task("Working", total=100)
 #     while not progress.finished:
 #         progress.update(task, advance=5)
 #         time.sleep(.2)
+
 # Indeterminate progress
 # In these cases you can call add_task() with start=False or total=None
 # which will display a pulsing animation that lets the user know something is working
@@ -35,6 +42,7 @@ from rich.progress import Progress
 #         progress.update(task1, advance=5)
 #         progress.update(task2, advance=5)
 #         time.sleep(.2)
+
 # When you have the number of steps you can call start_task()
 # which will display the progress bar at 0%, then update() as normal.
 # with Progress(transient=True, expand=True) as progress:
@@ -46,6 +54,7 @@ from rich.progress import Progress
 #
 #     print('Now start task1')
 #     progress.start_task(task1)
+
 # Auto refresh
 # By default, the progress information will refresh 10 times a second.
 # You can set the refresh rate with the refresh_per_second argument on the Progress constructor.
@@ -82,7 +91,7 @@ from rich.progress import Progress
 # bar_column = BarColumn(bar_width=None, table_column=Column(ratio=2))
 # time_elapsed_column = TimeElapsedColumn(table_column=Column(ratio=1))
 # progress = Progress(text_column, bar_column, time_elapsed_column, expand=True)
-#
+
 # with progress:
 #     for n in progress.track(range(100)):
 #         progress.print(n)
@@ -94,7 +103,7 @@ from rich.progress import Progress
 #         progress.console.print(f"Working on job #{job}")
 #         # run_job(job)
 #         progress.advance(task)
-#         sleep(.5)
+#         time.sleep(.5)
 # from my_project import my_console
 #
 # with Progress(console=my_console) as progress:
@@ -112,18 +121,18 @@ from rich.progress import Progress
 #     data = file.read()
 # print(data)
 
-from time import sleep
-from urllib.request import urlopen
-
-from rich.progress import wrap_file
-
-response = urlopen("https://www.textualize.io")
-size = int(response.headers["Content-Length"])
-
-with wrap_file(response, size) as file:
-    for line in file:
-        print(line.decode("utf-8"), end="")
-        sleep(0.1)
+# from time import sleep
+# from urllib.request import urlopen
+#
+# from rich.progress import wrap_file
+#
+# response = urlopen("https://www.textualize.io")
+# size = int(response.headers["Content-Length"])
+#
+# with wrap_file(response, size) as file:
+#     for line in file:
+#         # print(line.decode("utf-8"), end="")
+#         sleep(0.1)
 
 # download
 # https://github.com/Textualize/rich/blob/master/examples/downloader.py
