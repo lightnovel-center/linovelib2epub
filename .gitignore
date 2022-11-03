@@ -1,11 +1,13 @@
 # IntelliJ project files
 .idea
+.fleet
 
 # test artifacts
 /playground/**/*.epub
 /playground/**/*.svg
 /playground/images
 /playground/pickle
+/playground/*.iso
 
 # src artifacts
 /src/linovelib2epub/*.epub

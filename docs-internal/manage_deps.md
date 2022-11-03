@@ -45,7 +45,8 @@ uuid                1.30
 ``` 
 When use this command below to collect deps;
 ```bash
-pip freeze > requirement_version.txt
+# pip freeze > requirement_version.txt
+pip list --format=freeze >requirement.txt
 ```
 output:
 ```bash

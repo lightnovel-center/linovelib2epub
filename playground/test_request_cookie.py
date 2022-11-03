@@ -7,7 +7,7 @@ s.trust_env = False
 
 # if value contains many key-value pairs, must be encoded before loading.
 # DONT expose real cookie, use ENV VARIABLES instead
-rawdata_encode = ''
+rawdata_encode = 'k1=v1;'
 cookie = SimpleCookie()
 cookie.load(rawdata_encode)
 
