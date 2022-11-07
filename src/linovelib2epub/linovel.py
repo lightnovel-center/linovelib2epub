@@ -23,6 +23,11 @@ from urllib3.exceptions import MaxRetryError, ProxyError
 # from linovelib2epub import settings
 from . import settings
 
+# Replace invalid character for file/folder name
+def validate_title(title):
+    rstr = r"[\/\\\:\*\?\"\<\>\|]"  # '/ \ : * ? " < > |'
+    new_title = re.sub(rstr, "_", title)
+    return new_title
 
 class Linovelib2Epub():
     # TODO: use this method to update/override user settings
@@ -660,7 +665,7 @@ class Linovelib2Epub():
             nav_html.add_item(custom_style_nav)
             book.add_item(custom_style_nav)
 
-        epub.write_epub(folder + title + '.epub', book)
+        epub.write_epub(validate_title(folder) + validate_title(title) + '.epub', book)
 
     @staticmethod
     def _read_pkg_resource(file_path=''):
