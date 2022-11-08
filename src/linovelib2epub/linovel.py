@@ -6,6 +6,7 @@ import shutil
 import time
 import uuid
 from http.cookies import SimpleCookie
+# from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import urljoin
@@ -484,8 +485,8 @@ class Linovelib2Epub():
         urls_set = set(urls)
         print(f'len(urls_set) = {len(urls_set)}')
 
-        thread_pool = Pool(processes=int(pool_size))
-        error_links = thread_pool.map(self._download_image, urls_set)
+        process_pool = Pool(processes=int(pool_size))
+        error_links = process_pool.map(self._download_image, urls_set)
         # if everything is perfect, error_links array will be []
         # if some error occurred, error_links will be those links that failed to request.
 
@@ -503,7 +504,7 @@ class Linovelib2Epub():
             # print(f'sorted_error_links: {sorted_error_links}')
 
             # multi-thread
-            error_links = thread_pool.map(self._download_image, sorted_error_links)
+            error_links = process_pool.map(self._download_image, sorted_error_links)
             sorted_error_links = sorted(list(filter(None, error_links)))
             print(f'sorted_error_links: {sorted_error_links}')
 

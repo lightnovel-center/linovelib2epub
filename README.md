@@ -17,7 +17,7 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 - [x] built-in random browser user_agent through fake_useragent library
 - [x] built-in strict integrity check about image download
 - [x] built-in mechanism for saving temporary book data by pickle library
-- [x] use multi-thread to download images
+- [x] use multi-process to download images
 - [x] support add custom css style to epub
 
 
