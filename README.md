@@ -67,6 +67,17 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (quality) setup pytests and codecov
 - [ ] support more data provider：lightnovel and wenku8
 
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
 ## Acknowledgements
 
 - [biliNovel2Epub](https://github.com/fangxx3863/biliNovel2Epub)

@@ -1,10 +1,10 @@
 # 安装本地包
 ```bash
-py -m pip install -e <path>
+python -m pip install -e <path>
 ```
 输出示例：
 ```bash
-D:\Code\PycharmProjects\linovelib2epub>py -m pip install -e .
+D:\Code\PycharmProjects\linovelib2epub>python -m pip install -e .
 Looking in indexes: http://mirrors.aliyun.com/pypi/simple/
 Obtaining file:///D:/Code/PycharmProjects/linovelib2epub
   Installing build dependencies ... done
