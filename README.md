@@ -9,7 +9,8 @@ Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and
 [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)
 ![PyPI](https://img.shields.io/pypi/v/linovelib2epub)
-![Lines of code](https://img.shields.io/tokei/lines/github/lightnovel-center/linovelib2epub)
+![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub)
+[![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
 
 
