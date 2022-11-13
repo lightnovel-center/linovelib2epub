@@ -18,10 +18,9 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from fake_useragent import UserAgent
+from requests.exceptions import ProxyError
 from rich.prompt import Confirm
-from urllib3.exceptions import MaxRetryError, ProxyError
 
-# from linovelib2epub import settings
 from . import settings
 
 
@@ -462,7 +461,7 @@ class Linovelib2Epub():
                 print(f"downloading image: {url}")
                 resp = self.session.get(url, headers=self._request_headers(), timeout=self.http_timeout)
                 self._check_image_integrity(resp)
-            except (Exception, MaxRetryError, ProxyError,) as e:
+            except (Exception, ProxyError,) as e:
                 print(f'Error occurred when download image of {url}.')
                 # HTTPSConnectionPool(host='img.linovelib.com', port=443): Max retries exceeded...
                 # HTTPSConnectionPool(host='img.linovelib.com', port=443): Read timed out. (read timeout=10)
@@ -492,6 +491,9 @@ class Linovelib2Epub():
 
         # remove None element from array, only retain error link
         sorted_error_links = sorted(list(filter(None, error_links)))
+
+        # TODO: use python 3.8+ warlus operator, drop 3.7
+        # sorted_error_links:=sorted(list(filter(None, error_links)))
 
         # for loop until all files are downloaded successfully.
         while sorted_error_links:

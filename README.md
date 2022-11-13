@@ -63,6 +63,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 ## Todo
 
 - [ ] add gif demo for preview
+- [ ] use multi-thread or asyncio coroutine to download images
 - [ ] refactor code to several abstract level(user-input/http/crawl/write ebook)
 - [ ] (improvement) logging level: info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
