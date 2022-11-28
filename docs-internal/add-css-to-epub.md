@@ -273,7 +273,7 @@ CSS美化的元素。然后就可以逐步进行相应CSS规则的编写了。
   可以通过 `p > img` 进行选择.
 
 ### 自定义字体
-> WARNING: 抛弃此策略。将自定义字体的职责转移到epub阅读器中。
+> 自定义字体的职责优先考虑于制作端，而不是阅读端。
 
 ```python
 with open('Fonts/LXGWWenKai-Regular.ttf', 'rb') as f:

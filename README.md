@@ -62,6 +62,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
+- [ ] (fix) image download will sometimes miss some images.
 - [ ] add gif demo for preview
 - [ ] use multi-thread or asyncio coroutine to download images
 - [ ] refactor code to several abstract level(user-input/http/crawl/write ebook)
