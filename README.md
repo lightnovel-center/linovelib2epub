@@ -62,14 +62,13 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] (fix) image download will sometimes miss some images.
-- [ ] add gif demo for preview
-- [ ] use multi-thread or asyncio coroutine to download images
-- [ ] refactor code to several abstract level(user-input/http/crawl/write ebook)
-- [ ] (improvement) logging level: info or succinct
+- [ ] (docs) add gif demo for preview
+- [ ] (refactor) use multi-thread or asyncio coroutine to download images
+- [ ] (refactor) refactor code to several abstract level(user-input/http/crawl/write ebook)
+- [ ] (improvement) logging level info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
 - [ ] (quality) setup pytests and codecov
-- [ ] support more data provider：lightnovel and wenku8
+- [ ] (chore) support more data provider：lightnovel and wenku8
 
 ## Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->

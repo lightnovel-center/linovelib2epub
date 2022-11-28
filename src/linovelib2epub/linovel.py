@@ -490,25 +490,31 @@ class Linovelib2Epub():
         # if some error occurred, error_links will be those links that failed to request.
 
         # remove None element from array, only retain error link
-        sorted_error_links = sorted(list(filter(None, error_links)))
-
-        # TODO: use python 3.8+ warlus operator, drop 3.7
-        # sorted_error_links:=sorted(list(filter(None, error_links)))
+        # use python 3.8+ warlus operator, drop 3.7
+        # >>> sorted_error_links = sorted(list(filter(None, error_links)))
 
         # for loop until all files are downloaded successfully.
-        while sorted_error_links:
+        while sorted_error_links := sorted(list(filter(None, error_links))):
             print('Some errors occurred when download images. Retry those links that failed to request.')
             print(f'Error image links size: {len(sorted_error_links)}')
             print(f'Error image links: {sorted_error_links}')
 
-            # here is sync sequential http requests, poor performance.
-            # sorted_error_links = self._download_image(sorted_error_links)
-            # print(f'sorted_error_links: {sorted_error_links}')
-
-            # multi-thread
+            # multi-process
             error_links = process_pool.map(self._download_image, sorted_error_links)
-            sorted_error_links = sorted(list(filter(None, error_links)))
-            print(f'sorted_error_links: {sorted_error_links}')
+
+        # re-check image download result: the number of imgaes downloaded == len(urls_set)
+        # - happy result: urls_set - self.image_download_folder == 0
+        # - bad result: urls_set - self.image_download_folder > 0
+        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg
+        # Image images/0-682-117082-50748.jpg Saved.
+        download_image_recheck = len(urls_set) - len(os.listdir(self.image_download_folder))
+        print(f'download_image_recheck: {download_image_recheck}')
+        if download_image_recheck == 0:
+            print('The result of downloading pictures is perfect.')
+        else:
+            print('Some pictures to download are missing. Please submit this bug to github issue. Thank you.')
+
+
 
     # todo remove divide_volume and has_illustration params
     def _write_epub(self, title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
