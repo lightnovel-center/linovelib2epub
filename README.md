@@ -24,6 +24,42 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 
 ## Usage
 
+### install from source
+1. clone this repo
+```bash
+git clone https://github.com/lightnovel-center/linovelib2epub.git
+```
+2. set up a clean local python venv
+> See also: [creating-virtual-environments](https://docs.python.org/3/library/venv.html#creating-virtual-environments)
+
+replace `py` with your real python command if needed. e.g. `python` or `python3`.
+
+```bash
+# new a venv
+py -m venv venv
+
+# activate venv
+.\venv\Scripts\activate
+
+# install dependencies
+py -m pip install -r requirements.txt
+
+# install this package in local
+# under project root folder: linovelib2epub/
+python -m pip install -e .
+```
+
+3. Now you can use this package as a pypi remote package.
+```python
+from linovelib2epub.linovel import Linovelib2Epub
+
+# warning!: must run within __main__ module guard due to process spawn issue.
+if __name__ == '__main__':
+    linovelib_epub = Linovelib2Epub(book_id=3279)
+    linovelib_epub.run()
+```
+
+### install from pypi
 1. Install this package from pypi:
 ```
 pip install linovelib2epub
@@ -67,8 +103,13 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] (refactor) refactor code to several abstract level(user-input/http/crawl/write ebook)
 - [ ] (improvement) logging level info or succinct
 - [ ] (feat) enable a download certain chapter of one book.
+  - refer: playground/test_rich/rich_prompt.py
 - [ ] (quality) setup pytests and codecov
-- [ ] (chore) support more data provider：lightnovel and wenku8
+- [ ] (chore) support more data provider：
+  - lightnovel 轻之国度 
+  - https://www.wenku8.net/ 轻小说文库 （简/繁) 【插图清晰度高】
+  - https://lnovel.org/ 轻小说百科（简/繁）【插图清晰度低】
+  - https://www.8novel.com/ 无限轻小说（繁）【插图清晰度高】
 
 ## Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->

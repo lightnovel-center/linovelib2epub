@@ -25,7 +25,7 @@ def test_set_custom_style():
 
 
 def test_basic_run():
-    linovelib_epub = Linovelib2Epub(book_id=2940, clean_artifacts=True)
+    linovelib_epub = Linovelib2Epub(book_id=3279, clean_artifacts=True)
     linovelib_epub.run()
 
 
