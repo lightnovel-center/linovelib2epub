@@ -340,12 +340,16 @@ class Linovelib2Epub():
                             # print(f'image_src: {image_src}')
                             image_dict[volume].append(image_src)
 
-                            # goal: https://img.linovelib.com/0/682/117077/50675.jpg => file/0-682-117078-50677.jpg
+                            # goal: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
 
                             src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
                             replace_value = f'{self.image_download_folder}/' + "-".join(
                                 src_value.group().split("/")[-4:])
                             article = article.replace(str(src_value.group()), str(replace_value))
+
+                        # strip useless script on body tag by reg or soup method
+                        # e.g. <script>zation();</script>
+                        article= re.sub(r'<script.+?</script>', '', article, flags=re.DOTALL)
 
                         chapter_content += article
                         print(f'Processing page... {page_link}')
