@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 name = "linovelib2epub"
 description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 keywords = [
     'ebook',
     'epub',
@@ -60,9 +60,10 @@ path = "src/linovelib2epub/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
+    ".github",
     "/analyze",
-    "/docs",
-    "/test",
+    "/docs*",
+    "/playground",
 ]
 
 [tool.hatch.build.force-include]

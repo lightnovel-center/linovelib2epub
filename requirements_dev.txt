@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# below are dev/build/test dependencies
+wheel
+build
+twine
+upload
