@@ -2,4 +2,5 @@
 analyze
 dist
 docs
-test
+docs-internal
+playground

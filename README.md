@@ -98,14 +98,18 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] (docs) add gif demo for preview
-- [ ] (refactor) use multi-thread or asyncio coroutine to download images
-- [ ] (refactor) refactor code to several abstract level(user-input/http/crawl/write ebook)
-- [ ] (improvement) logging level info or succinct
-- [ ] (feat) enable a download certain chapter of one book.
+- [ ] docs: add gif demo for preview by terminalizer
+- [ ] setup more formatter and linter for maintainability
+- [ ] refactor: use multi-thread or asyncio coroutine to download images
+- [ ] refactor: refactor code to several abstract level(user-input/http/crawl/write ebook)
+- [ ] improvement: logging level info or succinct,save log file
+  - save log file & console logging
+  - beautify format: `[CI/test] [DEBUG] Downloading :: 19a67ff2d29b :: [========================>        ]  1.731MB/3.561MB`
+- [ ] feat: enable a download certain chapter of one book.
   - refer: playground/test_rich/rich_prompt.py
-- [ ] (quality) setup pytests and codecov
-- [ ] (chore) support more data provider：
+- [ ] quality: setup pytests and codecov
+- [ ] perf: use decorators to diagnose specific function time cost
+- [ ] chore: support more data provider：
   - lightnovel 轻之国度 
   - https://www.wenku8.net/ 轻小说文库 （简/繁) 【插图清晰度高】
   - https://lnovel.org/ 轻小说百科（简/繁）【插图清晰度低】
