@@ -86,10 +86,14 @@ class BaseNovelWebsiteSpider(ABC):
     def fetch(self) -> LightNovel:
         raise NotImplementedError()
 
-    # subclass can override this method to do its own sanitization. e.g. strip some js script
-    # default implementation is identity()
-    # def sanitize_html(self, html: str) -> str:
-    #     return html
+    @abstractmethod
+    def request_headers(self, referer: str = '', random_ua: bool = True):
+        raise NotImplementedError()
+
+    # img url to img filename for local saving
+    @abstractmethod
+    def parse_img_filename_from(self, url):
+        raise NotImplementedError()
 
     def download_images(self, urls=None, pool_size=os.cpu_count()):
         if urls is None:
@@ -173,15 +177,6 @@ class BaseNovelWebsiteSpider(ABC):
                 print(f'Image {save_path} Save failed. Rollback {url} for next try.')
                 return url
 
-    @abstractmethod
-    def request_headers(self, referer: str = '', random_ua: bool = True):
-        raise NotImplementedError()
-
-    # subclass must implement this parsing rule
-    @abstractmethod
-    def parse_img_filename_from(self, url):
-        raise NotImplementedError()
-
 
 class LinovelibSpider(BaseNovelWebsiteSpider):
 
@@ -238,10 +233,14 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return headers
 
     def _crawl_book_basic_info(self, url):
-        result = self._request_with_retry(url)
+        result = request_with_retry(self.session,
+                                    url,
+                                    headers=self.request_headers(),
+                                    retry_max=self.spider_settings['http_retries'],
+                                    timeout=self.spider_settings["http_timeout"])
 
         if result and result.status_code == 200:
-            print(f'Succeed to get the novel of book_id: {self.book_id}')
+            print(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
 
             # pass html text to beautiful soup parser
             soup = BeautifulSoup(result.text, 'lxml')
@@ -249,23 +248,28 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                 book_title = soup.find('h2', {'class': 'book-title'}).text
                 author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
                 book_summary = soup.find('section', id="bookSummary").text
-                book_cover = soup.find('img', {'class': 'book-cover'})['src']
-                return book_title, author, book_summary, book_cover
+                book_cover_url = soup.find('img', {'class': 'book-cover'})['src']
+                return book_title, author, book_summary, book_cover_url
 
             except (Exception,):
-                print(f'Failed to parse basic info of book_id: {self.book_id}')
+                print(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
 
         return None
 
     def _crawl_book_content(self, catalog_url):
         book_catalog_rs = None
         try:
-            book_catalog_rs = self._request_with_retry(catalog_url)
+            book_catalog_rs = request_with_retry(self.session,
+                                                 catalog_url,
+                                                 headers=self.request_headers(),
+                                                 retry_max=self.spider_settings['http_retries'],
+                                                 timeout=self.spider_settings["http_timeout"]
+                                                 )
         except (Exception,):
             print(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
         if book_catalog_rs and book_catalog_rs.status_code == 200:
-            print(f'Succeed to get the catalog of book_id: {self.book_id}')
+            print(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
             # parse catalog data
             soup_catalog = BeautifulSoup(book_catalog_rs.text, 'lxml')
@@ -322,7 +326,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                     # goal: solve all page links of a certain chapter
                     while True:
-                        resp = self._request_with_retry(url_next)
+                        resp = request_with_retry(self.session, url_next)
                         if resp:
                             soup = BeautifulSoup(resp.text, 'lxml')
                         else:
@@ -332,7 +336,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                         first_script_text = first_script.text
                         read_params_text = first_script_text[len('var ReadParams='):]
                         read_params_json = demjson3.decode(read_params_text)
-                        url_next = urljoin(self.base_url, read_params_json['url_next'])
+                        url_next = urljoin(self.spider_settings["base_url"], read_params_json['url_next'])
 
                         if '_' in url_next:
                             chapter.append(url_next)
@@ -344,7 +348,9 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                     # handle page content(text and img)
                     for page_link in chapter[1:]:
-                        page_resp = self._request_with_retry(page_link)
+                        page_resp = request_with_retry(self.session, page_link,
+                                                       retry_max=self.spider_settings['http_retries'],
+                                                       timeout=self.spider_settings["http_timeout"])
                         if page_resp:
                             soup = BeautifulSoup(page_resp.text, 'lxml')
                         else:
@@ -364,12 +370,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                             # goal: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
 
                             src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
-                            replace_value = f'{self.image_download_folder}/' + "-".join(
+                            replace_value = f'{self.spider_settings["image_download_folder"]}/' + "-".join(
                                 src_value.group().split("/")[-4:])
                             article = article.replace(str(src_value.group()), str(replace_value))
 
                         # strip useless script on body tag by reg or soup method
                         # e.g. <script>zation();</script>
+                        # TODO move sanitize_html()
                         article = re.sub(r'<script.+?</script>', '', article, flags=re.DOTALL)
 
                         chapter_content += article
@@ -380,7 +387,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             return paginated_content_dict, image_dict
 
         else:
-            print(f'Failed to get the catalog of book_id: {self.book_id}')
+            print(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
         return None
 
@@ -402,7 +409,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             # is normal chapter
             else:
                 href = catalog_li.find("a")["href"]
-                whole_url = urljoin(self.base_url, href)
+                whole_url = urljoin(self.spider_settings['base_url'], href)
                 current_volume.append([catalog_li_text, whole_url])
 
         return catalog_dict
@@ -460,11 +467,11 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return book_basic_info, paginated_content_dict, image_dict
 
     def sanitize_html(self, html: str) -> str:
-        return super().sanitize_html(html)
+        return html
 
 
 class EpubWriter:
-    def _prepare_epub(self, book_basic_info, content_dict, image_dict, has_illustration=True, divide_volume=False):
+    def prepare(self, book_basic_info, content_dict, image_dict, has_illustration=True, divide_volume=False):
         print(f'[Config]: has_illustration: {has_illustration}; divide_volume: {divide_volume}')
 
         book_title, author, book_summary, book_cover = book_basic_info
@@ -473,7 +480,7 @@ class EpubWriter:
         # divide_volume(2) x download_image(2) = 4 choices
         if has_illustration:
             # handle all image stuff
-            self._create_folder_if_not_exists(self.image_download_folder)
+            create_folder_if_not_exists(self.image_download_folder)
             image_list = self._extract_image_list(image_dict)
             image_list.append(book_cover)
             self._download_images(image_list)
@@ -501,8 +508,8 @@ class EpubWriter:
                     self._write_epub(f'{book_title}_{volume}', author, content_dict[volume], 'cover', cover_file,
                                      self.image_download_folder, book_title, divide_volume=True, has_illustration=False)
 
-    def _write_epub(self, title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
-                    divide_volume=False, has_illustration=True):
+    def write(self, title, author, content, cover_filename, cover_file, images_folder, output_folder=None,
+              divide_volume=False, has_illustration=True):
         book = epub.EpubBook()
         book.set_identifier(str(uuid.uuid4()))
         book.set_title(title)
@@ -702,12 +709,9 @@ class Linovelib2Epub():
             'has_illustration': has_illustration,
             'image_download_folder': image_download_folder,
             'pickle_temp_folder': pickle_temp_folder,
-            'basic_info_pickle_path': f'{self.common_settings["pickle_temp_folder"]}'
-                                      f'/{self.common_settings["book_id"]}_basic_info.pickle',
-            'content_dict_pickle_path': f'{self.common_settings["pickle_temp_folder"]}'
-                                        f'/{self.common_settings["book_id"]}_content_dict.pickle',
-            'image_dict_pickle_path': f'{self.common_settings["pickle_temp_folder"]}'
-                                      f'/{self.common_settings["book_id"]}_image_dict.pickle',
+            'basic_info_pickle_path': f'{pickle_temp_folder}/{book_id}_basic_info.pickle',
+            'content_dict_pickle_path': f'{pickle_temp_folder}/{book_id}_content_dict.pickle',
+            'image_dict_pickle_path': f'{pickle_temp_folder}/{book_id}_image_dict.pickle',
             'clean_artifacts': clean_artifacts
         }
 
@@ -750,11 +754,8 @@ class Linovelib2Epub():
                 os.remove(self.common_settings['basic_info_pickle_path'])
                 os.remove(self.common_settings['content_dict_pickle_path'])
                 os.remove(self.common_settings['image_dict_pickle_path'])
-                # book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
                 book_basic_info, paginated_content_dict, image_dict = self._spider.fetch()
         else:
-            # certain spider do fresh crawl
-            # book_basic_info, paginated_content_dict, image_dict = self._fresh_crawl(self.book_id)
             book_basic_info, paginated_content_dict, image_dict = self._spider.fetch()
 
         if book_basic_info and paginated_content_dict and image_dict:
@@ -764,7 +765,7 @@ class Linovelib2Epub():
             # self._prepare_epub(book_basic_info, paginated_content_dict, image_dict,
             #                    has_illustration=self.has_illustration, divide_volume=self.divide_volume)
 
-            print('Write epub finished. Now delete all the artifacts.')
+            print('Write epub finished. Now delete all the artifacts if set.')
             # clean temporary files if clean_artifacts option is set to True
             if self.clean_artifacts:
                 try:
@@ -795,12 +796,16 @@ def create_folder_if_not_exists(path):
         os.makedirs(path)
 
 
-def request_with_retry(client, url, retry_max=5, timeout=5):
+def request_with_retry(client, url, headers=None, retry_max=5, timeout=10):
+
+    if headers is None:
+        headers = {}
+
     current_num_of_request = 0
 
     while current_num_of_request <= retry_max:
         try:
-            response = client.get(url, headers=self._request_headers(), timeout=timeout)
+            response = client.get(url, headers=headers, timeout=timeout)
             if response:
                 return response
             else:
@@ -850,8 +855,3 @@ def sanitize_pathname(pathname):
 def read_pkg_resource(file_path=''):
     # file_path example: "./styles/chapter.css"
     return pkg_resources.resource_string(__name__, file_path)
-
-
-if __name__ == '__main__':
-    linovelib_epub = LinovelibSpider(book_id=3211)
-    linovelib_epub.run()

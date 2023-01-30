@@ -25,7 +25,7 @@ http_timeout = 10
 http_retries = 5
 
 # 自定义HTTP cookie
-http_cookie = 'night=0'
+http_cookie = ''
 
 # 删除临时数据/工件，这里指的是pickles和下载的图片文件
 clean_artifacts = True
