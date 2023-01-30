@@ -25,6 +25,7 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 ## Usage
 
 ### install from source
+> !!!In the refactoring phase，DON'T use this method to run.
 1. clone this repo
 ```bash
 git clone https://github.com/lightnovel-center/linovelib2epub.git
