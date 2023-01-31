@@ -24,7 +24,11 @@
  
 >设计1：下载插图的时机在哪个阶段？ 
 
-如果用户设置需要插图，那么下载插图应该在爬虫阶段，还是写epub阶段？
+```
+2.1 book basic info  -> 2.2 book paginated_content_dict -> 2.3 image_dict
+```
+
+A: 如果需要下载插图，那么应该在爬虫获取完 2.2 之后，开始处理 images 的下载。
 
 ## 定义LightNovel数据模型类
 这个类用于表示爬虫得到的轻小说的数据。按层级来分，为 book -> volumes -> chapters -> pages。
@@ -72,24 +76,25 @@ class Volume:
 
 一个Chapter表示一个特定的章节。
 - chapter id: 唯一。
-- chapter index page title: 该章节的第一个页面的标题。
-- chapter index page url: 该章节的第一个页面的url。
-- chapter pages: 表示章节的页。
-
-对于特定章节单页的网站：chapter pages 数组只有一个元素。
-对于特定章节多页的网站：chapter pages 数组含有多个元素。
+- ~~chapter index page title: 该章节的第一个页面的标题。~~
+- ~~chapter index page url: 该章节的第一个页面的url。~~
+- ~~chapter pages: 表示章节的页。~~
+- chapter title 
+- chapter url
+- chapter content
 
 因此，现在可以给出Chapter的初步设计。
 
 ```python
 class Chapter:
     cid: None
-    index_page_title: str
-    index_page_url: str
-    pages: []
+    title: str
+    url: str # optional
+    content: str
 ```
 
 ### Pages
+> 章节分页的话可以考虑，对于爬虫而言不需要。对于爬虫而言，抽象粒度到chapter而言足够，一个chapter对应一个大HTML页面。
 
 最后，是Page的设计了。 每个page应该包含：
 - page id
@@ -121,3 +126,7 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
 
 将普适的方法抽象泛化（上移）到基类 BaseNovelWebsiteSpider ，具体的方法实现特化（下移）在具体的实现类 LinovelibSpider。
+
+## LinovelibSpider
+
+关键在于爬虫数据格式的处理，和转化为LightNovel模型。

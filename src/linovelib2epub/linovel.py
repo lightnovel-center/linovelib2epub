@@ -25,28 +25,28 @@ from rich.prompt import Confirm
 from . import settings
 
 
-class LightNovelPage:
-    def __init__(self,
-                 pid: Optional[Union[int, str]] = None,
-                 title: str = '',
-                 url: str = '',
-                 content: str = '') -> None:
-        self.pid = pid
-        self.title = title
-        self.url = url
-        self.content = content
+# class LightNovelPage:
+#     def __init__(self,
+#                  pid: Optional[Union[int, str]] = None,
+#                  title: str = '',
+#                  url: str = '',
+#                  content: str = '') -> None:
+#         self.pid = pid
+#         self.title = title
+#         self.url = url
+#         self.content = content
 
 
 class LightNovelChapter:
     def __init__(self,
                  cid: Optional[Union[int, str]] = None,
-                 index_page_title: str = '',
-                 index_page_url: str = '',
-                 pages: Optional[List[LightNovelPage]] = None) -> None:
+                 title: str = '',
+                 url: str = '',
+                 content: str = '') -> None:
         self.cid = cid
-        self.index_page_title = index_page_title
-        self.index_page_url = index_page_url
-        self.pages = pages
+        self.title = title
+        self.url = url
+        self.content = content
 
 
 class LightNovelVolume:
@@ -56,18 +56,65 @@ class LightNovelVolume:
                  chapters: Optional[List[LightNovelChapter]] = None) -> None:
         self.vid = vid
         self.title = title
-        self.chapters = chapters
+        self.chapters = []
+
+    def add_chapter(self, chapter: LightNovelChapter) -> None:
+        self.chapters.append(chapter)
+
+    def add_chapter(self, cid, title='', url='', content=''):
+        pass
 
 
 class LightNovel:
     bid: Optional[Union[int, str]] = None
+    book_title: str = ''
     author: str = ''
     description: str = ''
+    book_cover: str = ''
 
     volumes: Optional[List[LightNovelVolume]] = None
 
+    # map<volume_name, List[img_url]>
+    image_dict: Optional[Dict[str, List[str]]] = None
+
+    # map<volume_name, List[page_url]>
+    # page_url may be broken
+    catalog_dict: Optional[Dict[str, List[str]]] = None
+
     def __init__(self) -> None:
-        pass
+        self.volumes = []
+        self.image_dict = {}
+
+    def get_volumes_size(self):
+        return len(self.volumes)
+
+    def get_chapter_size(self):
+        return sum([len(volume.chapters) for volume in self.volumes if volume.chapters])
+
+    def get_image_set(self):
+        image_set = set()
+        for values in self.image_dict.values():
+            for value in values:
+                image_set.add(value)
+        return image_set
+
+    def add_volume(self, volume: LightNovelVolume):
+        self.volumes.append(volume)
+
+    # new_novel.add_volume(volume_id,volume,[])
+    # def add_volume(self, vid, title, chapters):
+    #     new_volume = LightNovelVolume()
+    #     new_volume.vid = vid
+    #     new_volume.title = title
+    #     new_volume.chapters = chapters
+    #     self.volumes.append(new_volume)
+    #     return new_volume
+
+    def get_volume(self, vid):
+        for volume in self.volumes:
+            if volume.vid == vid:
+                return volume
+        return None
 
 
 from abc import ABC, abstractmethod
@@ -297,11 +344,19 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             # step 2: convert catalog array to catalog dict(table of contents)
             catalog_dict = self._convert_to_catalog_dict(catalog_lis)
 
-            paginated_content_dict = dict()
+            # paginated_content_dict = dict()  # 1
+            new_novel = LightNovel()
             image_dict = dict()
             url_next = ''
 
+            volume_id = 0
             for volume in catalog_dict:
+                volume_id += 1
+
+                new_volume = LightNovelVolume()
+                new_volume.vid = volume_id
+                new_volume.title = volume
+
                 print(f'volume: {volume}')
                 image_dict.setdefault(volume, [])
 
@@ -312,8 +367,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                     chapter_id += 1
                     # print(f'chapter_id: {chapter_id}')
 
+                    new_chapter = LightNovelChapter()
+                    new_chapter.cid = chapter_id
+                    new_chapter.title = chapter_title
+                    # new_chapter.content = 'UNSOLVED'
+
                     print(f'chapter : {chapter_title}')
-                    paginated_content_dict.setdefault(volume, []).append([chapter_title])
+                    # paginated_content_dict.setdefault(volume, []).append([chapter_title])  # 2
 
                     # if chapter[1] is valid link, assign it to url_next
                     # if chapter[1] is not a valid link, use url_next
@@ -334,6 +394,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                         first_script = soup.find("body", {"id": "aread"}).find("script")
                         first_script_text = first_script.text
+                        # alternative: use split(':')[-1] to get read_params_text
                         read_params_text = first_script_text[len('var ReadParams='):]
                         read_params_json = demjson3.decode(read_params_text)
                         url_next = urljoin(self.spider_settings["base_url"], read_params_json['url_next'])
@@ -343,7 +404,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                         else:
                             break
 
-                    # To think: after solving all page links of catalog. It's possible to utilize multi-thread tech
+                    # THINK: after solving all page links of catalog. It's possible to utilize multi-thread tech
                     # to fetch page content?
 
                     # handle page content(text and img)
@@ -361,35 +422,51 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                         for _, image in enumerate(images):
                             # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
-                            # src format: https://img.linovelib.com/0/682/117078/50677.jpg
                             # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
                             image_src = image['src']
-                            # print(f'image_src: {image_src}')
                             image_dict[volume].append(image_src)
 
-                            # goal: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
+                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
 
                             src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
                             replace_value = f'{self.spider_settings["image_download_folder"]}/' + "-".join(
                                 src_value.group().split("/")[-4:])
+                            # replace all remote images src to local file path
                             article = article.replace(str(src_value.group()), str(replace_value))
 
-                        # strip useless script on body tag by reg or soup method
-                        # e.g. <script>zation();</script>
-                        # TODO move sanitize_html()
-                        article = re.sub(r'<script.+?</script>', '', article, flags=re.DOTALL)
-
+                        article = self._sanitize_html(article)
                         chapter_content += article
+
                         print(f'Processing page... {page_link}')
 
-                    paginated_content_dict[volume][chapter_id].append(chapter_content)
+                    # Here, current chapter's content has been solved
+                    new_chapter.content = chapter_content
+                    new_volume.add_chapter(new_chapter)
 
-            return paginated_content_dict, image_dict
+                    # paginated_content_dict[volume][chapter_id].append(chapter_content)  # 3
+
+                new_novel.add_volume(new_volume)
+            # paginated_content_dict format:
+            # {'第一卷': [['插图',<html...>],['序章 没有成为主角的「路人角色」的无趣校园恋爱喜剧',<html...>],...],...}
+
+            return new_novel, image_dict, catalog_dict
 
         else:
             print(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
         return None
+
+    @staticmethod
+    def _sanitize_html(html):
+        """
+        strip useless script on body tag by reg or soup method.
+
+        e.g. <script>zation();</script>
+
+        :param html:
+        :return:
+        """
+        return re.sub(r'<script.+?</script>', '', html, flags=re.DOTALL)
 
     def _convert_to_catalog_dict(self, catalog_lis):
         catalog_lis_tmp = catalog_lis
@@ -445,29 +522,43 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         if book_basic_info:
             book_title, author, book_summary, book_cover = book_basic_info
             print(book_title, author, book_summary, book_cover)
-            with open(self.spider_settings["basic_info_pickle_path"], 'wb') as f:
-                pickle.dump([book_title, author, book_summary, book_cover], f)
-                print(f'[Milestone]: save {self.spider_settings["basic_info_pickle_path"]} done.')
+            # with open(self.spider_settings["basic_info_pickle_path"], 'wb') as f:
+            #     pickle.dump([book_title, author, book_summary, book_cover], f)
+            #     print(f'[Milestone]: save {self.spider_settings["basic_info_pickle_path"]} done.')
         else:
             raise Exception(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
 
         book_content = self._crawl_book_content(book_catalog_url)
         if book_content:
-            paginated_content_dict, image_dict = book_content
-            with open(self.spider_settings["content_dict_pickle_path"], 'wb') as f:
-                pickle.dump(paginated_content_dict, f)
-                print(f'[Milestone]: save {self.spider_settings["content_dict_pickle_path"]} done.')
-            with open(self.spider_settings["image_dict_pickle_path"], 'wb') as f:
-                pickle.dump(image_dict, f)
-                print(f'[Milestone]: save {self.spider_settings["image_dict_pickle_path"]} done.')
+            new_novel, image_dict, catalog_dict = book_content
+            # with open(self.spider_settings["content_dict_pickle_path"], 'wb') as f:
+            #     pickle.dump(paginated_content_dict, f)
+            #     print(f'[Milestone]: save {self.spider_settings["content_dict_pickle_path"]} done.')
+            # with open(self.spider_settings["image_dict_pickle_path"], 'wb') as f:
+            #     pickle.dump(image_dict, f)
+            #     print(f'[Milestone]: save {self.spider_settings["image_dict_pickle_path"]} done.')
         else:
             raise Exception(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
 
-        # TODO create Novel Model
-        return book_basic_info, paginated_content_dict, image_dict
+        book_title, author, book_summary, book_cover = book_basic_info
+        new_novel, image_dict, catalog_dict = book_content
 
-    def sanitize_html(self, html: str) -> str:
-        return html
+        novel = LightNovel()
+        # set book basic info
+        novel.bid = self.spider_settings['book_id']
+        novel.book_title = book_title
+        novel.author = author
+        novel.description = book_summary
+        novel.book_cover = book_cover
+        # TODO handle paginated_content_dict and image_dict and catalog_dict
+
+        print(new_novel)
+
+        # volumes = self._convert_to_volumes(paginated_content_dict)
+
+        # TODO save one novel pickle
+
+        return new_novel
 
 
 class EpubWriter:
@@ -723,7 +814,6 @@ class Linovelib2Epub():
             'http_cookie': http_cookie,
             'disable_proxy': disable_proxy
         }
-
         self._spider = LinovelibSpider(spider_setting=self.spider_settings)
 
         self.epub_settings = {
@@ -736,29 +826,33 @@ class Linovelib2Epub():
 
     def run(self):
         # recover from last work.
-        basic_info_pickle = Path(self.common_settings['basic_info_pickle_path'])
-        content_dict_pickle = Path(self.common_settings['content_dict_pickle_path'])
-        image_dict_pickle = Path(self.common_settings['image_dict_pickle_path'])
+        # basic_info_pickle = Path(self.common_settings['basic_info_pickle_path'])
+        # content_dict_pickle = Path(self.common_settings['content_dict_pickle_path'])
+        # image_dict_pickle = Path(self.common_settings['image_dict_pickle_path'])
+        # TODO resolve novel pickle path
+        novel_pickle_path = Path('/example')
 
-        if basic_info_pickle.exists() and content_dict_pickle.exists() and image_dict_pickle.exists():
-            print(f'basic_info_pickle= {basic_info_pickle}')
+        if novel_pickle_path.exists():
+            # print(f'basic_info_pickle= {basic_info_pickle}')
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
-                with open(self.common_settings["basic_info_pickle_path"], 'rb') as f:
-                    book_basic_info = pickle.load(f)
-                with open(self.common_settings["content_dict_pickle_path"], 'rb') as f:
-                    paginated_content_dict = pickle.load(f)
-                with open(self.common_settings["image_dict_pickle_path"], 'rb') as f:
-                    image_dict = pickle.load(f)
-
+                # with open(self.common_settings["basic_info_pickle_path"], 'rb') as f:
+                #     book_basic_info = pickle.load(f)
+                # with open(self.common_settings["content_dict_pickle_path"], 'rb') as f:
+                #     paginated_content_dict = pickle.load(f)
+                # with open(self.common_settings["image_dict_pickle_path"], 'rb') as f:
+                #     image_dict = pickle.load(f)
+                # TODO load novel pickle
+                novel = None
             else:
-                os.remove(self.common_settings['basic_info_pickle_path'])
-                os.remove(self.common_settings['content_dict_pickle_path'])
-                os.remove(self.common_settings['image_dict_pickle_path'])
-                book_basic_info, paginated_content_dict, image_dict = self._spider.fetch()
+                # os.remove(self.common_settings['basic_info_pickle_path'])
+                # os.remove(self.common_settings['content_dict_pickle_path'])
+                # os.remove(self.common_settings['image_dict_pickle_path'])
+                os.remove(novel_pickle_path)
+                novel = self._spider.fetch()
         else:
-            book_basic_info, paginated_content_dict, image_dict = self._spider.fetch()
+            novel= self._spider.fetch()
 
-        if book_basic_info and paginated_content_dict and image_dict:
+        if novel:
             print(
                 f'[INFO]: The data of book(id={self.common_settings["book_id"]}) except image files is ready. Start making an ebook now.')
 
@@ -770,9 +864,10 @@ class Linovelib2Epub():
             if self.clean_artifacts:
                 try:
                     shutil.rmtree(self.image_download_folder)
-                    os.remove(self.basic_info_pickle_path)
-                    os.remove(self.content_dict_pickle_path)
-                    os.remove(self.image_dict_pickle_path)
+                    # os.remove(self.basic_info_pickle_path)
+                    # os.remove(self.content_dict_pickle_path)
+                    # os.remove(self.image_dict_pickle_path)
+                    os.remove(novel_pickle_path)
                 except (Exception,):
                     pass
 
@@ -797,7 +892,6 @@ def create_folder_if_not_exists(path):
 
 
 def request_with_retry(client, url, headers=None, retry_max=5, timeout=10):
-
     if headers is None:
         headers = {}
 
