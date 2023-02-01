@@ -9,6 +9,7 @@ from typing import List, Optional, Union, Dict, Iterable, Any
 from urllib.parse import urljoin
 
 import demjson3
+import inquirer
 import requests
 import uuid
 from PIL import Image
@@ -69,7 +70,7 @@ class LightNovel:
     volumes: List[Dict[str, Any]] = []
 
     # map<volume_name, List[img_url]>
-    illustration_dict: Optional[Dict[Union[int,str], List[str]]] = None
+    illustration_dict: Optional[Dict[Union[int, str], List[str]]] = None
 
     def __init__(self):
         self.volumes = []
@@ -110,7 +111,7 @@ class LightNovel:
                 return volume
         return None
 
-    def set_illustration_dict(self, illustration_dict: Dict[Union[int,str], List[str]] = {}):
+    def set_illustration_dict(self, illustration_dict: Dict[Union[int, str], List[str]] = {}):
         self.illustration_dict = illustration_dict
 
     def mark_basic_info_ready(self):
@@ -237,12 +238,27 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
             # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
 
-            # TODO: think how to enable SELECT_VOLUME_MODE
+            catalog_list = self._convert_to_catalog_list(catalog_lis)
 
-            catalog_list= self._convert_to_catalog_list(catalog_lis)
+            if self.spider_settings['select_volume_mode']:
+                # step 1: need to show UI for user to select one or more volumes,
+                # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
+
+                # UI show
+                volume_choices = self._get_volume_choices(catalog_list)
+                question_name = 'Selecting volumes'
+                questions = [
+                    inquirer.Checkbox(question_name,
+                                      message="Which volumes you want to download?(select one or multiple volumes)",
+                                      choices=volume_choices, ),
+                ]
+                # user input
+                # answers: {'Selecting volumes': [3, 6]}
+                answers = inquirer.prompt(questions)
+                catalog_list = self._reduce_catalog_by_selection(catalog_list, answers[question_name])
 
             new_novel = LightNovel()
-            illustration_dict: Dict[Union[int,str], List[str]] = dict()
+            illustration_dict: Dict[Union[int, str], List[str]] = dict()
             url_next = ''
 
             volume_id = 0
@@ -351,6 +367,18 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         return None
 
+    def _reduce_catalog_by_selection(self, catalog_list, selection_array):
+        return [volume for volume in catalog_list if volume['vid'] in selection_array]
+
+    def _get_volume_choices(self, catalog_list):
+        """
+        [(volume_title,vid),(volume_title,vid),...]
+
+        :param catalog_list:
+        :return:
+        """
+        return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+
     @staticmethod
     def _sanitize_html(html):
         """
@@ -367,7 +395,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # return example:
         # [{vid:1,volume_title: "XX", chapters:[[xxx,u1,u2,u3],[xx,u1,u2],[...] ]},{},{}]
 
-        catalog_list= []
+        catalog_list = []
         current_volume = []
         current_volume_text = catalog_html_lis[0].text
         volume_index = 0
@@ -377,7 +405,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
             # is volume name
             if 'chapter-bar' in catalog_li['class']:
-                volume_index+=1
+                volume_index += 1
                 # reset current_* variables
                 current_volume_text = catalog_li_text
                 current_volume = []
@@ -494,7 +522,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
         download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
-        print(f'download_image_miss_quota: {download_image_miss_quota}')
+        print(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
         if download_image_miss_quota <= 0:
             print('The result of downloading pictures is perfect.')
         else:
@@ -564,7 +592,7 @@ class EpubWriter:
             self._write_epub(book_title, author, novel.volumes, cover_file)
         else:
             for volume in novel.volumes:
-                self._write_epub(f'{book_title}_{volume.title}', author, volume, cover_file)
+                self._write_epub(f'{book_title}_{volume["title"]}', author, volume, cover_file)
 
     def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
         """
@@ -598,6 +626,7 @@ class EpubWriter:
 
         chapter_index = -1
         file_index = -1
+
         if not self.epub_settings["divide_volume"]:
             # merge all chapters content to EPUB
             for volume in volumes:
@@ -684,7 +713,7 @@ class EpubWriter:
             self._set_custom_nav_style(book, nav_html)
 
         # FINAL WRITE
-        epub.write_epub(sanitize_pathname(f'{out_folder}{title}') + '.epub', book)
+        epub.write_epub(sanitize_pathname(out_folder) + "/" + sanitize_pathname(title) + '.epub', book)
 
     def _set_page_style(self, book, custom_style_chapter, default_style_chapter, page):
         page.add_item(default_style_chapter)
@@ -717,9 +746,9 @@ class EpubWriter:
 
     def _get_output_folder(self):
         if self.epub_settings['divide_volume']:
-            out_folder = str(self._novel_book_title) + '/'
+            out_folder = str(self._novel_book_title)
         else:
-            out_folder = ''
+            out_folder = '.'
         return out_folder
 
     def _get_cutom_chapter_style(self):
@@ -771,6 +800,7 @@ from . import settings
 from .exceptions import LinovelibException
 
 import pickle
+import urllib.parse
 
 
 class Linovelib2Epub():
@@ -783,6 +813,7 @@ class Linovelib2Epub():
                  image_download_folder: str = settings.IMAGE_DOWNLOAD_FOLDER,
                  pickle_temp_folder: str = settings.PICKLE_TEMP_FOLDER,
                  clean_artifacts: bool = settings.CLEAN_ARTIFACTS,
+                 select_volume_mode: bool = settings.SELECT_VOLUME_MODE,
                  http_timeout: int = settings.HTTP_TIMEOUT,
                  http_retries: int = settings.HTTP_RETRIES,
                  http_cookie: str = settings.HTTP_COOKIE,
@@ -796,15 +827,18 @@ class Linovelib2Epub():
         if base_url is None:
             raise LinovelibException('base_url parameter must be set.')
 
+        u = urllib.parse.urlsplit(base_url)
+
         self.common_settings = {
             'book_id': book_id,
             'base_url': base_url,
-            'divide_volume': divide_volume,
+            'divide_volume': True if select_volume_mode else divide_volume,
             'has_illustration': has_illustration,
             'image_download_folder': image_download_folder,
             'pickle_temp_folder': pickle_temp_folder,
-            'novel_pickle_path': f'{pickle_temp_folder}/{book_id}_novel.pickle',
-            'clean_artifacts': clean_artifacts
+            'novel_pickle_path': f'{pickle_temp_folder}/{u.hostname}_{book_id}.pickle',
+            'clean_artifacts': clean_artifacts,
+            'select_volume_mode': select_volume_mode
         }
 
         self.spider_settings = {
@@ -826,7 +860,7 @@ class Linovelib2Epub():
         self._epub_writer = EpubWriter(epub_settings=self.epub_settings)
 
     def run(self):
-        # recover from last work.
+        # recover from last work. only support this format: 3573_novel.pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
         if novel_pickle_path.exists():
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):

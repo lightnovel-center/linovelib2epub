@@ -1,5 +1,8 @@
 -r requirements.txt
 
+# dev
+# InquirerPy==0.3.3
+
 # below are dev/build/test dependencies
 wheel
 build

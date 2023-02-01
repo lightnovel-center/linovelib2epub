@@ -3,8 +3,17 @@ import inquirer
 questions = [
     inquirer.List('size',
                   message="What size do you need?",
-                  choices=['Jumbo', 'Large', 'Standard', 'Medium', 'Small', 'Micro'],
+                  choices=[('Jumbo',1), ('Large',2),],
                   ),
 ]
+# answers = inquirer.prompt(questions)
+# print(answers)
+
+
+questions = [
+  inquirer.Checkbox('interests',
+                    message="What are you interested in?",
+                    choices=[('Jumbo',1), ('Large',2)], ),
+]
 answers = inquirer.prompt(questions)
-print(answers)
+print(answers['interests'])

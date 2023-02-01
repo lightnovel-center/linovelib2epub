@@ -102,7 +102,6 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] docs: add gif demo for preview by terminalizer
 - [ ] setup more formatter and linter for maintainability
 - [ ] refactor: use multi-thread or asyncio coroutine to download images
-- [ ] refactor: refactor code to several abstract level(user-input/http/crawl/write ebook)
 - [ ] improvement: logging level info or succinct,save log file
   - save log file & console logging
   - beautify format: `[CI/test] [DEBUG] Downloading :: 19a67ff2d29b :: [========================>        ]  1.731MB/3.561MB`
