@@ -69,7 +69,7 @@ class LightNovel:
     volumes: List[Dict[str, Any]] = []
 
     # map<volume_name, List[img_url]>
-    illustration_dict: Optional[Dict[str, List[str]]] = None
+    illustration_dict: Optional[Dict[Union[int,str], List[str]]] = None
 
     def __init__(self):
         self.volumes = []
@@ -110,7 +110,7 @@ class LightNovel:
                 return volume
         return None
 
-    def set_illustration_dict(self, illustration_dict: Dict[str, List[str]] = {}):
+    def set_illustration_dict(self, illustration_dict: Dict[Union[int,str], List[str]] = {}):
         self.illustration_dict = illustration_dict
 
     def mark_basic_info_ready(self):
@@ -236,35 +236,28 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             # <li class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑</li>
             # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
             # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
-            # ...
-            # we should convert it to a dict: (key, value).
-            # key is chapter_name, value is a two-dimensional array
-            # Every array element is also an array which includes only two element.
-            # format: ['插图','/novel/682/117077.html'], [’「彩虹与夜色的交会──远在起始之前──」‘,'/novel/682/32683.html']
-            # So, the whole dict will be like this format:
-            # (’第一卷 夏娃在黎明时微笑‘,[['插图','/novel/2211/116045.html'], [’「彩虹与夜色的交会──远在起始之前──」‘,'/novel/682/32683.html'],...])
-            # (’第二卷 咏唱少女将往何方‘,[...])
 
             # TODO: think how to enable SELECT_VOLUME_MODE
 
-            catalog_dict = self._convert_to_catalog_dict(catalog_lis)
+            catalog_list= self._convert_to_catalog_list(catalog_lis)
 
             new_novel = LightNovel()
-            illustration_dict: Dict[str, List[str]] = dict()
+            illustration_dict: Dict[Union[int,str], List[str]] = dict()
             url_next = ''
 
             volume_id = 0
-            for volume in catalog_dict:
+            for volume in catalog_list:
                 volume_id += 1
 
                 new_volume = LightNovelVolume(vid=volume_id)
-                new_volume.title = volume
+                new_volume.title = volume['volume_title']
 
-                print(f'volume: {volume}')
-                illustration_dict.setdefault(volume, [])
+                print(f'volume: {volume["volume_title"]}')
+
+                illustration_dict.setdefault(volume['vid'], [])
 
                 chapter_id = -1
-                for chapter in catalog_dict[volume]:
+                for chapter in volume['chapters']:
                     chapter_content = ''
                     chapter_title = chapter[0]
                     chapter_id += 1
@@ -324,7 +317,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                             # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
                             # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
                             image_src = image['src']
-                            illustration_dict[volume].append(image_src)
+                            illustration_dict[volume['vid']].append(image_src)
 
                             # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
 
@@ -370,28 +363,37 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         """
         return re.sub(r'<script.+?</script>', '', html, flags=re.DOTALL)
 
-    def _convert_to_catalog_dict(self, catalog_lis):
-        catalog_lis_tmp = catalog_lis
+    def _convert_to_catalog_list(self, catalog_html_lis):
+        # return example:
+        # [{vid:1,volume_title: "XX", chapters:[[xxx,u1,u2,u3],[xx,u1,u2],[...] ]},{},{}]
 
-        catalog_dict = dict()
+        catalog_list= []
         current_volume = []
-        current_volume_text = catalog_lis_tmp[0].text
+        current_volume_text = catalog_html_lis[0].text
+        volume_index = 0
 
-        for index, catalog_li in enumerate(catalog_lis_tmp):
+        for index, catalog_li in enumerate(catalog_html_lis):
             catalog_li_text = catalog_li.text
+
             # is volume name
             if 'chapter-bar' in catalog_li['class']:
+                volume_index+=1
                 # reset current_* variables
                 current_volume_text = catalog_li_text
                 current_volume = []
-                catalog_dict[current_volume_text] = current_volume
+
+                catalog_list.append({
+                    'vid': volume_index,
+                    'volume_title': current_volume_text,
+                    'chapters': current_volume
+                })
             # is normal chapter
             else:
                 href = catalog_li.find("a")["href"]
                 whole_url = urljoin(self.spider_settings['base_url'], href)
                 current_volume.append([catalog_li_text, whole_url])
 
-        return catalog_dict
+        return catalog_list
 
     @staticmethod
     def _is_valid_chapter_link(href: str):
