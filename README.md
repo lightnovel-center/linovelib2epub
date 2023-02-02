@@ -30,6 +30,22 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 - [x] use multi-process to download images
 - [x] support add custom css style to epub
 
+## Supported  Websites (plan)
+
+| 序号 | 网站名称             | 语言                 | 爬虫难度            | 支持进度 | 备注                 |
+| ---- | -------------------- | -------- | -------------------- | ---- | ---- |
+| 1    | [哔哩轻小说（Mobile）](https://w.linovelib.com/) | 简/繁 | 中😰 | :ok:     | 默认选项。 |
+| 2    | [哔哩轻小说（Web）](https://www.linovelib.com/) | 简/繁 | 中😰 | 🚫        | 资源同Mobile，没必要。 |
+| 3    | [轻之国度](https://www.lightnovel.us/) | 简/繁 | 高🤣👿 | 🚫 | 需要登录，轻币门槛，导航分类混乱。 |
+| 4 | [无限轻小说](https://www.8novel.com/) | 繁 | 中😰 | ？ | 不用登录。一章多页。 |
+| 5 | [轻小说文库](https://www.wenku8.net/) | 简/繁 | 中😰 | ？ | 需要登录。一章一页。 |
+| 6 | [轻小说百科](https://lnovel.org/ ) | 简/繁 | 低😆 | ？ | 不用登录，一章一页。遗憾的是插图清晰度低。 |
+
+> 爬虫友好度有两个重要指标：1.访问门槛。是否需要登陆以及积分。 2.页面结构。一个章节多页渲染的视为中等难度。
+
+如果你发现其他的很好轻小说目标源，资源丰富，更新及时，插图清晰，并且爬虫门槛合理的，可以在issue发起补充。
+
+代码实现中对其他轻小说源的支持，关键是继承并重写这个 `BaseNovelWebsiteSpider` 类。
 
 ## Usage
 
@@ -108,15 +124,10 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] quality: setup pytests and codecov
+- [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] refactor: use multi-thread or asyncio coroutine to download images
-- [ ] chore: collect runtime metrics(time cost)
-- [ ] feat: support more data provider：
-  - lightnovel 轻之国度 
-  - https://www.wenku8.net/ 轻小说文库 （简/繁) 【插图清晰度高】
-  - https://lnovel.org/ 轻小说百科（简/繁）【插图清晰度低】
-  - https://www.8novel.com/ 无限轻小说（繁）【插图清晰度高】
+  - multiprocess logging not work with normal logging library. 可以选择asyncio或者使用Queue。
 
 ## Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
