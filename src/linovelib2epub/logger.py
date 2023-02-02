@@ -20,11 +20,13 @@ class Logger:
     def __init__(self,
                  logger_level: Optional[str] = "INFO",
                  logger_name: Optional[str] = "logger",
-                 log_dir: Optional[str] = None):
+                 log_dir: Optional[str] = None,
+                 log_filename: Optional[str] = None):
         self.logger = None
         self.level = self.LEVEL_MAP.get(logger_level, 'INFO')
         self.name = logger_name
         self.log_dir = log_dir if log_dir else f"{os.path.join(os.path.dirname(os.getcwd()), 'logs')}"
+        self.log_filename = log_filename or strftime("%Y-%m-%d", localtime())
         self._set_logger()
 
     def _set_logger(self):
@@ -40,9 +42,11 @@ class Logger:
         # If you need sys.stdout, pass it to StreamHandler constructor()
         # stream_handler = StreamHandler()
         shell_handler = RichHandler(rich_tracebacks=True)
+
+
         file_handler = FileHandler(
             filename=os.path.join(self.log_dir,
-                                  "{log_time}.log".format(log_time=strftime("%Y-%m-%d", localtime()))),
+                                  "{log_filename}.log".format(log_filename=self.log_filename)),
             mode="a",
             encoding="utf-8",
         )

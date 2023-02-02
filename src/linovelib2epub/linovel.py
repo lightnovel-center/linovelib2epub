@@ -2,13 +2,13 @@ import io
 import os
 import re
 import shutil
+import time
 from abc import ABC, abstractmethod
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
 from urllib.parse import urljoin
-import time
 
 import demjson3
 import inquirer
@@ -45,10 +45,11 @@ from .logger import Logger
 class LinovelibSpider(BaseNovelWebsiteSpider):
 
     def __init__(self,
-                 spider_setting: Optional[Dict] = None):
-        super().__init__(spider_setting)
+                 spider_settings: Optional[Dict] = None):
+        super().__init__(spider_settings)
         self._init_http_client()
-        self.logger = Logger(logger_name=__class__.__name__).get_logger()
+        self.logger = Logger(logger_name=__class__.__name__,
+                             log_filename=self.spider_settings["log_filename"]).get_logger()
 
     def dump_settings(self):
         self.logger.info(self.spider_settings)
@@ -492,7 +493,8 @@ class EpubWriter:
 
     def __init__(self, epub_settings) -> None:
         self.epub_settings = epub_settings
-        self.logger = Logger(logger_name=__class__.__name__).get_logger()
+        self.logger = Logger(logger_name=__class__.__name__,
+                             log_filename=self.epub_settings["log_filename"]).get_logger()
 
     def write(self, novel: LightNovel):
         start = time.perf_counter()
@@ -515,7 +517,7 @@ class EpubWriter:
         # tips: show output file folder
         output_folder = os.path.join(os.getcwd(), self._get_output_folder())
         rich_print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
-              f"(You can see the link if you use a modern shell.)")
+                   f"(You can see the link if you use a modern shell.)")
         self.logger.info('(Perf metrics) Write epub took: {} seconds'.format(time.perf_counter() - start))
 
     def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
@@ -750,6 +752,11 @@ class Linovelib2Epub():
 
         u = urllib.parse.urlsplit(base_url)
 
+        # - use for novel_pickle_path
+        # - use for a unique log_file name instead of timestamp to avoid big file in one day.
+        # I don't want to use log file rotate to increase complexity.
+        run_identifier = f'{u.hostname}_{book_id}'
+
         self.common_settings = {
             'book_id': book_id,
             'base_url': base_url,
@@ -757,9 +764,10 @@ class Linovelib2Epub():
             'has_illustration': has_illustration,
             'image_download_folder': image_download_folder,
             'pickle_temp_folder': pickle_temp_folder,
-            'novel_pickle_path': f'{pickle_temp_folder}/{u.hostname}_{book_id}.pickle',
+            'novel_pickle_path': f'{pickle_temp_folder}/{run_identifier}.pickle',
             'clean_artifacts': clean_artifacts,
-            'select_volume_mode': select_volume_mode
+            'select_volume_mode': select_volume_mode,
+            'log_filename': run_identifier
         }
 
         self.spider_settings = {
@@ -770,7 +778,7 @@ class Linovelib2Epub():
             'http_cookie': http_cookie,
             'disable_proxy': disable_proxy
         }
-        self._spider = LinovelibSpider(spider_setting=self.spider_settings)
+        self._spider = LinovelibSpider(spider_settings=self.spider_settings)
 
         self.epub_settings = {
             **self.common_settings,
@@ -780,7 +788,8 @@ class Linovelib2Epub():
         }
         self._epub_writer = EpubWriter(epub_settings=self.epub_settings)
 
-        self.logger = Logger(logger_name=__class__.__name__).get_logger()
+        self.logger = Logger(logger_name=__class__.__name__,
+                             log_filename=self.common_settings["log_filename"]).get_logger()
 
     def run(self):
         # recover from last work. only support this format: [hostname]_3573.pickle
