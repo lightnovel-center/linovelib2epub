@@ -29,3 +29,8 @@
   
 ## issues
 1. logger 无法打印多线程中的日志。
+
+## 参考
+- [在多个线程中记录日志](https://docs.python.org/zh-cn/3/howto/logging-cookbook.html#logging-from-multiple-threads)
+- [从多个进程记录至单个文件](https://docs.python.org/zh-cn/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes)
+- [(Python 在多进程中使用 logging)](https://zjuturtle.com/2021/11/09/python-multiprocess-logging/)

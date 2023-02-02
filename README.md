@@ -14,6 +14,7 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
+- [x] support download a certain volume of a novel
 - [x] built-in http request retry mechanism to improve network fault tolerance
 - [x] built-in random browser user_agent through fake_useragent library
 - [x] built-in strict integrity check about image download
@@ -25,7 +26,6 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 ## Usage
 
 ### install from source
-> !!!In the refactoring phase，DON'T use this method to run.
 1. clone this repo
 ```bash
 git clone https://github.com/lightnovel-center/linovelib2epub.git
@@ -85,6 +85,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 | book_id               | number  | YES      | None                            | 书籍ID。                                                    |
 | base_url              | string  | NO       | 'https://w.linovelib.com/novel' | 哔哩轻小说主页URL                                           |
 | divide_volume         | boolean | NO       | False                           | 是否分卷                                                    |
+| select_volume_mode     | boolean | NO       | False                           | 选择卷模式，它为True时 divide_volume 强制为True。                                                   |
 | has_illustration      | boolean | NO       | True                            | 是否下载插图                                                |
 | image_download_folder | string  | NO       | "images"                        | 图片下载临时文件夹. 不允许以相对路径../开头。               |
 | pickle_temp_folder    | string  | NO       | "pickle"                        | pickle临时数据保存的文件夹。                                |
@@ -101,10 +102,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 - [ ] docs: add gif demo for preview by terminalizer
 - [ ] quality: setup pytests and codecov
-- [ ] improvement: logging level info or succinct,save log file
-  - playground/test_console/rich_logging.py
-  - beautify format: `[CI/test] [DEBUG] Downloading :: 19a67ff2d29b :: [========================>        ]  1.731MB/3.561MB`
-- [ ] feat: setup more formatter and linter for maintainability
+- [ ] quality: setup more formatter and linter for maintainability
 - [ ] refactor: use multi-thread or asyncio coroutine to download images
 - [ ] chore: collect runtime metrics(time cost)
 - [ ] feat: support more data provider：
