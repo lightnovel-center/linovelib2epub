@@ -8,6 +8,7 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
 from urllib.parse import urljoin
+import time
 
 import demjson3
 import inquirer
@@ -24,7 +25,7 @@ from linovelib2epub.utils import (check_image_integrity, cookiedict_from_str,
                                   read_pkg_resource, request_with_retry,
                                   sanitize_pathname)
 from requests.exceptions import ProxyError
-from rich import print
+from rich import print as rich_print
 from rich.prompt import Confirm
 
 
@@ -357,7 +358,10 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return '-'.join(url.split("/")[-4:])
 
     def fetch(self) -> LightNovel:
+        start = time.perf_counter()
         novel_whole = self._fetch()
+        self.logger.info('(Perf metrics) Fetch Book took: {} seconds'.format(time.perf_counter() - start))
+
         self._post_fecth(novel_whole)
 
         return novel_whole
@@ -387,7 +391,10 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
     def _post_fecth(self, novel: LightNovel):
         self._save_novel_pickle(novel)
+
+        start = time.perf_counter()
         self._process_image_download(novel)
+        self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
 
     def _process_image_download(self, novel):
         create_folder_if_not_exists(self.spider_settings["image_download_folder"])
@@ -488,6 +495,7 @@ class EpubWriter:
         self.logger = Logger(logger_name=__class__.__name__).get_logger()
 
     def write(self, novel: LightNovel):
+        start = time.perf_counter()
         self.logger.info(f'[Config]: has_illustration: {self.epub_settings["has_illustration"]};'
                          f' divide_volume: {self.epub_settings["divide_volume"]}')
 
@@ -506,8 +514,9 @@ class EpubWriter:
 
         # tips: show output file folder
         output_folder = os.path.join(os.getcwd(), self._get_output_folder())
-        print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
+        rich_print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
               f"(You can see the link if you use a modern shell.)")
+        self.logger.info('(Perf metrics) Write epub took: {} seconds'.format(time.perf_counter() - start))
 
     def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
         """
