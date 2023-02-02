@@ -2,126 +2,29 @@ import io
 import os
 import re
 import shutil
+import uuid
+from abc import ABC, abstractmethod
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Optional, Union, Dict, Iterable, Any
+from typing import Dict, Iterable, List, Optional, Union
 from urllib.parse import urljoin
 
 import demjson3
 import inquirer
 import requests
-import uuid
 from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
-from linovelib2epub.utils import cookiedict_from_str, random_useragent, create_folder_if_not_exists, \
-    request_with_retry, is_valid_image_url, check_image_integrity, read_pkg_resource, sanitize_pathname
+from linovelib2epub.models import (LightNovel, LightNovelChapter,
+                                   LightNovelVolume)
+from linovelib2epub.utils import (check_image_integrity, cookiedict_from_str,
+                                  create_folder_if_not_exists,
+                                  is_valid_image_url, random_useragent,
+                                  read_pkg_resource, request_with_retry,
+                                  sanitize_pathname)
 from requests.exceptions import ProxyError
 from rich.prompt import Confirm
-
-
-class LightNovelChapter():
-    def __init__(self,
-                 cid: Union[int, str],
-                 title: str = '',
-                 content: str = ''):
-        self.cid = cid
-        self.title = title
-        self.content = content
-
-
-class LightNovelVolume:
-    def __init__(self,
-                 vid: Union[int, str],
-                 title: str = ''):
-        self.vid = vid
-        self.title = title
-        self.chapters = []
-
-    def add_chapter(self, cid: Union[int, str], title: str = '', content: str = ''):
-        new_chapter = {
-            'cid': cid,
-            'title': title,
-            'content': content
-        }
-        self.chapters.append(new_chapter)
-
-    def get_chapter_by_cid(self, cid):
-        for chapter in self.chapters:
-            if chapter.cid == cid:
-                return chapter
-        return None
-
-    def get_chapters_size(self):
-        return len(self.get_chapters())
-
-    def get_chapters(self):
-        return self.chapters
-
-
-class LightNovel:
-    bid: Union[int, str] = None
-    book_title: str = ''
-    author: str = ''
-    description: str = ''
-    book_cover: str = ''
-
-    volumes: List[Dict[str, Any]] = []
-
-    # map<volume_name, List[img_url]>
-    illustration_dict: Optional[Dict[Union[int, str], List[str]]] = None
-
-    def __init__(self):
-        self.volumes = []
-        self.illustration_dict = {}
-
-        # data states
-        self.basic_info_ready = False
-        self.volumes_content_ready = False
-
-    def get_volumes_size(self):
-        return len(self.volumes)
-
-    def get_chapters_size(self):
-        count = 0
-        for volume in self.volumes:
-            if volume['chapters']:
-                count += len(volume['chapters'])
-        return count
-
-    def get_illustration_set(self):
-        image_set = set()
-        for values in self.illustration_dict.values():
-            for value in values:
-                image_set.add(value)
-        return image_set
-
-    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None):
-        new_volume = {
-            'vid': vid,
-            'title': title,
-            'chapters': chapters if chapters else []
-        }
-        self.volumes.append(new_volume)
-
-    def get_volume_by_vid(self, vid):
-        for volume in self.volumes:
-            if volume.vid == vid:
-                return volume
-        return None
-
-    def set_illustration_dict(self, illustration_dict: Dict[Union[int, str], List[str]] = {}):
-        self.illustration_dict = illustration_dict
-
-    def mark_basic_info_ready(self):
-        self.basic_info_ready = True
-
-    def mark_volumes_content_ready(self):
-        self.volumes_content_ready = True
-
-
-from abc import ABC, abstractmethod
 
 
 class BaseNovelWebsiteSpider(ABC):
@@ -134,15 +37,19 @@ class BaseNovelWebsiteSpider(ABC):
         raise NotImplementedError()
 
 
+from .logger import Logger
+
+
 class LinovelibSpider(BaseNovelWebsiteSpider):
 
     def __init__(self,
                  spider_setting: Optional[Dict] = None):
         super().__init__(spider_setting)
         self._init_http_client()
+        self.logger = Logger(logger_name=__class__.__name__).get_logger()
 
     def dump_settings(self):
-        print(self.spider_settings)
+        self.logger.info(self.spider_settings)
 
     def _init_http_client(self):
         self.session = requests.Session()
@@ -192,10 +99,11 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                                     url,
                                     headers=self._request_headers(),
                                     retry_max=self.spider_settings['http_retries'],
-                                    timeout=self.spider_settings["http_timeout"])
+                                    timeout=self.spider_settings["http_timeout"],
+                                    logger=self.logger)
 
         if result and result.status_code == 200:
-            print(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
+            self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
 
             # pass html text to beautiful soup parser
             soup = BeautifulSoup(result.text, 'lxml')
@@ -207,7 +115,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                 return book_title, author, book_summary, book_cover_url
 
             except (Exception,):
-                print(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
+                self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
 
         return None
 
@@ -218,13 +126,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                                                  catalog_url,
                                                  headers=self._request_headers(),
                                                  retry_max=self.spider_settings['http_retries'],
-                                                 timeout=self.spider_settings["http_timeout"]
-                                                 )
+                                                 timeout=self.spider_settings["http_timeout"],
+                                                 logger=self.logger)
         except (Exception,):
-            print(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
+            self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
         if book_catalog_rs and book_catalog_rs.status_code == 200:
-            print(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+            self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
             # parse catalog data
             soup_catalog = BeautifulSoup(book_catalog_rs.text, 'lxml')
@@ -239,23 +147,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
 
             catalog_list = self._convert_to_catalog_list(catalog_lis)
-
             if self.spider_settings['select_volume_mode']:
-                # step 1: need to show UI for user to select one or more volumes,
-                # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
-
-                # UI show
-                volume_choices = self._get_volume_choices(catalog_list)
-                question_name = 'Selecting volumes'
-                questions = [
-                    inquirer.Checkbox(question_name,
-                                      message="Which volumes you want to download?(select one or multiple volumes)",
-                                      choices=volume_choices, ),
-                ]
-                # user input
-                # answers: {'Selecting volumes': [3, 6]}
-                answers = inquirer.prompt(questions)
-                catalog_list = self._reduce_catalog_by_selection(catalog_list, answers[question_name])
+                catalog_list = self._handle_select_volume(catalog_list)
 
             new_novel = LightNovel()
             illustration_dict: Dict[Union[int, str], List[str]] = dict()
@@ -268,7 +161,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                 new_volume = LightNovelVolume(vid=volume_id)
                 new_volume.title = volume['volume_title']
 
-                print(f'volume: {volume["volume_title"]}')
+                self.logger.info(f'volume: {volume["volume_title"]}')
 
                 illustration_dict.setdefault(volume['vid'], [])
 
@@ -282,7 +175,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                     new_chapter.title = chapter_title
                     # new_chapter.content = 'UNSOLVED'
 
-                    print(f'chapter : {chapter_title}')
+                    self.logger.info(f'chapter : {chapter_title}')
 
                     # fix broken links in place(catalog_lis) if exits
                     # - if chapter[1] is valid link, assign it to url_next
@@ -295,7 +188,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                     # goal: solve all page links of a certain chapter
                     while True:
-                        resp = request_with_retry(self.session, url_next)
+                        resp = request_with_retry(self.session, url_next, logger=None)
                         if resp:
                             soup = BeautifulSoup(resp.text, 'lxml')
                         else:
@@ -320,7 +213,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                     for page_link in chapter[1:]:
                         page_resp = request_with_retry(self.session, page_link,
                                                        retry_max=self.spider_settings['http_retries'],
-                                                       timeout=self.spider_settings["http_timeout"])
+                                                       timeout=self.spider_settings["http_timeout"],
+                                                       logger=self.logger)
                         if page_resp:
                             soup = BeautifulSoup(page_resp.text, 'lxml')
                         else:
@@ -346,7 +240,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                         article = self._sanitize_html(article)
                         chapter_content += article
 
-                        print(f'Processing page... {page_link}')
+                        self.logger.info(f'Processing page... {page_link}')
 
                     # Here, current chapter's content has been solved
                     new_chapter.content = chapter_content
@@ -363,21 +257,38 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             return new_novel
 
         else:
-            print(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+            self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
         return None
 
-    def _reduce_catalog_by_selection(self, catalog_list, selection_array):
-        return [volume for volume in catalog_list if volume['vid'] in selection_array]
+    def _handle_select_volume(self, catalog_list):
+        def _reduce_catalog_by_selection(catalog_list, selection_array):
+            return [volume for volume in catalog_list if volume['vid'] in selection_array]
 
-    def _get_volume_choices(self, catalog_list):
-        """
-        [(volume_title,vid),(volume_title,vid),...]
+        def _get_volume_choices(catalog_list):
+            """
+            [(volume_title,vid),(volume_title,vid),...]
 
-        :param catalog_list:
-        :return:
-        """
-        return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+            :param catalog_list:
+            :return:
+            """
+            return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+
+        # step 1: need to show UI for user to select one or more volumes,
+        # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
+        # UI show
+        volume_choices = _get_volume_choices(catalog_list)
+        question_name = 'Selecting volumes'
+        questions = [
+            inquirer.Checkbox(question_name,
+                              message="Which volumes you want to download?(select one or multiple volumes)",
+                              choices=volume_choices, ),
+        ]
+        # user input
+        # answers: {'Selecting volumes': [3, 6]}
+        answers = inquirer.prompt(questions)
+        catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
+        return catalog_list
 
     @staticmethod
     def _sanitize_html(html):
@@ -497,7 +408,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
     def _download_images(self, urls: Iterable = None, pool_size=os.cpu_count()):
         if urls is None:
             urls = set()
-        print(f'len of image set = {len(urls)}')
+        self.logger.info(f'len of image set = {len(urls)}')
 
         process_pool = Pool(processes=int(pool_size))
         error_links = process_pool.map(self._download_image, urls)
@@ -509,9 +420,9 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         # for loop until all files are downloaded successfully.
         while sorted_error_links := sorted(list(filter(None, error_links))):
-            print('Some errors occurred when download images. Retry those links that failed to request.')
-            print(f'Error image links size: {len(sorted_error_links)}')
-            print(f'Error image links: {sorted_error_links}')
+            self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
+            self.logger.info(f'Error image links size: {len(sorted_error_links)}')
+            self.logger.info(f'Error image links: {sorted_error_links}')
 
             # multi-process
             error_links = process_pool.map(self._download_image, sorted_error_links)
@@ -522,11 +433,11 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
         download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
-        print(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
+        self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
         if download_image_miss_quota <= 0:
-            print('The result of downloading pictures is perfect.')
+            self.logger.info('The result of downloading pictures is perfect.')
         else:
-            print('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
+            self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
 
     def _download_image(self, url: str):
         """
@@ -556,19 +467,20 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         # url is valid and never downloaded
         try:
-            print(f"downloading image: {url}")
+            multiprocessing.get_logger()
+            self.logger.info(f"Downloading image: {url}")
             resp = self.session.get(url, headers=self._request_headers(), timeout=self.spider_settings['http_timeout'])
             check_image_integrity(resp)
         except (Exception, ProxyError,) as e:
-            print(f'Error occurred when download image of {url}. Error: {e}')
+            self.logger.error(f'Error occurred when download image of {url}. Error: {e}')
             return url
         else:
             try:
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
-                print(f'Image {save_path} Saved.')
+                self.logger.info(f'Image {save_path} Saved.')
             except (Exception,):
-                print(f'Image {save_path} Save failed. Rollback {url} for next try.')
+                self.logger.error(f'Image {save_path} Save failed. Rollback {url} for next try.')
                 return url
 
 
@@ -576,10 +488,11 @@ class EpubWriter:
 
     def __init__(self, epub_settings) -> None:
         self.epub_settings = epub_settings
+        self.logger = Logger(logger_name=__class__.__name__).get_logger()
 
     def write(self, novel: LightNovel):
-        print(f'[Config]: has_illustration: {self.epub_settings["has_illustration"]};'
-              f' divide_volume: {self.epub_settings["divide_volume"]}')
+        self.logger.info(f'[Config]: has_illustration: {self.epub_settings["has_illustration"]};'
+                         f' divide_volume: {self.epub_settings["divide_volume"]}')
 
         # remember _novel_book_title for later usage, don't want to pass novel_book_title
         book_title = self._novel_book_title = novel.book_title
@@ -688,11 +601,9 @@ class EpubWriter:
         book.add_item(default_style_chapter)
         if custom_style_chapter:
             book.add_item(custom_style_chapter)
-        print('Now book_content(text) is ready.')
 
         images_folder = self.epub_settings["image_download_folder"]
         self._add_images(book, images_folder)
-        print('Now all images in book_content are ready.')
 
         # if divide volume, create a folder named title, or leave folder as "“
         out_folder = self._get_output_folder()
@@ -795,12 +706,11 @@ class EpubWriter:
         book.add_item(default_style_nav)
 
 
-from . import settings
-
-from .exceptions import LinovelibException
-
 import pickle
 import urllib.parse
+
+from . import settings
+from .exceptions import LinovelibException
 
 
 class Linovelib2Epub():
@@ -859,6 +769,8 @@ class Linovelib2Epub():
         }
         self._epub_writer = EpubWriter(epub_settings=self.epub_settings)
 
+        self.logger = Logger(logger_name=__class__.__name__).get_logger()
+
     def run(self):
         # recover from last work. only support this format: [hostname]_3573.pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
@@ -873,11 +785,11 @@ class Linovelib2Epub():
             novel = self._spider.fetch()
 
         if novel:
-            print(f'[INFO]: The data of book(id={self.common_settings["book_id"]}) except image files is ready.')
+            self.logger.info(f'The data of book(id={self.common_settings["book_id"]}) except image files is ready.')
 
             self._epub_writer.write(novel)
 
-            print('Write epub finished. Now delete all the artifacts if set.')
+            self.logger.info('Write epub finished. Now delete all the artifacts if set.')
 
             # clean temporary files if clean_artifacts option is set to True
             if self.common_settings['clean_artifacts']:

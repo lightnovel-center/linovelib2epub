@@ -1,6 +1,7 @@
 # IntelliJ project files
 .idea
 .fleet
+.vscode
 
 # test artifacts
 /playground/**/*.epub
@@ -22,3 +23,5 @@
 
 # venv
 venv
+
+logs

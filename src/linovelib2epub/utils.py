@@ -7,7 +7,6 @@ import pkg_resources
 from fake_useragent import UserAgent
 
 
-
 def cookiedict_from_str(str=''):
     cookie = SimpleCookie()
     cookie.load(str)
@@ -27,7 +26,7 @@ def create_folder_if_not_exists(path):
         os.makedirs(path)
 
 
-def request_with_retry(client, url, headers=None, retry_max=5, timeout=10):
+def request_with_retry(client, url, headers=None, retry_max=5, timeout=10, logger=None):
     if headers is None:
         headers = {}
 
@@ -39,14 +38,17 @@ def request_with_retry(client, url, headers=None, retry_max=5, timeout=10):
             if response:
                 return response
             else:
-                print(f'WARN: request {url} succeed but data is empty.')
+                if logger:
+                     logger.warn(f'Request {url} succeed but data is empty.')
                 time.sleep(1)
         except (Exception,) as e:
-            print(f'ERROR: request {url}', e)
+            if logger:
+                logger.error(f'Request {url} failed.', e)
             time.sleep(1)
 
         current_num_of_request += 1
-        print('current_num_of_request: ', current_num_of_request)
+        if logger:
+            logger.warn('current_num_of_request: ', current_num_of_request)
 
     return None
 
@@ -69,11 +71,11 @@ def check_image_integrity(resp):
     actual_length = resp.raw.tell()  # len(resp.content)
     if expected_length and actual_length:
         # expected_length: 31949; actual_length: 31949
-        # print(f'expected_length: {expected_length}; actual_length: {actual_length}')
         if int(actual_length) < int(expected_length):
             raise IOError(
                 'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
             )
+
 
 # Replace invalid character for file/folder name
 def sanitize_pathname(pathname):

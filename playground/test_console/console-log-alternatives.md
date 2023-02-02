@@ -24,3 +24,8 @@
 - [ ] blessings
   - terminal coloring, styling, and positioning
   - 缺点：not work in windows
+- [x] https://github.com/Delgan/loguru
+  - 开箱即用，不需要复杂定制的配置即可拥有：时间+level+位置+信息。
+  
+## issues
+1. logger 无法打印多线程中的日志。
