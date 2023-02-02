@@ -860,7 +860,7 @@ class Linovelib2Epub():
         self._epub_writer = EpubWriter(epub_settings=self.epub_settings)
 
     def run(self):
-        # recover from last work. only support this format: 3573_novel.pickle
+        # recover from last work. only support this format: [hostname]_3573.pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
         if novel_pickle_path.exists():
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):

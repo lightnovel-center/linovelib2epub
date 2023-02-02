@@ -6,7 +6,7 @@ from tqdm import tqdm
 #     time.sleep(0.2)
 
 # with tqdm(total=100) as pbar:
-#     for i in range(10):
+#     for i in range(5):
 #         time.sleep(0.1)
 #         pbar.update(10)
 

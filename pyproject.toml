@@ -16,7 +16,6 @@ keywords = [
     '哔哩轻小说',
     'library'
 ]
-#version = "0.0.9"
 authors = [
     { name = "wdpm", email = "1137299673@qq.com" },
 ]
@@ -46,7 +45,8 @@ dependencies = [
     'requests>=2.28.1',
     'rich>=12.5.1',
     'uuid>=1.30',
-    'pillow>=9.2.0'
+    'pillow>=9.2.0',
+    'inquirer>=3.1.2'
 ]
 dynamic = ["version"]
 
@@ -67,11 +67,9 @@ exclude = [
 ]
 
 [tool.hatch.build.force-include]
-#"./styles" = "src/linovelib2epub/styles"
 
 [tool.hatch.build.targets.wheel]
 
-# python static type
 [tool.mypy]
 #disallow_untyped_defs = false
 #follow_imports = "normal"
