@@ -17,9 +17,13 @@ class EmailHighlighter(RegexHighlighter):
     highlights = [r"(?P<email>[\w-]+@([\w-]+\.)+[\w-]+)"]
 
 
-# theme = Theme({"example.email": "bold magenta"})
-# console = Console(highlighter=EmailHighlighter(), theme=theme)
-# console.print("Send funds to money@example.org")
+theme = Theme({"example.email": "bold magenta"})
+console = Console(highlighter=EmailHighlighter(), theme=theme)
+console.print("Send funds to money@example.org")
+
+from rich import print
+print("Visit file [link=D:\Code\lightnovel-center\linovelib2epub\playground\\test_rich\\]blog[/link]!")
+
 #
 # console = Console(theme=theme)
 # highlight_emails = EmailHighlighter()
@@ -38,5 +42,5 @@ class RainbowHighlighter(Highlighter):
             text.stylize(f"color({randint(16, 255)})", index, index + 1)
 
 
-rainbow = RainbowHighlighter()
-print(rainbow("I must not fear. Fear is the mind-killer."))
+# rainbow = RainbowHighlighter()
+# print(rainbow("I must not fear. Fear is the mind-killer."))

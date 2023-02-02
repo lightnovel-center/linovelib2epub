@@ -11,6 +11,14 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
 
+## preview
+> A picture is worth a thousand words. Talk is cheap, show me the real effect.
+
+![preview](./preview.gif)
+
+> This demo use [this screen recorder tool](https://github.com/faressoft/terminalizer) to record.
+
+
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
@@ -100,7 +108,6 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] docs: add gif demo for preview by terminalizer
 - [ ] quality: setup pytests and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] refactor: use multi-thread or asyncio coroutine to download images

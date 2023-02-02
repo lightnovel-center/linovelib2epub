@@ -25,12 +25,8 @@ def test_set_custom_style():
 
 
 def test_basic_run():
-    linovelib_epub = Linovelib2Epub(book_id=1068, clean_artifacts=True)
-    # linovelib_epub = Linovelib2Epub(book_id=1068, divide_volume=False,has_illustration=True)
-    # linovelib_epub = Linovelib2Epub(book_id=1068, divide_volume=False,has_illustration=False)
-    # linovelib_epub = Linovelib2Epub(book_id=1068, divide_volume=True,has_illustration=True)
-    # linovelib_epub = Linovelib2Epub(book_id=1068, has_illustration=False,select_volume_mode=True)
-    # linovelib_epub = Linovelib2Epub(book_id=1068, has_illustration=True,select_volume_mode=True)
+    # linovelib_epub = Linovelib2Epub(book_id=3593, clean_artifacts=False)
+    linovelib_epub = Linovelib2Epub(book_id=3593, divide_volume=True, clean_artifacts=False)
     linovelib_epub.run()
 
 

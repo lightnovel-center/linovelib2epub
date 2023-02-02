@@ -2,7 +2,6 @@ import io
 import os
 import re
 import shutil
-import uuid
 from abc import ABC, abstractmethod
 # from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
@@ -13,6 +12,7 @@ from urllib.parse import urljoin
 import demjson3
 import inquirer
 import requests
+import uuid
 from PIL import Image
 from bs4 import BeautifulSoup
 from ebooklib import epub
@@ -24,6 +24,7 @@ from linovelib2epub.utils import (check_image_integrity, cookiedict_from_str,
                                   read_pkg_resource, request_with_retry,
                                   sanitize_pathname)
 from requests.exceptions import ProxyError
+from rich import print
 from rich.prompt import Confirm
 
 
@@ -356,25 +357,25 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return '-'.join(url.split("/")[-4:])
 
     def fetch(self) -> LightNovel:
+        novel_whole = self._fetch()
+        self._post_fecth(novel_whole)
+
+        return novel_whole
+
+    def _fetch(self):
         book_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}.html'
         book_catalog_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}/catalog'
-
         create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
-
         book_basic_info = self._crawl_book_basic_info(book_url)
         if not book_basic_info:
             raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
-
         new_novel_with_content = self._crawl_book_content(book_catalog_url)
         if not new_novel_with_content:
             raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
-
         # do better: use named tuple or class like NovelBasicInfoGroup
         book_title, author, book_summary, book_cover = book_basic_info
-
         novel_whole = new_novel_with_content
         novel_whole.mark_volumes_content_ready()
-
         # set book basic info
         novel_whole.bid = self.spider_settings['book_id']
         novel_whole.book_title = book_title
@@ -382,9 +383,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         novel_whole.description = book_summary
         novel_whole.book_cover = book_cover
         novel_whole.mark_basic_info_ready()
-
-        self._post_fecth(novel_whole)
-
         return novel_whole
 
     def _post_fecth(self, novel: LightNovel):
@@ -467,7 +465,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         # url is valid and never downloaded
         try:
-            multiprocessing.get_logger()
             self.logger.info(f"Downloading image: {url}")
             resp = self.session.get(url, headers=self._request_headers(), timeout=self.spider_settings['http_timeout'])
             check_image_integrity(resp)
@@ -506,6 +503,11 @@ class EpubWriter:
         else:
             for volume in novel.volumes:
                 self._write_epub(f'{book_title}_{volume["title"]}', author, volume, cover_file)
+
+        # tips: show output file folder
+        output_folder = os.path.join(os.getcwd(), self._get_output_folder())
+        print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
+              f"(You can see the link if you use a modern shell.)")
 
     def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
         """

@@ -8,8 +8,8 @@ logger = logging.getLogger('mp')
 install_mp_handler(logger=logger)
 
 def log_url(url):
-    # print(url)
-    logger.info(url)
+    print(url)
+    # logger.info(url)
 
 # 难题，多进程下如何写logging。
 
