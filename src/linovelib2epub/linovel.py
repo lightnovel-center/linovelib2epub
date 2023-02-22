@@ -544,7 +544,6 @@ class EpubWriter:
             cover_filename = 'cover'
         book.set_cover(cover_filename + '.' + cover_type, open(cover_file, 'rb').read())
 
-        write_content = ""
         book.spine = ["nav", ]
 
         default_style_chapter = self._get_default_chapter_style()
@@ -553,39 +552,12 @@ class EpubWriter:
         chapter_index = -1
         file_index = -1
 
-        if not self.epub_settings["divide_volume"]:
-            # merge all chapters content to EPUB
-            for volume in volumes:
-                volume_title = volume['title']
-                html_volume_title = "<h1>" + volume_title + "</h1>"
-                write_content += html_volume_title
-                book.toc.append([epub.Section(volume_title), []])
-                chapter_index += 1
-                for chapter in volume['chapters']:
-                    file_index += 1
-                    chapter_title = chapter['title']
-
-                    html_chapter_title = "<h2>" + chapter_title + "</h2>"
-                    write_content += html_chapter_title + str(chapter["content"]).replace(
-                        """<div class="acontent" id="acontent">""", "")
-                    write_content = write_content.replace('png', 'jpg')
-
-                    page = epub.EpubHtml(title=chapter_title, file_name=f"{file_index}.xhtml", lang="zh")
-                    page.set_content(write_content)
-
-                    # add `<link>` tag to page `<head>` section.
-                    self._set_page_style(book, custom_style_chapter, default_style_chapter, page)
-
-                    book.toc[chapter_index][1].append(page)
-                    book.spine.append(page)
-
-                    write_content = ""
-        else:
-            create_folder_if_not_exists(self._novel_book_title)
-
-            # here volumes is a volume
-            volume = volumes
-            volume_title = title
+        def _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title):
+            # reset content
+            write_content = ""
+            # use outer scope counters
+            nonlocal chapter_index
+            nonlocal file_index
 
             html_volume_title = "<h1>" + volume_title + "</h1>"
             write_content += html_volume_title
@@ -610,6 +582,17 @@ class EpubWriter:
                 book.spine.append(page)
 
                 write_content = ""
+
+        if not self.epub_settings["divide_volume"]:
+            for volume in volumes:
+                volume_title = volume['title']
+                _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
+        else:
+            create_folder_if_not_exists(self._novel_book_title)
+
+            volume = volumes
+            volume_title = title
+            _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
 
         book.add_item(default_style_chapter)
         if custom_style_chapter:
@@ -639,7 +622,8 @@ class EpubWriter:
         # FINAL WRITE
         epub.write_epub(sanitize_pathname(out_folder) + "/" + sanitize_pathname(title) + '.epub', book)
 
-    def _set_page_style(self, book, custom_style_chapter, default_style_chapter, page):
+    @staticmethod
+    def _set_page_style(book, custom_style_chapter, default_style_chapter, page):
         page.add_item(default_style_chapter)
         if custom_style_chapter:
             page.add_item(custom_style_chapter)
