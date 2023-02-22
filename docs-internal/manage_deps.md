@@ -1,4 +1,7 @@
 # collect project dependencies
+
+> pip list --no-required
+
 1. use pip
 ```bash
 pip list

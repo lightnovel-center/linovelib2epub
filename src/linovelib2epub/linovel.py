@@ -778,6 +778,7 @@ class Linovelib2Epub():
             'http_cookie': http_cookie,
             'disable_proxy': disable_proxy
         }
+        # dynamic inject LinovelibSpider or otherSpider definitions
         self._spider = LinovelibSpider(spider_settings=self.spider_settings)
 
         self.epub_settings = {

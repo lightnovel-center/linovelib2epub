@@ -49,6 +49,7 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 如果你发现其他的很好轻小说目标源，资源丰富，更新及时，插图清晰，并且爬虫门槛合理的，可以在issue发起补充。
 
 代码实现中对其他轻小说源的支持，关键是继承并重写这个 `BaseNovelWebsiteSpider` 类。
+- 其他参考：https://github.com/ilusrdbb/lightnovel-pydownloader
 
 ## Usage
 
@@ -127,6 +128,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
+- [ ] refactor: use dataclasses for models
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] refactor: use multi-thread or asyncio coroutine to download images
