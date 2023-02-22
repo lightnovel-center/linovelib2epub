@@ -46,11 +46,12 @@ class LightNovel:
     author: str = ''
     description: str = ''
     book_cover: str = ''
+    book_cover_local: str = ''
 
-    volumes: List[Dict[str, Any]] = []
+    volumes: List[dict[str, Any]] = []
 
     # map<volume_name, List[img_url]>
-    illustration_dict: Optional[Dict[Union[int, str], List[str]]] = None
+    illustration_dict: Optional[dict[Union[int, str], list[str]]] = None
 
     def __init__(self):
         self.volumes = []

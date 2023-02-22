@@ -31,12 +31,97 @@ from rich.prompt import Confirm
 
 class BaseNovelWebsiteSpider(ABC):
 
-    def __init__(self, spider_settings: Optional[Dict] = None):
+    def __init__(self, spider_settings: Optional[dict] = None):
         self.spider_settings = spider_settings
+        self.logger = Logger(logger_name=self.__class__.__name__,
+                             log_filename=self.spider_settings["log_filename"]).get_logger()
 
     @abstractmethod
     def fetch(self) -> LightNovel:
         raise NotImplementedError()
+
+    def request_headers(self) -> dict:
+        return {}
+
+    def get_image_filename(self, url) -> str:
+        return url.rsplit('/', 1)[1]
+
+    def download_images(self, urls: Iterable = None, pool_size=os.cpu_count()) -> None:
+        if urls is None:
+            urls = set()
+        self.logger.info(f'len of image set = {len(urls)}')
+
+        process_pool = Pool(processes=int(pool_size))
+        error_links = process_pool.map(self.download_image, urls)
+        # if everything is perfect, error_links array will be []
+        # if some error occurred, error_links will be those links that failed to request.
+
+        # remove None element from array, only retain error link
+        # >>> sorted_error_links := sorted(list(filter(None, error_links)))
+
+        # for loop until all files are downloaded successfully.
+        while sorted_error_links := sorted(list(filter(None, error_links))):
+            self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
+            self.logger.info(f'Error image links size: {len(sorted_error_links)}')
+            self.logger.info(f'Error image links: {sorted_error_links}')
+
+            # multi-process
+            error_links = process_pool.map(self.download_image, sorted_error_links)
+
+        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
+        # re-check image download result:
+        # - happy result: urls_set - self.image_download_folder == 0
+        # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
+        # - bad result: urls_set - self.image_download_folder > 0
+        download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
+        self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
+        if download_image_miss_quota <= 0:
+            self.logger.info('The result of downloading pictures is perfect.')
+        else:
+            self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
+
+    def download_image(self, url: str) -> Optional[str | None]:
+        """
+        If a image url download failed, return its url. else return None.
+
+        :param url: single url string
+        :return: original url if failed, or None if succeeded.
+        """
+        if not is_valid_image_url(url):
+            return
+
+        # if url is not desired format, return
+        try:
+            # filename parse rule depends on the specific website
+            # website -> img filepath format -> parse rule
+            # use open/close principle to refactor => manage this change
+            filename = self.get_image_filename(url)
+        except (Exception,):
+            return
+
+        save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+
+        # the file already exists, return
+        filename_path = Path(save_path)
+        if filename_path.exists():
+            return
+
+        # url is valid and never downloaded
+        try:
+            self.logger.info(f"Downloading image: {url}")
+            resp = self.session.get(url, headers=self.request_headers(), timeout=self.spider_settings['http_timeout'])
+            check_image_integrity(resp)
+        except (Exception, ProxyError,) as e:
+            self.logger.error(f'Error occurred when download image of {url}. Error: {e}')
+            return url
+        else:
+            try:
+                with open(save_path, "wb") as f:
+                    f.write(resp.content)
+                self.logger.info(f'Image {save_path} Saved.')
+            except (Exception,):
+                self.logger.error(f'Image {save_path} Save failed. Rollback {url} for next try.')
+                return url
 
 
 from .logger import Logger
@@ -44,15 +129,38 @@ from .logger import Logger
 
 class LinovelibSpider(BaseNovelWebsiteSpider):
 
-    def __init__(self,
-                 spider_settings: Optional[Dict] = None):
+    def __init__(self, spider_settings: Optional[Dict] = None):
         super().__init__(spider_settings)
         self._init_http_client()
-        self.logger = Logger(logger_name=__class__.__name__,
-                             log_filename=self.spider_settings["log_filename"]).get_logger()
 
     def dump_settings(self):
         self.logger.info(self.spider_settings)
+
+    def request_headers(self, referer: str = '', random_ua: bool = True):
+        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+        default_referer = 'https://w.linovelib.com'
+        headers = {
+            'referer': referer if referer else default_referer,
+            'user-agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+        }
+        return headers
+
+    def fetch(self) -> LightNovel:
+        start = time.perf_counter()
+        novel_whole = self._fetch()
+        self.logger.info('(Perf metrics) Fetch Book took: {} seconds'.format(time.perf_counter() - start))
+
+        return novel_whole
+
+    def post_fetch(self, novel: LightNovel):
+        self._save_novel_pickle(novel)
+
+        start = time.perf_counter()
+        self._process_image_download(novel)
+        self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
+
+    def get_image_filename(self, url):
+        return '-'.join(url.split("/")[-4:])
 
     def _init_http_client(self):
         self.session = requests.Session()
@@ -66,41 +174,10 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             cookiejar = requests.utils.cookiejar_from_dict(cookie_dict)
             self.session.cookies = cookiejar
 
-    def _request_headers(self, referer: str = '', random_ua: bool = True):
-        """
-            :authority: w.linovelib.com
-            :method: GET
-            :path: /
-            :scheme: https
-            accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
-            accept-encoding: gzip, deflate, br
-            accept-language: en,zh-CN;q=0.9,zh;q=0.8
-            cache-control: max-age=0
-            cookie: night=0
-            referer: https://www.google.com/
-            sec-ch-ua: "Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"
-            sec-ch-ua-mobile: ?0
-            sec-ch-ua-platform: "Windows"
-            sec-fetch-dest: document
-            sec-fetch-mode: navigate
-            sec-fetch-site: cross-site
-            sec-fetch-user: ?1
-            upgrade-insecure-requests: 1
-            user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36
-        """
-        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
-        default_referer = 'https://w.linovelib.com'
-        headers = {
-            # ! don't set any accept fields
-            'referer': referer if referer else default_referer,
-            'user-agent': self.spider_settings['random_useragent'] if random_ua else default_ua
-        }
-        return headers
-
     def _crawl_book_basic_info(self, url):
         result = request_with_retry(self.session,
                                     url,
-                                    headers=self._request_headers(),
+                                    headers=self.request_headers(),
                                     retry_max=self.spider_settings['http_retries'],
                                     timeout=self.spider_settings["http_timeout"],
                                     logger=self.logger)
@@ -127,7 +204,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         try:
             book_catalog_rs = request_with_retry(self.session,
                                                  catalog_url,
-                                                 headers=self._request_headers(),
+                                                 headers=self.request_headers(),
                                                  retry_max=self.spider_settings['http_retries'],
                                                  timeout=self.spider_settings["http_timeout"],
                                                  logger=self.logger)
@@ -228,15 +305,14 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                         for _, image in enumerate(images):
                             # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
-                            # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
                             image_src = image['src']
                             illustration_dict[volume['vid']].append(image_src)
+                            src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
 
                             # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
-
-                            src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
-                            replace_value = f'{self.spider_settings["image_download_folder"]}/' + "-".join(
-                                src_value.group().split("/")[-4:])
+                            # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
+                            local_image_uri = self.get_image_filename(src_value.group())
+                            replace_value = f'{self.spider_settings["image_download_folder"]}/' + local_image_uri
                             # replace all remote images src to local file path
                             article = article.replace(str(src_value.group()), str(replace_value))
 
@@ -280,11 +356,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # step 1: need to show UI for user to select one or more volumes,
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
-        volume_choices = _get_volume_choices(catalog_list)
         question_name = 'Selecting volumes'
+        question_description = "Which volumes you want to download?(select one or multiple volumes)"
+        # [(volume_title,vid),(volume_title,vid),...]
+        volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,
-                              message="Which volumes you want to download?(select one or multiple volumes)",
+                              message=question_description,
                               choices=volume_choices, ),
         ]
         # user input
@@ -355,47 +433,34 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         return image_url_list
 
-    def _parse_img_filename_from(self, url):
-        return '-'.join(url.split("/")[-4:])
-
-    def fetch(self) -> LightNovel:
-        start = time.perf_counter()
-        novel_whole = self._fetch()
-        self.logger.info('(Perf metrics) Fetch Book took: {} seconds'.format(time.perf_counter() - start))
-
-        self._post_fecth(novel_whole)
-
-        return novel_whole
-
     def _fetch(self):
         book_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}.html'
         book_catalog_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}/catalog'
         create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
+
         book_basic_info = self._crawl_book_basic_info(book_url)
         if not book_basic_info:
             raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
+
         new_novel_with_content = self._crawl_book_content(book_catalog_url)
         if not new_novel_with_content:
             raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
+
         # do better: use named tuple or class like NovelBasicInfoGroup
         book_title, author, book_summary, book_cover = book_basic_info
         novel_whole = new_novel_with_content
         novel_whole.mark_volumes_content_ready()
+
         # set book basic info
         novel_whole.bid = self.spider_settings['book_id']
         novel_whole.book_title = book_title
         novel_whole.author = author
         novel_whole.description = book_summary
         novel_whole.book_cover = book_cover
+        novel_whole.book_cover_local = self.get_image_filename(book_cover)
         novel_whole.mark_basic_info_ready()
+
         return novel_whole
-
-    def _post_fecth(self, novel: LightNovel):
-        self._save_novel_pickle(novel)
-
-        start = time.perf_counter()
-        self._process_image_download(novel)
-        self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
 
     def _process_image_download(self, novel):
         create_folder_if_not_exists(self.spider_settings["image_download_folder"])
@@ -403,90 +468,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         if self.spider_settings['has_illustration']:
             image_set = novel.get_illustration_set()
             image_set.add(novel.book_cover)
-            self._download_images(image_set)
+            self.download_images(image_set)
         else:
-            self._download_images({novel.book_cover})
+            self.download_images({novel.book_cover})
 
     def _save_novel_pickle(self, novel):
         with open(self.spider_settings['novel_pickle_path'], 'wb') as fp:
             pickle.dump(novel, fp)
-
-    def _download_images(self, urls: Iterable = None, pool_size=os.cpu_count()):
-        if urls is None:
-            urls = set()
-        self.logger.info(f'len of image set = {len(urls)}')
-
-        process_pool = Pool(processes=int(pool_size))
-        error_links = process_pool.map(self._download_image, urls)
-        # if everything is perfect, error_links array will be []
-        # if some error occurred, error_links will be those links that failed to request.
-
-        # remove None element from array, only retain error link
-        # >>> sorted_error_links := sorted(list(filter(None, error_links)))
-
-        # for loop until all files are downloaded successfully.
-        while sorted_error_links := sorted(list(filter(None, error_links))):
-            self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
-            self.logger.info(f'Error image links size: {len(sorted_error_links)}')
-            self.logger.info(f'Error image links: {sorted_error_links}')
-
-            # multi-process
-            error_links = process_pool.map(self._download_image, sorted_error_links)
-
-        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
-        # re-check image download result:
-        # - happy result: urls_set - self.image_download_folder == 0
-        # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
-        # - bad result: urls_set - self.image_download_folder > 0
-        download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
-        self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
-        if download_image_miss_quota <= 0:
-            self.logger.info('The result of downloading pictures is perfect.')
-        else:
-            self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
-
-    def _download_image(self, url: str):
-        """
-        If a image url download failed, return its url. else return None.
-
-        :param url: single url string
-        :return:
-        """
-        if not is_valid_image_url(url):
-            return
-
-        # if url is not desired format, return
-        try:
-            # filename parse rule depends on the specific website
-            # website -> img filepath format -> parse rule
-            # use open/close principle to refactor/manage this change
-            filename = self._parse_img_filename_from(url)
-        except (Exception,):
-            return
-
-        save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
-
-        # the file already exists, return
-        filename_exists = Path(save_path)
-        if filename_exists.exists():
-            return
-
-        # url is valid and never downloaded
-        try:
-            self.logger.info(f"Downloading image: {url}")
-            resp = self.session.get(url, headers=self._request_headers(), timeout=self.spider_settings['http_timeout'])
-            check_image_integrity(resp)
-        except (Exception, ProxyError,) as e:
-            self.logger.error(f'Error occurred when download image of {url}. Error: {e}')
-            return url
-        else:
-            try:
-                with open(save_path, "wb") as f:
-                    f.write(resp.content)
-                self.logger.info(f'Image {save_path} Saved.')
-            except (Exception,):
-                self.logger.error(f'Image {save_path} Save failed. Rollback {url} for next try.')
-                return url
 
 
 class EpubWriter:
@@ -504,9 +492,7 @@ class EpubWriter:
         # remember _novel_book_title for later usage, don't want to pass novel_book_title
         book_title = self._novel_book_title = novel.book_title
         author = novel.author
-        book_cover = novel.book_cover
-        # DON'T harcode path file
-        cover_file = self.epub_settings["image_download_folder"] + '/' + '-'.join(book_cover.split('/')[-4:])
+        cover_file = self.epub_settings["image_download_folder"] + "/" + novel.book_cover_local
 
         if not self.epub_settings["divide_volume"]:
             self._write_epub(book_title, author, novel.volumes, cover_file)
@@ -589,20 +575,18 @@ class EpubWriter:
                 _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
         else:
             create_folder_if_not_exists(self._novel_book_title)
-
             volume = volumes
             volume_title = title
             _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
 
+        # DEFAULT CHAPTER STYLE & CUSTOM CHAPTER STYLE
         book.add_item(default_style_chapter)
         if custom_style_chapter:
             book.add_item(custom_style_chapter)
 
+        # IMAGES
         images_folder = self.epub_settings["image_download_folder"]
         self._add_images(book, images_folder)
-
-        # if divide volume, create a folder named title, or leave folder as "“
-        out_folder = self._get_output_folder()
 
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
@@ -620,6 +604,8 @@ class EpubWriter:
             self._set_custom_nav_style(book, nav_html)
 
         # FINAL WRITE
+        # if divide volume, create a folder named title, or leave folder as "“
+        out_folder = self._get_output_folder()
         epub.write_epub(sanitize_pathname(out_folder) + "/" + sanitize_pathname(title) + '.epub', book)
 
     @staticmethod
@@ -733,6 +719,7 @@ class Linovelib2Epub():
             raise LinovelibException('book_id parameter must be set.')
         if base_url is None:
             raise LinovelibException('base_url parameter must be set.')
+        # add option spider_class
 
         u = urllib.parse.urlsplit(base_url)
 
@@ -778,6 +765,7 @@ class Linovelib2Epub():
 
     def run(self):
         # recover from last work. only support this format: [hostname]_3573.pickle
+        # 1.solve novel pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
         if novel_pickle_path.exists():
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
@@ -790,16 +778,22 @@ class Linovelib2Epub():
             novel = self._spider.fetch()
 
         if novel:
+            # 2.solve images download and save novel pickle
+            self._spider.post_fetch(novel)
             self.logger.info(f'The data of book(id={self.common_settings["book_id"]}) except image files is ready.')
 
+            # 3.write epub
             self._epub_writer.write(novel)
-
             self.logger.info('Write epub finished. Now delete all the artifacts if set.')
 
-            # clean temporary files if clean_artifacts option is set to True
-            if self.common_settings['clean_artifacts']:
-                try:
-                    shutil.rmtree(self.common_settings['image_download_folder'])
-                    os.remove(novel_pickle_path)
-                except (Exception,):
-                    pass
+            # 4.cleanup
+            self._cleanup(novel_pickle_path)
+
+    def _cleanup(self, novel_pickle_path):
+        # clean temporary files if clean_artifacts option is set to True
+        if self.common_settings['clean_artifacts']:
+            try:
+                shutil.rmtree(self.common_settings['image_download_folder'])
+                os.remove(novel_pickle_path)
+            except (Exception,):
+                pass

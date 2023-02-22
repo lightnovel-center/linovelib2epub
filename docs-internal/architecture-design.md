@@ -130,3 +130,14 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 ## LinovelibSpider
 
 关键在于爬虫数据格式的处理，和转化为LightNovel模型。
+
+## 图片URL的规定
+
+```
+remote:
+https://img.linovelib.com/3/3211/163938/193293.jpg
+
+local path & epub content:
+format:  [image_download_folder]/[image_filename]
+example: images/.../3-3211-163938-193293.jpg
+```

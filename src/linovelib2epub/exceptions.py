@@ -4,4 +4,4 @@ class LinovelibException(Exception):
     """
     pass
 
-# TODO search all exception and concrete
+# TODO search all exceptions and concrete
