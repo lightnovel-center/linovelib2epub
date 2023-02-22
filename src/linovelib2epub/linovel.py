@@ -733,7 +733,7 @@ class Linovelib2Epub():
             'base_url': base_url,
             'divide_volume': True if select_volume_mode else divide_volume,
             'has_illustration': has_illustration,
-            'image_download_folder': image_download_folder,
+            'image_download_folder': f'{image_download_folder}/{u.hostname}',
             'pickle_temp_folder': pickle_temp_folder,
             'novel_pickle_path': f'{pickle_temp_folder}/{run_identifier}.pickle',
             'clean_artifacts': clean_artifacts,

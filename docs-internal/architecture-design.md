@@ -131,8 +131,22 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 
 关键在于爬虫数据格式的处理，和转化为LightNovel模型。
 
-## 图片URL的规定
+## 文件下载目录规定
 
+目录组织：
+```
+pickel/
+    w.linovelib.com_3610.pickle  => hostname_book_id (unique)
+  
+images/
+    w.linovelib.com/
+        3-3610-182485-209179.jpg
+        3-3610-182485-209180.jpg
+        3-3610-182486-209181.jpg
+        image-3-3610-3610s.jpg
+```
+
+图片：
 ```
 remote:
 https://img.linovelib.com/3/3211/163938/193293.jpg
@@ -141,3 +155,4 @@ local path & epub content:
 format:  [image_download_folder]/[image_filename]
 example: images/.../3-3211-163938-193293.jpg
 ```
+
