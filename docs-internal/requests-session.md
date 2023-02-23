@@ -5,3 +5,5 @@
 ## requests 内置的重试机制
 
 - HTTPAdapter(max_retries=3)
+
+参考：https://stackoverflow.com/a/47475019

@@ -1,7 +1,9 @@
+from functools import wraps
 import os
 import re
 import time
 from http.cookies import SimpleCookie
+from typing import Callable, Any
 
 import pkg_resources
 from fake_useragent import UserAgent
@@ -39,7 +41,7 @@ def request_with_retry(client, url, headers=None, retry_max=5, timeout=10, logge
                 return response
             else:
                 if logger:
-                     logger.warn(f'Request {url} succeed but data is empty.')
+                    logger.warn(f'Request {url} succeed but data is empty.')
                 time.sleep(1)
         except (Exception,) as e:
             if logger:
@@ -86,3 +88,20 @@ def sanitize_pathname(pathname):
 def read_pkg_resource(file_path=''):
     # file_path example: "./styles/chapter.css"
     return pkg_resources.resource_string(__name__, file_path)
+
+
+def async_timed():
+    def wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapped(*args, **kwargs) -> Any:
+            print(f'starting {func} with args {args} {kwargs}')
+            start = time.time()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                end = time.time()
+                print(f'finished {func} in {end - start :.4f} second(s)')
+
+        return wrapped
+
+    return wrapper

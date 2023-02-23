@@ -1,10 +1,11 @@
 import io
 import os
+import pickle
 import re
 import shutil
 import time
+import urllib.parse
 from abc import ABC, abstractmethod
-# from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
@@ -28,6 +29,10 @@ from requests.exceptions import ProxyError
 from rich import print as rich_print
 from rich.prompt import Confirm
 
+from . import settings
+from .exceptions import LinovelibException
+from .logger import Logger
+
 
 class BaseNovelWebsiteSpider(ABC):
 
@@ -49,6 +54,9 @@ class BaseNovelWebsiteSpider(ABC):
     def download_images(self, urls: Iterable = None, pool_size=os.cpu_count()) -> None:
         if urls is None:
             urls = set()
+        else:
+            urls = set(urls)
+
         self.logger.info(f'len of image set = {len(urls)}')
 
         process_pool = Pool(processes=int(pool_size))
@@ -59,13 +67,11 @@ class BaseNovelWebsiteSpider(ABC):
         # remove None element from array, only retain error link
         # >>> sorted_error_links := sorted(list(filter(None, error_links)))
 
-        # for loop until all files are downloaded successfully.
         while sorted_error_links := sorted(list(filter(None, error_links))):
             self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
             self.logger.info(f'Error image links size: {len(sorted_error_links)}')
             self.logger.info(f'Error image links: {sorted_error_links}')
 
-            # multi-process
             error_links = process_pool.map(self.download_image, sorted_error_links)
 
         # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
@@ -80,7 +86,7 @@ class BaseNovelWebsiteSpider(ABC):
         else:
             self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
 
-    def download_image(self, url: str) -> Optional[str | None]:
+    def download_image(self, url: str) -> Optional[str]:
         """
         If a image url download failed, return its url. else return None.
 
@@ -90,18 +96,9 @@ class BaseNovelWebsiteSpider(ABC):
         if not is_valid_image_url(url):
             return
 
-        # if url is not desired format, return
-        try:
-            # filename parse rule depends on the specific website
-            # website -> img filepath format -> parse rule
-            # use open/close principle to refactor => manage this change
-            filename = self.get_image_filename(url)
-        except (Exception,):
-            return
-
+        filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
 
-        # the file already exists, return
         filename_path = Path(save_path)
         if filename_path.exists():
             return
@@ -109,22 +106,22 @@ class BaseNovelWebsiteSpider(ABC):
         # url is valid and never downloaded
         try:
             self.logger.info(f"Downloading image: {url}")
-            resp = self.session.get(url, headers=self.request_headers(), timeout=self.spider_settings['http_timeout'])
+            resp = self.session.get(url, headers={}, timeout=self.spider_settings['http_timeout'])
             check_image_integrity(resp)
         except (Exception, ProxyError,) as e:
             self.logger.error(f'Error occurred when download image of {url}. Error: {e}')
+            # SAD PATH
             return url
         else:
             try:
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
                 self.logger.info(f'Image {save_path} Saved.')
+                # HAPPY PATH
             except (Exception,):
                 self.logger.error(f'Image {save_path} Save failed. Rollback {url} for next try.')
+                # SAD PATH
                 return url
-
-
-from .logger import Logger
 
 
 class LinovelibSpider(BaseNovelWebsiteSpider):
@@ -689,13 +686,6 @@ class EpubWriter:
         book.add_item(default_style_nav)
 
 
-import pickle
-import urllib.parse
-
-from . import settings
-from .exceptions import LinovelibException
-
-
 class Linovelib2Epub():
 
     def __init__(self,
@@ -723,9 +713,9 @@ class Linovelib2Epub():
 
         u = urllib.parse.urlsplit(base_url)
 
+        # identify one-time unique crawl
         # - use for novel_pickle_path
         # - use for a unique log_file name instead of timestamp to avoid big file in one day.
-        # I don't want to use log file rotate to increase complexity.
         run_identifier = f'{u.hostname}_{book_id}'
 
         self.common_settings = {
@@ -787,11 +777,12 @@ class Linovelib2Epub():
             self.logger.info('Write epub finished. Now delete all the artifacts if set.')
 
             # 4.cleanup
-            self._cleanup(novel_pickle_path)
+            self._cleanup()
 
-    def _cleanup(self, novel_pickle_path):
+    def _cleanup(self):
         # clean temporary files if clean_artifacts option is set to True
         if self.common_settings['clean_artifacts']:
+            novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
             try:
                 shutil.rmtree(self.common_settings['image_download_folder'])
                 os.remove(novel_pickle_path)
