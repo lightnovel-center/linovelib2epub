@@ -28,3 +28,4 @@ logs
 
 # local do remote package test
 local_use
+*.log

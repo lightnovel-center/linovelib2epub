@@ -4,83 +4,103 @@ from typing import Iterable
 
 import aiohttp as aiohttp
 from aiohttp import ClientSession
+from linovelib2epub.logger import Logger
 
 from utils import async_timed, get_image_urls
 
-logger = logging.getLogger()
-fh = logging.FileHandler('use_asyncio_wait.log', encoding='utf-8', mode='w')
-stream_handler = logging.StreamHandler()
-logger.addHandler(fh)
-logger.addHandler(stream_handler)
-logger.setLevel(logging.INFO)
 
-# @async_timed()
-async def download_image(session: ClientSession, url: str) -> bytes:
-    # per request timeout
-    timeout = aiohttp.ClientTimeout(total=30, connect=15)
-    async with session.get(url, timeout=timeout) as resp:
-        if resp.status < 400:
-            # TODO check image integrity here, if get partial, raise error
-            image = await resp.read()
-            return image
-        else:
-            # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
-            pass
+def get_external_logger():
+    logger = Logger(logger_name='ExternalLogger', log_filename='ExternalLogger').get_logger()
+    return logger
 
 
-@async_timed()
-async def download_images(urls: Iterable):
-    async with aiohttp.ClientSession() as session:
+class MyLogger:
 
-        requests = {asyncio.create_task(download_image(session, url), name=url) for url in urls}
-        pending: set = requests
+    def __init__(self):
+        logger = logging.getLogger()
+        fh = logging.FileHandler('use_asyncio_wait.log', encoding='utf-8', mode='w')
+        stream_handler = logging.StreamHandler()
+        logger.addHandler(fh)
+        logger.addHandler(stream_handler)
+        logger.setLevel(logging.INFO)
+        self.logger = logger
 
-        # 1 resps = await asyncio.gather(*requests)
+    def get_logger(self):
+        return self.logger
 
-        # 2 for finished_task in asyncio.as_completed(requests):
-        #     logger.info(await finished_task)
 
-        # 3 asyncio.wait: 这种方式不能很好地获取及时的下载反馈。因为请考虑 asyncio.as_completed()
+class MySpider:
 
-        while pending:
-            # 这个策略性能比ALL要稳定，也略好
-            # test result(s): 14 16 26 41 47 => AVG 144/5 ≈ 30
-            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+    def __init__(self, logger):
+        self.logger = logger
 
-            # Test result: 35 41 37 34 23 => AVG 170/5 = 34
-            # done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+    async def download_image(self, session: ClientSession, url: str) -> bytes:
+        timeout = aiohttp.ClientTimeout(total=30, connect=15) # per request timeout
+        async with session.get(url, timeout=timeout) as resp:
+            if resp.status < 400:
+                # TODO check image integrity here, if get partial, raise error
+                self.logger.info(f'{url} is ok.')
+                image = await resp.read()
+                return image
+            else:
+                # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
+                pass
 
-            # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs are returned in the second set
+    @async_timed()
+    async def download_images(self, urls: Iterable):
+        async with aiohttp.ClientSession() as session:
 
-            # 1. succeed => normal result in done(# HAPPY CASE)
-            # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
-            # 3  Other Exception before timeout => ? how to handle(SAD CASE(need retry)
+            requests = {asyncio.create_task(self.download_image(session, url), name=url) for url in urls}
+            pending: set = requests
 
-            logger.info(f'Done task count: {len(done)}')
-            logger.info(f'Pending task count: {len(pending)}')
+            # 1 resps = await asyncio.gather(*requests)
 
-            for done_task in done:
-                exception = done_task.exception()
-                task_url = done_task.get_name()
+            # 2 for finished_task in asyncio.as_completed(requests):
+            #     logger.info(await finished_task)
 
-                if exception is None:
-                    result = done_task.result()
-                    # logger.info(f'SUCCEED: {task_url}; size: {len(result)}')
-                    logger.info(f'SUCCEED: {task_url};')
-                else:
-                    # make connect=.1 to reach this branch, should retry all the urls that entered this case
-                    # Done task count: 39
-                    # Pending task count: 0
-                    logger.info(f'Exception: {type(exception)}')
-                    logger.info(f'FAIL: {task_url}; should retry this url.')
-                    pending.add(asyncio.create_task(download_image(session, task_url), name=task_url))
+            # 3 asyncio.wait
 
-            logger.info(f'[FINAL]Pending task count: {len(pending)}')
+            while pending:
+                # 不同策略差距不大
+                # done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+
+                # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs are returned in the second set
+
+                # 1. succeed => normal result in done(# HAPPY CASE)
+                # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
+                # 3  Other Exception before timeout => ? how to handle(SAD CASE(need retry)
+
+                self.logger.info(f'Done task count: {len(done)}')
+                self.logger.info(f'Pending task count: {len(pending)}')
+
+                for done_task in done:
+                    exception = done_task.exception()
+                    task_url = done_task.get_name()
+
+                    if exception is None:
+                        result = done_task.result()
+                        # logger.info(f'SUCCEED: {task_url}; size: {len(result)}')
+                        self.logger.info(f'SUCCEED: {task_url};')
+                    else:
+                        # make connect=.1 to reach this branch, should retry all the urls that entered this case
+                        # Done task count: 39
+                        # Pending task count: 0
+                        self.logger.info(f'Exception: {type(exception)}')
+                        self.logger.info(f'FAIL: {task_url}; should retry this url.')
+                        pending.add(asyncio.create_task(self.download_image(session, task_url), name=task_url))
+
+                self.logger.info(f'[FINAL]Pending task count: {len(pending)}')
 
 
 async def main():
-    urls = get_image_urls()
-    await download_images(urls)
+    urls = set(get_image_urls())
+
+    logger = MyLogger().get_logger()
+    external_logger = get_external_logger()
+
+    spider = MySpider(external_logger)
+    await spider.download_images(urls)
 
     # async with aiofiles.open('./tmp.jpg', mode='wb') as afp:
     #     await afp.write(resps[0])
