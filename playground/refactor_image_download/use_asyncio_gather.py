@@ -11,25 +11,30 @@ from utils import async_timed, get_image_urls
 counter_lock = Lock()
 counter: int = 0
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+fh = logging.FileHandler('use_asyncio_gather.log', encoding='utf-8', mode='w')
+stream_handler = logging.StreamHandler()
+logger.addHandler(fh)
+logger.addHandler(stream_handler)
+logger.setLevel(logging.INFO)
 
 
 def download_image(url: str) -> str:
     global counter
     try:
         resp = requests.get(url, headers={}, timeout=10)
-        print(f'SUCCEED: {url} ; STATUS: {resp.status_code}')
+        logger.info(f'SUCCEED: {url} ; STATUS: {resp.status_code}')
         with counter_lock:
             counter = counter + 1
     except (Exception,) as e:
         # timeout or other exceptions
-        print(f'FAIL: {e}')
+        logger.info(f'FAIL: {e}')
         return url
 
 
 async def reporter(request_count: int):
     while counter < request_count:
-        print(f'Finished {counter}/{request_count} requests')
+        logger.info(f'Finished {counter}/{request_count} requests')
         await asyncio.sleep(.5)
 
 
@@ -43,7 +48,7 @@ async def main():
         request_count = len(image_url_set)
         urls = [url for url in image_url_set]
 
-        print('Image download progress...')
+        logger.info('Image download progress...')
         reporter_task = asyncio.create_task(reporter(request_count))
         tasks = [loop.run_in_executor(pool, functools.partial(download_image, url)) for url in urls]
 
@@ -51,7 +56,7 @@ async def main():
             results = await asyncio.gather(*tasks)
 
             need_retry_urls = list(filter(None, results))
-            print(f'Retry: {need_retry_urls}')
+            logger.info(f'Retry: {need_retry_urls}')
             tasks = [loop.run_in_executor(pool, functools.partial(download_image, url)) for url in need_retry_urls]
 
         await reporter_task

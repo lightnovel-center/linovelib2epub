@@ -51,7 +51,7 @@ class BaseNovelWebsiteSpider(ABC):
     def get_image_filename(self, url) -> str:
         return url.rsplit('/', 1)[1]
 
-    def download_images(self, urls: Iterable = None, pool_size=os.cpu_count()) -> None:
+    def download_images(self, urls: Iterable = None) -> None:
         if urls is None:
             urls = set()
         else:
@@ -59,7 +59,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         self.logger.info(f'len of image set = {len(urls)}')
 
-        process_pool = Pool(processes=int(pool_size))
+        process_pool = Pool(processes=os.cpu_count() or 4)
         error_links = process_pool.map(self.download_image, urls)
         # if everything is perfect, error_links array will be []
         # if some error occurred, error_links will be those links that failed to request.
@@ -754,6 +754,7 @@ class Linovelib2Epub():
                              log_filename=self.common_settings["log_filename"]).get_logger()
 
     def run(self):
+        self.logger.info('log something in run')
         # recover from last work. only support this format: [hostname]_3573.pickle
         # 1.solve novel pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
@@ -769,15 +770,17 @@ class Linovelib2Epub():
 
         if novel:
             # 2.solve images download and save novel pickle
-            self._spider.post_fetch(novel)
             self.logger.info(f'The data of book(id={self.common_settings["book_id"]}) except image files is ready.')
+            self._spider.post_fetch(novel)
 
             # 3.write epub
             self._epub_writer.write(novel)
-            self.logger.info('Write epub finished. Now delete all the artifacts if set.')
 
             # 4.cleanup
+            self.logger.info('Write epub finished. Now delete all the artifacts if set.')
             self._cleanup()
+
+            self.logger.info('=' * 80)
 
     def _cleanup(self):
         # clean temporary files if clean_artifacts option is set to True

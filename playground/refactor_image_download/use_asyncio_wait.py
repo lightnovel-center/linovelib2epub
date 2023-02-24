@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Iterable
 
 import aiohttp as aiohttp
@@ -6,6 +7,12 @@ from aiohttp import ClientSession
 
 from utils import async_timed, get_image_urls
 
+logger = logging.getLogger()
+fh = logging.FileHandler('use_asyncio_wait.log', encoding='utf-8', mode='w')
+stream_handler = logging.StreamHandler()
+logger.addHandler(fh)
+logger.addHandler(stream_handler)
+logger.setLevel(logging.INFO)
 
 # @async_timed()
 async def download_image(session: ClientSession, url: str) -> bytes:
@@ -31,7 +38,7 @@ async def download_images(urls: Iterable):
         # 1 resps = await asyncio.gather(*requests)
 
         # 2 for finished_task in asyncio.as_completed(requests):
-        #     print(await finished_task)
+        #     logger.info(await finished_task)
 
         # 3 asyncio.wait: 这种方式不能很好地获取及时的下载反馈。因为请考虑 asyncio.as_completed()
 
@@ -49,8 +56,8 @@ async def download_images(urls: Iterable):
             # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
             # 3  Other Exception before timeout => ? how to handle(SAD CASE(need retry)
 
-            print(f'Done task count: {len(done)}')
-            print(f'Pending task count: {len(pending)}')
+            logger.info(f'Done task count: {len(done)}')
+            logger.info(f'Pending task count: {len(pending)}')
 
             for done_task in done:
                 exception = done_task.exception()
@@ -58,17 +65,17 @@ async def download_images(urls: Iterable):
 
                 if exception is None:
                     result = done_task.result()
-                    # print(f'SUCCEED: {task_url}; size: {len(result)}')
-                    print(f'SUCCEED: {task_url};')
+                    # logger.info(f'SUCCEED: {task_url}; size: {len(result)}')
+                    logger.info(f'SUCCEED: {task_url};')
                 else:
                     # make connect=.1 to reach this branch, should retry all the urls that entered this case
                     # Done task count: 39
                     # Pending task count: 0
-                    print(f'Exception: {type(exception)}')
-                    print(f'FAIL: {task_url}; should retry this url.')
+                    logger.info(f'Exception: {type(exception)}')
+                    logger.info(f'FAIL: {task_url}; should retry this url.')
                     pending.add(asyncio.create_task(download_image(session, task_url), name=task_url))
 
-            print(f'[FINAL]Pending task count: {len(pending)}')
+            logger.info(f'[FINAL]Pending task count: {len(pending)}')
 
 
 async def main():
@@ -77,7 +84,7 @@ async def main():
 
     # async with aiofiles.open('./tmp.jpg', mode='wb') as afp:
     #     await afp.write(resps[0])
-    #     print('write file done.')
+    #     logger.info('write file done.')
 
 
 asyncio.run(main())

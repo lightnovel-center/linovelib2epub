@@ -1,6 +1,5 @@
 import os
-from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler,
-                     Formatter, getLogger)
+from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler, Formatter, getLogger)
 from time import localtime, strftime
 from typing import Optional
 
@@ -43,7 +42,6 @@ class Logger:
         # stream_handler = StreamHandler()
         shell_handler = RichHandler(rich_tracebacks=True)
 
-
         file_handler = FileHandler(
             filename=os.path.join(self.log_dir,
                                   "{log_filename}.log".format(log_filename=self.log_filename)),
@@ -53,7 +51,6 @@ class Logger:
 
         # LOG LEVELS
         self.logger.setLevel(self.level)
-        # stream_handler.setLevel(self.level)
         shell_handler.setLevel(self.level)
         file_handler.setLevel(self.level)
 
@@ -64,6 +61,7 @@ class Logger:
 
         # LOG FORMATTER
         # 2023-02-02,13:07:55 INFO     [logger2] Logging set up.             logger2.py:30
+        # Warning: rich will add some logging formats to fmt_shell
         shell_formatter = Formatter(fmt_shell, datefmt)
         # [2023-02-02,13:07:55][ERROR][logger2][logger2.py:division:37] Oh noes!
         file_formatter = Formatter(fmt_file, datefmt)
