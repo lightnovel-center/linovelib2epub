@@ -53,6 +53,7 @@ class MySpider:
                 async with aiofiles.open(filename, mode='wb') as afp:
                     await afp.write(image)
                     self.logger.debug(f'image url: {url} writes file done.')
+                self.logger.info(f"save image: {url} ok.")
             else:
                 # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
                 pass
@@ -106,7 +107,7 @@ class MySpider:
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
 
-async def main():
+async def download_async():
     urls = set(get_image_urls())
 
     # logger = MyLogger().get_logger()
@@ -121,8 +122,12 @@ async def test_aiofiles():
         await afp.write('hello aiofiles')
 
 
+def download_sync():
+    asyncio.run(download_async())
+
+
 if __name__ == '__main__':
-    asyncio.run(main())
+    download_sync()
     # asyncio.run(test_aiofiles())
 
 # 3x faster than multiprocessing approximately

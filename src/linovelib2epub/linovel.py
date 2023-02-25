@@ -163,7 +163,6 @@ class BaseNovelWebsiteSpider(ABC):
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
     async def _download_image(self, session: ClientSession, url: str) -> None:
-
         if not is_valid_image_url(url):
             return
 
@@ -172,6 +171,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename_path = Path(save_path)
         if filename_path.exists():
+            self.logger.info(f"The image to download is alreay downloaded at {filename_path}.skip.")
             return
 
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
@@ -188,7 +188,7 @@ class BaseNovelWebsiteSpider(ABC):
                 # write file, maybe raise IO error
                 async with aiofiles.open(save_path, mode='wb') as afp:
                     await afp.write(image)
-                    self.logger.debug(f'image url: {url} writes file done.')
+                    self.logger.info(f'save image: {url} ok.')
             else:
                 # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
                 pass
