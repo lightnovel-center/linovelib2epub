@@ -128,7 +128,6 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Todo
 
-- [ ] refactor: use dataclasses for models
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 

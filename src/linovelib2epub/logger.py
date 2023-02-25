@@ -61,7 +61,7 @@ class Logger:
 
         # LOG FORMAT
         fmt_shell = '%(name)s %(message)s'
-        fmt_file = '%(asctime)s %(levelname)-8s %(name)-20s %(filename)-15s:%(lineno)-5d %(message)s'
+        fmt_file = '%(asctime)s %(levelname)-8s %(name)-22s %(filename)-26s:%(lineno)-5d %(message)s'
         datefmt = '%Y-%m-%d,%H:%M:%S'
 
         # LOG FORMATTER

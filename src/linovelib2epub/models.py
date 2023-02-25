@@ -1,23 +1,19 @@
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Union
 
 
-class LightNovelChapter():
-    def __init__(self,
-                 cid: Union[int, str],
-                 title: str = '',
-                 content: str = ''):
-        self.cid = cid
-        self.title = title
-        self.content = content
+@dataclass
+class LightNovelChapter:
+    cid: Union[int, str]
+    title: str = ''
+    content: str = ''
 
 
+@dataclass
 class LightNovelVolume:
-    def __init__(self,
-                 vid: Union[int, str],
-                 title: str = ''):
-        self.vid = vid
-        self.title = title
-        self.chapters = []
+    vid: Union[int, str]
+    title: str = ''
+    chapters: list = field(default_factory=list)
 
     def add_chapter(self, cid: Union[int, str], title: str = '', content: str = ''):
         new_chapter = {
@@ -40,6 +36,7 @@ class LightNovelVolume:
         return self.chapters
 
 
+@dataclass
 class LightNovel:
     bid: Union[int, str] = None
     book_title: str = ''
@@ -48,16 +45,13 @@ class LightNovel:
     book_cover: str = ''
     book_cover_local: str = ''
 
-    volumes: List[dict[str, Any]] = []
+    volumes: list[dict[str, Any]] = field(default_factory=list)
 
     # map<volume_name, List[img_url]>
-    illustration_dict: Optional[dict[Union[int, str], list[str]]] = None
+    illustration_dict: dict[Union[int, str], list[str]] = field(default_factory=dict)
 
-    def __init__(self):
-        self.volumes = []
-        self.illustration_dict = {}
-
-        # data states
+    def __post_init__(self):
+        # data state flags
         self.basic_info_ready = False
         self.volumes_content_ready = False
 
