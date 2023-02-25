@@ -1,4 +1,4 @@
-from linovelib2epub import linovel
+# import linovelib2epub
 from linovelib2epub.linovel import Linovelib2Epub
 
 
@@ -35,8 +35,7 @@ def test_basic_run():
     # linovelib_epub = Linovelib2Epub(book_id=3610, clean_artifacts=False,
     #                                 image_download_strategy=linovel.MULTIPROCESSING)
 
-    linovelib_epub = Linovelib2Epub(book_id=3610, clean_artifacts=False,
-                                    image_download_strategy=linovel.ASYNCIO)
+    linovelib_epub = Linovelib2Epub(book_id=3610, clean_artifacts=False)
     linovelib_epub.run()
 
 

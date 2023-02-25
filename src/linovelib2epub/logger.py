@@ -2,7 +2,8 @@ import logging
 import os
 import sys
 import traceback
-from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler, StreamHandler,Formatter, getLogger)
+from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler,
+                     Formatter, StreamHandler, getLogger)
 from os import path
 from time import localtime, strftime
 from typing import Optional

@@ -1,10 +1,10 @@
+import asyncio
 import os
 import re
 import time
-import asyncio
 from functools import wraps
 from http.cookies import SimpleCookie
-from typing import Callable, Any
+from typing import Any, Callable
 
 import pkg_resources
 from fake_useragent import UserAgent

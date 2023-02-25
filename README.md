@@ -131,8 +131,6 @@ If it finished without errors, you can see the epub file is under the folder whe
 - [ ] refactor: use dataclasses for models
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
-- [ ] refactor: use multi-thread or asyncio coroutine to download images
-  - multiprocess logging not work with normal logging library. 可以选择asyncio或者使用Queue。
 
 ## Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
