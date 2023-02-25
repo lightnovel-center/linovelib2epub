@@ -10,12 +10,16 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
 from urllib.parse import urljoin
+import asyncio
 
+import aiofiles
+import aiohttp as aiohttp
 import demjson3
 import inquirer
 import requests
 import uuid
 from PIL import Image
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from linovelib2epub.models import (LightNovel, LightNovelChapter,
@@ -24,7 +28,7 @@ from linovelib2epub.utils import (check_image_integrity, cookiedict_from_str,
                                   create_folder_if_not_exists,
                                   is_valid_image_url, random_useragent,
                                   read_pkg_resource, request_with_retry,
-                                  sanitize_pathname)
+                                  sanitize_pathname, is_async)
 from requests.exceptions import ProxyError
 from rich import print as rich_print
 from rich.prompt import Confirm
@@ -32,6 +36,11 @@ from rich.prompt import Confirm
 from . import settings
 from .exceptions import LinovelibException
 from .logger import Logger
+
+# IMAGE_DOWNLOAD_STRATEGY
+MULTIPROCESSING = 'MULTIPROCESSING'
+MULTITHREADING = 'MULTITHREADING'
+ASYNCIO = 'ASYNCIO'
 
 
 class BaseNovelWebsiteSpider(ABC):
@@ -51,7 +60,7 @@ class BaseNovelWebsiteSpider(ABC):
     def get_image_filename(self, url) -> str:
         return url.rsplit('/', 1)[1]
 
-    def download_images(self, urls: Iterable = None) -> None:
+    def download_images_by_multiprocessing(self, urls: Iterable = None) -> None:
         if urls is None:
             urls = set()
         else:
@@ -60,19 +69,12 @@ class BaseNovelWebsiteSpider(ABC):
         self.logger.info(f'len of image set = {len(urls)}')
 
         process_pool = Pool(processes=os.cpu_count() or 4)
-        error_links = process_pool.map(self.download_image, urls)
-        # if everything is perfect, error_links array will be []
-        # if some error occurred, error_links will be those links that failed to request.
+        error_links = process_pool.map(self._download_image_legacy, urls)
 
-        # remove None element from array, only retain error link
-        # >>> sorted_error_links := sorted(list(filter(None, error_links)))
-
-        while sorted_error_links := sorted(list(filter(None, error_links))):
+        while sorted_error_links := list(filter(None, error_links)):
             self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
-            self.logger.info(f'Error image links size: {len(sorted_error_links)}')
-            self.logger.info(f'Error image links: {sorted_error_links}')
-
-            error_links = process_pool.map(self.download_image, sorted_error_links)
+            self.logger.info(f'Retry image links: {sorted_error_links}')
+            error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
 
         # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
         # re-check image download result:
@@ -86,9 +88,9 @@ class BaseNovelWebsiteSpider(ABC):
         else:
             self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
 
-    def download_image(self, url: str) -> Optional[str]:
+    def _download_image_legacy(self, url: str) -> Optional[str]:
         """
-        If a image url download failed, return its url. else return None.
+        If a image url download failed, return its url(for retry). else return None.
 
         :param url: single url string
         :return: original url if failed, or None if succeeded.
@@ -105,23 +107,126 @@ class BaseNovelWebsiteSpider(ABC):
 
         # url is valid and never downloaded
         try:
-            self.logger.info(f"Downloading image: {url}")
             resp = self.session.get(url, headers={}, timeout=self.spider_settings['http_timeout'])
-            check_image_integrity(resp)
+
+            expected_length = resp.headers and resp.headers.get('Content-Length')
+            actual_length = resp.raw.tell()
+            check_image_integrity(expected_length, actual_length)
         except (Exception, ProxyError,) as e:
-            self.logger.error(f'Error occurred when download image of {url}. Error: {e}')
             # SAD PATH
             return url
         else:
             try:
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
-                self.logger.info(f'Image {save_path} Saved.')
                 # HAPPY PATH
             except (Exception,):
-                self.logger.error(f'Image {save_path} Save failed. Rollback {url} for next try.')
                 # SAD PATH
                 return url
+
+    async def download_images_by_asyncio(self, urls: Iterable = None):
+        if urls is None:
+            urls = set()
+        else:
+            urls = set(urls)
+
+        self.logger.info(f'len of image set = {len(urls)}')
+
+        async with aiohttp.ClientSession() as session:
+            requests = {asyncio.create_task(self._download_image(session, url), name=url) for url in urls}
+            pending: set = requests
+            succeed_count = 0
+
+            while pending:
+                done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+                # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
+                # are returned in the second set
+
+                # 1. succeed => normal result in done(# HAPPY CASE)
+                # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
+                # 3  Other Exception before timeout => (SAD CASE(need retry)
+
+                for done_task in done:
+                    exception = done_task.exception()
+                    task_url = done_task.get_name()
+
+                    if exception is None:
+                        # result = done_task.result()
+                        succeed_count += 1
+                    else:
+                        # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
+                        self.logger.info(f'Exception: {type(exception)}')
+                        self.logger.info(f'FAIL: {task_url}; should retry this url.')
+                        pending.add(asyncio.create_task(self._download_image(session, task_url), name=task_url))
+
+                self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
+                self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+
+    async def _download_image(self, session: ClientSession, url: str) -> None:
+
+        if not is_valid_image_url(url):
+            return
+
+        filename = self.get_image_filename(url)
+        save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+
+        filename_path = Path(save_path)
+        if filename_path.exists():
+            return
+
+        timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
+        async with session.get(url, timeout=timeout) as resp:
+            if resp.status < 400:
+                image = await resp.read()
+
+                # check image integrity here, if get partial, MUST raise error
+                expected_get = resp.headers.get('Content-Length')
+                actual_get = len(image)
+                self.logger.debug(f'check_image_integrity: expected_get:{expected_get} vs actual_get: {actual_get}')
+                check_image_integrity(expected_get, actual_get)
+
+                # write file, maybe raise IO error
+                async with aiofiles.open(save_path, mode='wb') as afp:
+                    await afp.write(image)
+                    self.logger.debug(f'image url: {url} writes file done.')
+            else:
+                # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
+                pass
+
+    def post_fetch(self, novel: LightNovel):
+        self._save_novel_pickle(novel)
+
+        start = time.perf_counter()
+        self._process_image_download(novel)
+        self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
+
+    def _process_image_download(self, novel):
+        create_folder_if_not_exists(self.spider_settings["image_download_folder"])
+
+        strategy_to_method = {
+            MULTIPROCESSING: self.download_images_by_multiprocessing,
+            ASYNCIO: self.download_images_by_asyncio,
+            # add more
+        }
+        _download_image = strategy_to_method.get(self.spider_settings['image_download_strategy'],
+                                                 self.download_images_by_asyncio)
+
+        self.logger.info(f"Image download strategy: {self.spider_settings['image_download_strategy']}")
+
+        if self.spider_settings['has_illustration']:
+            image_set = novel.get_illustration_set()
+            image_set.add(novel.book_cover)
+        else:
+            image_set = {novel.book_cover}
+
+        if is_async(_download_image):
+            asyncio.run(_download_image(image_set))
+        else:
+            _download_image(image_set)
+
+    def _save_novel_pickle(self, novel):
+        with open(self.spider_settings['novel_pickle_path'], 'wb') as fp:
+            pickle.dump(novel, fp)
 
 
 class LinovelibSpider(BaseNovelWebsiteSpider):
@@ -148,13 +253,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         self.logger.info('(Perf metrics) Fetch Book took: {} seconds'.format(time.perf_counter() - start))
 
         return novel_whole
-
-    def post_fetch(self, novel: LightNovel):
-        self._save_novel_pickle(novel)
-
-        start = time.perf_counter()
-        self._process_image_download(novel)
-        self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
 
     def get_image_filename(self, url):
         return '-'.join(url.split("/")[-4:])
@@ -459,20 +557,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         return novel_whole
 
-    def _process_image_download(self, novel):
-        create_folder_if_not_exists(self.spider_settings["image_download_folder"])
-
-        if self.spider_settings['has_illustration']:
-            image_set = novel.get_illustration_set()
-            image_set.add(novel.book_cover)
-            self.download_images(image_set)
-        else:
-            self.download_images({novel.book_cover})
-
-    def _save_novel_pickle(self, novel):
-        with open(self.spider_settings['novel_pickle_path'], 'wb') as fp:
-            pickle.dump(novel, fp)
-
 
 class EpubWriter:
 
@@ -480,6 +564,9 @@ class EpubWriter:
         self.epub_settings = epub_settings
         self.logger = Logger(logger_name=__class__.__name__,
                              log_filename=self.epub_settings["log_filename"]).get_logger()
+
+    def dump_settings(self):
+        self.logger.info(self.epub_settings)
 
     def write(self, novel: LightNovel):
         start = time.perf_counter()
@@ -499,9 +586,9 @@ class EpubWriter:
 
         # tips: show output file folder
         output_folder = os.path.join(os.getcwd(), self._get_output_folder())
+        self.logger.info('(Perf metrics) Write epub took: {} seconds'.format(time.perf_counter() - start))
         rich_print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
                    f"(You can see the link if you use a modern shell.)")
-        self.logger.info('(Perf metrics) Write epub took: {} seconds'.format(time.perf_counter() - start))
 
     def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
         """
@@ -701,6 +788,7 @@ class Linovelib2Epub():
                  http_retries: int = settings.HTTP_RETRIES,
                  http_cookie: str = settings.HTTP_COOKIE,
                  disable_proxy: bool = settings.DISABLE_PROXY,
+                 image_download_strategy: str = ASYNCIO,
                  custom_style_cover: str = None,
                  custom_style_nav: str = None,
                  custom_style_chapter: str = None):
@@ -733,6 +821,7 @@ class Linovelib2Epub():
 
         self.spider_settings = {
             **self.common_settings,
+            'image_download_strategy': image_download_strategy,
             'http_timeout': http_timeout,
             'http_retries': http_retries,
             'random_useragent': random_useragent(),
@@ -754,7 +843,6 @@ class Linovelib2Epub():
                              log_filename=self.common_settings["log_filename"]).get_logger()
 
     def run(self):
-        self.logger.info('log something in run')
         # recover from last work. only support this format: [hostname]_3573.pickle
         # 1.solve novel pickle
         novel_pickle_path = Path(self.common_settings['novel_pickle_path'])

@@ -48,8 +48,7 @@ class Logger:
         shell_handler = RichHandler(rich_tracebacks=True)
 
         file_handler = FileHandler(
-            filename=os.path.join(self.log_dir,
-                                  "{log_filename}.log".format(log_filename=self.log_filename)),
+            filename=os.path.join(self.log_dir, f"{self.log_filename}.log"),
             mode="a",
             encoding="utf-8",
         )

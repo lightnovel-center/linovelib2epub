@@ -13,7 +13,9 @@
 3. [write epub] - 利用epub相关工具库，结合爬虫配置，输入epub文件。
 
 ## 用户设置
+
 根据用户设置的不同：
+
 - 选择模式，分卷(Y/N)。=>这部分设置影响正文内容的范围。
   - 分卷(N) => 【默认选项】。下载整本，输出一个整体的epub文件。
   - 分卷(Y) => 下载整本，输出文件时会单卷单个文件保存，输出一个或多个epub文件。
@@ -21,8 +23,8 @@
 - 下载插图(Y/N)。
   - Y。下载插图。【默认选项】。
   - N。不下载插图。epub中对于插图的位置一般会显示为[Image]标注。
- 
->设计1：下载插图的时机在哪个阶段？ 
+
+> 设计1：下载插图的时机在哪个阶段？
 
 ```
 2.1 book basic info  -> 2.2 book paginated_content_dict -> 2.3 image_dict
@@ -31,24 +33,29 @@
 A: 如果需要下载插图，那么应该在爬虫获取完 2.2 之后，开始处理 images 的下载。
 
 ## 定义LightNovel数据模型类
+
 这个类用于表示爬虫得到的轻小说的数据。按层级来分，为 book -> volumes -> chapters -> pages。
 
 也就是一本书有多个卷，每一卷有多个章节，每个章节有多个html 页面（也可以为一个html页面，不同网站的实现不同）。
+
 - 哔哩轻小说为了减少一个章节的阅读压力，将一个章节切分为多个子页面，这样一个页面的数据就相对小一点。
 - 而[无限轻小说](https://www.8novel.com/) 则是一个章节一个页面，这样对于爬虫很友好，但是对于常规阅读可以会发现页面滚动范围很长。
 
 ### Book
+
 我们从最简单的代码开始思考：
+
 ```python
 class LightNovel:
     # 省略书籍的其他元信息...
     bid = None
-  
+
     class Volume:
         pass
 
     volumes: []
 ```
+
 一本书至少需要一个book_id，这个book_id对于特定的网站而言，是唯一的。
 
 ### Volumes
@@ -65,21 +72,24 @@ class LightNovel:
 class Chapter:
     pass
 
+
 class Volume:
     vid: None
     title: str
     chapters: []
 ```
+
 现在我们来到了Chapter的内部设计阶段。
 
 ### Chapters
 
 一个Chapter表示一个特定的章节。
+
 - chapter id: 唯一。
 - ~~chapter index page title: 该章节的第一个页面的标题。~~
 - ~~chapter index page url: 该章节的第一个页面的url。~~
 - ~~chapter pages: 表示章节的页。~~
-- chapter title 
+- chapter title
 - chapter url
 - chapter content
 
@@ -89,41 +99,42 @@ class Volume:
 class Chapter:
     cid: None
     title: str
-    url: str # optional
+    url: str  # optional
     content: str
 ```
 
 ### Pages
+
 > 章节分页的话可以考虑，对于爬虫而言不需要。对于爬虫而言，抽象粒度到chapter而言足够，一个chapter对应一个大HTML页面。
 
 最后，是Page的设计了。 每个page应该包含：
+
 - page id
 - page title
 - page url
 - page content
+
 ```python
 class Page:
-   pid: None
-   title: str
-   url: str
-   content: str
+    pid: None
+    title: str
+    url: str
+    content: str
 ```
-
 
 ## 爬虫关键的设计点
 
-由于每个novel website的页面结构不同，应该抽象出一个抽象类，例如 NovelWebsite。 不同的网站，例如website-a,website-b应该继承自这个
-基类，然后重写对应的方法实现。
+由于每个novel website的页面结构不同，应该抽象出一个抽象类，例如 NovelWebsite。 不同的网站，例如website-a,website-b应该继承自这个 基类，然后重写对应的方法实现。
 
 BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
+
 - __init__ logger实例，爬虫配置（外部可以使用单例，因为这个配置一旦初始化就不可变）。
 - @abstractmethod fetch()。爬取novel data的主方法。子类必须覆盖这个方法。
 - default sanitize_html() implementation 默认的html消毒方法，例如剥离js脚本，转义部分字符等等。
 
 不同的轻小说来源网站就是 BaseNovelWebsiteSpider 的子类。
 
-但是此时会导致不同的用户调用时需要手动引入不同的子类，然后初始化。
-为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
+但是此时会导致不同的用户调用时需要手动引入不同的子类，然后初始化。 为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
 
 将普适的方法抽象泛化（上移）到基类 BaseNovelWebsiteSpider ，具体的方法实现特化（下移）在具体的实现类 LinovelibSpider。
 
@@ -134,6 +145,7 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 ## 文件下载目录规定
 
 目录组织：
+
 ```
 pickel/
     w.linovelib.com_3610.pickle  => hostname_book_id (unique)
@@ -147,6 +159,7 @@ images/
 ```
 
 图片：
+
 ```
 remote:
 https://img.linovelib.com/3/3211/163938/193293.jpg
@@ -156,3 +169,49 @@ format:  [image_download_folder]/[image_filename]
 example: images/.../3-3211-163938-193293.jpg
 ```
 
+## async syntax tradeoff
+
+async/await 语法会扩散到最外层的调用，会造成非常多的语法嵌套。这样，就是从回调地狱走向嵌套地狱，（题外话，.then()这种是链式调用地狱）。
+
+如果想尽可能避免async/await语法扩散的污染,有两种方式：
+
+1. 将异步函数包装为同步函数，然后导出同步函数作为API。这种方式可以隐藏异步实现的细节，让调用方仍然可以使用同步方式调用API。例如，以下代码演示了如何将异步函数async_function()
+   包装为同步函数sync_function()：
+
+```python
+import asyncio
+
+
+async def async_function():
+    # 异步函数实现 
+    return result
+
+
+def sync_function():
+    return asyncio.run(async_function())
+```
+
+2. 将异步函数包装为异步上下文管理器或异步迭代器，并导出为API。这种方式可以让调用方使用async with或async for语法来运行异步函数，从而避免显式地使用asyncio.run()
+   函数。例如，以下代码演示了如何将异步函数async_function()包装为异步上下文管理器AsyncContext()：
+
+```python
+import asyncio
+
+async def async_function():
+    # 异步函数实现
+    return result
+
+class AsyncContext:
+    async def __aenter__(self):
+        self.result = await async_function()
+        return self.result
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+```
+```python
+async with AsyncContext() as result:
+    print(result)
+```
+
+一般而言，不要将实现变更直接扩散到用户使用API。

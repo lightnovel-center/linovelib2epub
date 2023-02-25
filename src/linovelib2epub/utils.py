@@ -1,7 +1,8 @@
-from functools import wraps
 import os
 import re
 import time
+import asyncio
+from functools import wraps
 from http.cookies import SimpleCookie
 from typing import Callable, Any
 
@@ -67,12 +68,16 @@ def is_valid_image_url(url):
     return bool(re.match(image_pattern, url))
 
 
-def check_image_integrity(resp):
-    # check file integrity by comparing HTTP header content-length and real request tell()
-    expected_length = resp.headers and resp.headers.get('Content-Length')
-    actual_length = resp.raw.tell()  # len(resp.content)
+def check_image_integrity(expected_length, actual_length):
+    """
+    check file integrity by comparing expected_get and actual_get
+
+    :param expected_length:
+    :param actual_length:
+    :return:
+    """
     if expected_length and actual_length:
-        # expected_length: 31949; actual_length: 31949
+        # actual_length should be >= expected_length
         if int(actual_length) < int(expected_length):
             raise IOError(
                 'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
@@ -105,3 +110,6 @@ def async_timed():
         return wrapped
 
     return wrapper
+
+def is_async(func):
+    return asyncio.iscoroutinefunction(func)
