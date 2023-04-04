@@ -72,7 +72,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 book_title = soup.find('h2', {'class': 'book-title'}).text
                 author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
                 book_summary = soup.find('section', id="bookSummary").text
-                book_cover_url = soup.find('img', {'class': 'book-cover'})['src']
+                # see issue #10, strip invalid suffix characters after ? from cover url
+                book_cover_url = soup.find('img', {'class': 'book-cover'})['src'].split("?")[0]
                 return book_title, author, book_summary, book_cover_url
 
             except (Exception,):
