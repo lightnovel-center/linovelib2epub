@@ -34,8 +34,14 @@ class BaseNovelWebsiteSpider(ABC):
     def fetch(self) -> LightNovel:
         raise NotImplementedError()
 
-    def request_headers(self) -> dict:
-        return {}
+    def request_headers(self, referer: str = '', random_ua: bool = True) -> dict:
+        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+        default_referer = 'https://w.linovelib.com'
+        headers = {
+            'referer': referer if referer else default_referer,
+            'user-agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+        }
+        return headers
 
     def get_image_filename(self, url) -> str:
         return url.rsplit('/', 1)[1]
@@ -87,7 +93,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         # url is valid and never downloaded
         try:
-            resp = self.session.get(url, headers={}, timeout=self.spider_settings['http_timeout'])
+            resp = self.session.get(url, headers=self.request_headers(), timeout=self.spider_settings['http_timeout'])
 
             expected_length = resp.headers and resp.headers.get('Content-Length')
             actual_length = resp.raw.tell()
@@ -155,7 +161,7 @@ class BaseNovelWebsiteSpider(ABC):
             return
 
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
-        async with session.get(url, timeout=timeout) as resp:
+        async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
             if resp.status < 400:
                 image = await resp.read()
 
