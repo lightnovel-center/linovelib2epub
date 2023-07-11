@@ -43,9 +43,6 @@ class BaseNovelWebsiteSpider(ABC):
         }
         return headers
 
-    def get_image_filename(self, url) -> str:
-        return url.rsplit('/', 1)[1]
-
     def download_images_by_multiprocessing(self, urls: Iterable = None) -> None:
         if urls is None:
             urls = set()
@@ -67,7 +64,8 @@ class BaseNovelWebsiteSpider(ABC):
         # - happy result: urls_set - self.image_download_folder == 0
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
-        download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
+
+        download_image_miss_quota = len(urls) - sum([len(files) for root, dirs, files in os.walk(self.spider_settings['image_download_folder'])])
         self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
         if download_image_miss_quota <= 0:
             self.logger.info('The result of downloading pictures is perfect.')
@@ -86,6 +84,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+        if not os.path.exists(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():
@@ -154,6 +154,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+        if not os.path.exists(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():

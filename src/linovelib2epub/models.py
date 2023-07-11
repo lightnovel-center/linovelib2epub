@@ -14,6 +14,7 @@ class LightNovelVolume:
     vid: Union[int, str]
     title: str = ''
     chapters: list = field(default_factory=list)
+    volume_img_folder: str = ''
 
     def add_chapter(self, cid: Union[int, str], title: str = '', content: str = ''):
         new_chapter = {
@@ -72,11 +73,12 @@ class LightNovel:
                 image_set.add(value)
         return image_set
 
-    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None):
+    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None, volume_img_folder: str = ''):
         new_volume = {
             'vid': vid,
             'title': title,
-            'chapters': chapters if chapters else []
+            'chapters': chapters if chapters else [],
+            'volume_img_folder': volume_img_folder,
         }
         self.volumes.append(new_volume)
 

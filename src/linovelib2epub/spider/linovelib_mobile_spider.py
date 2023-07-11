@@ -41,7 +41,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return novel_whole
 
     def get_image_filename(self, url):
-        return '-'.join(url.split("/")[-4:])
+        # example: https://img.linovelib.com/0/682/117077/50675.jpg => 117077/50677.jpg
+        # "117077" will be treated as a folder
+        # "50677.jpg" is the image filename
+        return '/'.join(url.split("/")[-2:])
 
     def _init_http_client(self):
         self.session = requests.Session()
@@ -128,7 +131,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 illustration_dict.setdefault(volume['vid'], [])
 
                 chapter_id = -1
-                chapter_list=[] # store chapter for removing duplicate images in the first chapter
+                chapter_list = []  # store chapter for removing duplicate images in the first chapter
                 for chapter in volume['chapters']:
                     chapter_content = ''
                     chapter_title = chapter[0]
@@ -186,13 +189,13 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         images = soup.find_all('img')
                         article = str(soup.find(id="acontent"))
                         for _, image in enumerate(images):
-                            
+
                             # images in the first chapter are lazyload, their urls are inside "data-src"
                             # img tag format: <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
                             image_src = image.get("data-src")
                             if image_src:
                                 src_value = re.search('(?<= data-src=").*?(?=")', str(image))
-                            
+
                             # img tag format: <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
                             else:
                                 image_src = image.get("src")
@@ -200,13 +203,14 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                             illustration_dict[volume['vid']].append(image_src)
 
-                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
-                            # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
-                            local_image_uri = self.get_image_filename(src_value.group())
+                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/117077/50677.jpg
+                            # 117077 is [volume_img_folder]
+                            # 50677.jpg is the [filename]
+                            local_image_uri = self.get_image_filename(src_value.group())  # local_image_uri is "[volume_img_folder]/[filename]"
                             replace_value = '<img src="' + f'{self.spider_settings["image_download_folder"]}/' + local_image_uri + '"/>'
 
                             # replace all remote images src to local file path
-                            # after replacing, all images have format like: <img src="[folder]/[filename]"/>
+                            # after replacing, all images have format like: <img src="[folder]/[volume_img_folder]/[filename]"/>
                             article = article.replace(str(image), str(replace_value))
 
                         article = self._sanitize_html(article)
@@ -217,28 +221,39 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     # Here, current chapter's content has been solved
                     new_chapter.content = chapter_content
                     chapter_list.append(new_chapter)
-                
+
                 # removing duplicate images in the first chapter
                 def removeInList(match, l):
-                    s=match.group()
+                    s = match.group()
                     if s in l:
                         self.logger.info(f'Remove duplicate image in the first chapter... {s}')
                         return ""
                     else:
                         return s
-                check_img_duplicate_list=[]
+                check_img_duplicate_list = []
                 for chapter in chapter_list[1:]:
                     check_img_duplicate_list.extend(re.findall('<img src=".*?"/>', chapter.content))
-                chapter_list[0].content=re.sub('<img src=".*?"/>', lambda m: removeInList(m, check_img_duplicate_list), chapter_list[0].content)
+                chapter_list[0].content = re.sub('<img src=".*?"/>', lambda m: removeInList(m, check_img_duplicate_list), chapter_list[0].content)
 
                 for chapter in chapter_list:
-                    new_volume.add_chapter(cid=chapter.cid,
-                                            title=chapter.title,
-                                            content=chapter.content)
+                    new_volume.add_chapter(
+                        cid=chapter.cid,
+                        title=chapter.title,
+                        content=chapter.content
+                    )
 
-                new_novel.add_volume(vid=new_volume.vid,
-                                     title=new_volume.title,
-                                     chapters=new_volume.chapters)
+                # store [volume_img_folder] in volume dict
+                # [volume_img_folder] is used to extract images in specific volume when "divide_volume=True"
+                if illustration_dict[volume['vid']]:
+                    sample_url = illustration_dict[volume['vid']][0]
+                    new_volume.volume_img_folder = sample_url.split("/")[-2]
+
+                new_novel.add_volume(
+                    vid=new_volume.vid,
+                    title=new_volume.title,
+                    chapters=new_volume.chapters,
+                    volume_img_folder=new_volume.volume_img_folder
+                )
 
             new_novel.set_illustration_dict(illustration_dict)
 

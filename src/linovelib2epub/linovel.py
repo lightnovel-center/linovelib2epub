@@ -46,6 +46,10 @@ class EpubWriter:
             self._write_epub(book_title, author, novel.volumes, cover_file)
         else:
             for volume in novel.volumes:
+                # if volume image folder is not empty, then use the first image as the cover
+                if volume["volume_img_folder"]:
+                    cover_file = os.listdir(f'{self.epub_settings["image_download_folder"]}/{volume["volume_img_folder"]}')[0]
+                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume["volume_img_folder"]}/{cover_file}'
                 self._write_epub(f'{book_title}_{volume["title"]}', author, volume, cover_file)
 
         # tips: show output file folder
@@ -61,7 +65,7 @@ class EpubWriter:
            for one epub per volume, the title should be volume title.
         :param author:
         :param volumes: if divide_volume is False, this parameter should be volume list(List[LightNovelVolume]).
-           if divide_volume is True, it should be one volum(LightNovelVolume).
+           if divide_volume is True, it should be one volume(LightNovelVolume).
         :param cover_file: local image file path
         :param cover_filename: cover_filename has no format suffix such as ".jpg"
         :return:
@@ -93,17 +97,28 @@ class EpubWriter:
             nonlocal chapter_index
             nonlocal file_index
 
-            html_volume_title = "<h1>" + volume_title + "</h1>"
-            write_content += html_volume_title
-            book.toc.append([epub.Section(volume_title), []])
+            if not self.epub_settings["divide_volume"]:
+                # volume_title as h1
+                html_volume_title = "<h1>" + volume_title + "</h1>"
+                write_content += html_volume_title
+                book.toc.append([epub.Section(volume_title), []])
+
             chapter_index += 1
             for chapter in volume['chapters']:
                 file_index += 1
                 chapter_title = chapter['title']
 
-                html_chapter_title = "<h2>" + chapter_title + "</h2>"
-                write_content += html_chapter_title + str(chapter["content"]).replace(
-                    """<div class="acontent" id="acontent">""", "")
+                if not self.epub_settings["divide_volume"]:
+                    # chapter_title as h2
+                    html_chapter_title = "<h2>" + chapter_title + "</h2>"
+                    write_content += html_chapter_title + str(chapter["content"]).replace(
+                        """<div class="acontent" id="acontent">""", "")
+                else:
+                    # chapter_title as h1
+                    html_chapter_title = "<h1>" + chapter_title + "</h1>"
+                    write_content += html_chapter_title + str(chapter["content"]).replace(
+                        """<div class="acontent" id="acontent">""", "")
+
                 write_content = write_content.replace('png', 'jpg')
 
                 page = epub.EpubHtml(title=chapter_title, file_name=f"{file_index}.xhtml", lang="zh")
@@ -112,12 +127,19 @@ class EpubWriter:
                 # add `<link>` tag to page `<head>` section.
                 self._set_page_style(book, custom_style_chapter, default_style_chapter, page)
 
-                book.toc[chapter_index][1].append(page)
+                if not self.epub_settings["divide_volume"]:
+                    # volume_title as h1
+                    book.toc[chapter_index][1].append(page)
+                else:
+                    # chapter_title as h1
+                    book.toc.append(epub.Link(f"{file_index}.xhtml", chapter_title, str(uuid.uuid4())))
+
                 book.spine.append(page)
 
                 write_content = ""
 
         if not self.epub_settings["divide_volume"]:
+            volume_img_folder = ""
             for volume in volumes:
                 volume_title = volume['title']
                 _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
@@ -125,6 +147,7 @@ class EpubWriter:
             create_folder_if_not_exists(self._novel_book_title)
             volume = volumes
             volume_title = title
+            volume_img_folder = volume['volume_img_folder']
             _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
 
         # DEFAULT CHAPTER STYLE & CUSTOM CHAPTER STYLE
@@ -134,7 +157,7 @@ class EpubWriter:
 
         # IMAGES
         images_folder = self.epub_settings["image_download_folder"]
-        self._add_images(book, images_folder)
+        self._add_images(book, images_folder, volume_img_folder)
 
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
@@ -163,28 +186,37 @@ class EpubWriter:
             page.add_item(custom_style_chapter)
         book.add_item(page)
 
-    def _add_images(self, book, images_folder):
+    def _add_images(self, book, images_folder, volume_img_folder):
+
+        def func(image_file):
+            if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
+                return
+            try:
+                img = Image.open(f'{images_folder}/{volume_img_folder}/{image_file}')
+            except (Exception,):
+                return
+
+            b = io.BytesIO()
+            img = img.convert('RGB')
+            img.save(b, 'jpeg')
+            data_img = b.getvalue()
+
+            new_image_file = image_file.replace('png', 'jpg')
+            img = epub.EpubItem(file_name=f'{images_folder}/{volume_img_folder}/{new_image_file}', media_type="image/jpeg",
+                                content=data_img)
+            book.add_item(img)
+
         if self.epub_settings["has_illustration"]:
-            image_files = os.listdir(images_folder)
-            # THINK: if enable multi Linovel instances, need to make sure images_folder corresponds to a seperate instance.
-            # Or it will add all images into a certain epub.
-            for image_file in image_files:
-                if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
-                    continue
-                try:
-                    img = Image.open(images_folder + '/' + image_file)
-                except (Exception,):
-                    continue
-
-                b = io.BytesIO()
-                img = img.convert('RGB')
-                img.save(b, 'jpeg')
-                data_img = b.getvalue()
-
-                new_image_file = image_file.replace('png', 'jpg')
-                img = epub.EpubItem(file_name=f"{images_folder}/{new_image_file}", media_type="image/jpeg",
-                                    content=data_img)
-                book.add_item(img)
+            if not self.epub_settings["divide_volume"]:
+                # grab all images under all [volume_img_folder]
+                for volume_img_folder in os.listdir(images_folder):
+                    for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
+                        func(image_file)
+            else:
+                # only grab images under current [volume_img_folder]
+                if volume_img_folder != "":
+                    for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
+                        func(image_file)
 
     def _get_output_folder(self):
         if self.epub_settings['divide_volume']:
