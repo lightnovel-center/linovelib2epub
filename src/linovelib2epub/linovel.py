@@ -101,7 +101,7 @@ class EpubWriter:
                 # volume_title as h1
                 html_volume_title = "<h1>" + volume_title + "</h1>"
                 write_content += html_volume_title
-                book.toc.append([epub.Section(volume_title), []])
+                book.toc.append([epub.Link(f"{file_index+1}.xhtml", volume_title, str(uuid.uuid4())), []])
 
             chapter_index += 1
             for chapter in volume['chapters']:
@@ -177,7 +177,12 @@ class EpubWriter:
         # FINAL WRITE
         # if divide volume, create a folder named title, or leave folder as "“
         out_folder = self._get_output_folder()
-        epub.write_epub(sanitize_pathname(out_folder) + "/" + sanitize_pathname(title) + '.epub', book)
+        if not self.epub_settings["divide_volume"]:
+            prefix = ""
+        else:
+            prefix = "%02d." % volume['vid']
+
+        epub.write_epub(sanitize_pathname(out_folder) + "/" + prefix + sanitize_pathname(title) + '.epub', book)
 
     @staticmethod
     def _set_page_style(book, custom_style_chapter, default_style_chapter, page):
