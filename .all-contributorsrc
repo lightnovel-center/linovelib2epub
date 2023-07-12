@@ -33,6 +33,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "Holence",
+      "name": "Holence",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56831381?v=4",
+      "profile": "http://dongliteahouse.wordpress.com",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
