@@ -41,7 +41,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return novel_whole
 
     def get_image_filename(self, url):
-        return '-'.join(url.split("/")[-4:])
+        # example: https://img.linovelib.com/0/682/117077/50675.jpg => 117077/50677.jpg
+        # "117077" will be treated as a folder
+        # "50677.jpg" is the image filename
+        return '/'.join(url.split("/")[-2:])
 
     def _init_http_client(self):
         self.session = requests.Session()
@@ -128,6 +131,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 illustration_dict.setdefault(volume['vid'], [])
 
                 chapter_id = -1
+                chapter_list = []  # store chapter for removing duplicate images in the first chapter
                 for chapter in volume['chapters']:
                     chapter_content = ''
                     chapter_title = chapter[0]
@@ -184,19 +188,36 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                         images = soup.find_all('img')
                         article = str(soup.find(id="acontent"))
-
                         for _, image in enumerate(images):
-                            # img tag format: <img src="https://img.linovelib.com/0/682/117078/50677.jpg" border="0" class="imagecontent">
-                            image_src = image['src']
-                            illustration_dict[volume['vid']].append(image_src)
-                            src_value = re.search(r"(?<=src=\").*?(?=\")", str(image))
 
-                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [folder]/0-682-117078-50677.jpg
-                            # here we convert its path `0/682/117078/50677.jpg` to `0-682-117078-50677.jpg` as filename.
-                            local_image_uri = self.get_image_filename(src_value.group())
+                            # images in the first chapter are lazyload, their urls are inside "data-src"
+                            # img tag format: <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
+                            image_src = image.get("data-src")
+                            if image_src:
+                                data_src_value = re.search('(?<= data-src=").*?(?=")', str(image))
+                                src_value = re.search('(?<= src=").*?(?=")', str(image))
+
+                                local_image_uri = self.get_image_filename(data_src_value.group())
+
+                            # img tag format: <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
+                            else:
+                                image_src = image.get("src")
+                                src_value = re.search('(?<= src=").*?(?=")', str(image))
+
+                                local_image_uri = self.get_image_filename(src_value.group())
+
+                            # local_image_uri is "[volume_img_folder]/[filename]"
+                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [image_download_folder]/117077/50677.jpg
+                            # 117077 is [volume_img_folder]
+                            # 50677.jpg is the [filename]
+
                             replace_value = f'{self.spider_settings["image_download_folder"]}/' + local_image_uri
+                            new_image = str(image).replace(str(src_value.group()), replace_value)
+
                             # replace all remote images src to local file path
-                            article = article.replace(str(src_value.group()), str(replace_value))
+                            article = article.replace(str(image), new_image)
+
+                            illustration_dict[volume['vid']].append(image_src)
 
                         article = self._sanitize_html(article)
                         chapter_content += article
@@ -205,13 +226,46 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # Here, current chapter's content has been solved
                     new_chapter.content = chapter_content
-                    new_volume.add_chapter(cid=new_chapter.cid,
-                                           title=new_chapter.title,
-                                           content=new_chapter.content)
+                    chapter_list.append(new_chapter)
 
-                new_novel.add_volume(vid=new_volume.vid,
-                                     title=new_volume.title,
-                                     chapters=new_volume.chapters)
+                # removing duplicate images in the first chapter
+                def filter_duplicate_images(match, img_src_list):
+                    img = match.group()
+                    img_src = re.search('(?<= src=").*?(?=")', match.group()).group()
+                    if img_src in img_src_list:
+                        self.logger.info(f'Remove duplicate image in the first chapter... {img_src}')
+                        return ""
+
+                    else:
+                        return img
+
+                img_src_list = []
+                for chapter in chapter_list[1:]:
+                    img_src_list.extend(
+                        [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
+                    )
+                chapter_list[0].content = re.sub('<img.*?/>', lambda match: filter_duplicate_images(match, img_src_list), chapter_list[0].content)
+
+                for chapter in chapter_list:
+                    new_volume.add_chapter(
+                        cid=chapter.cid,
+                        title=chapter.title,
+                        content=chapter.content
+                    )
+
+                # store [volume_img_folder] and [volume_cover] in volume dict
+                if illustration_dict[volume['vid']]:
+                    cover_image_url = illustration_dict[volume['vid']][0]
+                    path = self.get_image_filename(cover_image_url)
+                    new_volume.volume_img_folder, new_volume.volume_cover = path.split("/")
+
+                new_novel.add_volume(
+                    vid=new_volume.vid,
+                    title=new_volume.title,
+                    chapters=new_volume.chapters,
+                    volume_img_folder=new_volume.volume_img_folder,
+                    volume_cover=new_volume.volume_cover
+                )
 
             new_novel.set_illustration_dict(illustration_dict)
 

@@ -56,12 +56,13 @@ class BaseNovelWebsiteSpider(ABC):
             self.logger.info(f'Retry image links: {sorted_error_links}')
             error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
 
-        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
+        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [image_download_folder]/[117082]/50748.jpg
         # re-check image download result:
         # - happy result: urls_set - self.image_download_folder == 0
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
-        download_image_miss_quota = len(urls) - len(os.listdir(self.spider_settings['image_download_folder']))
+
+        download_image_miss_quota = len(urls) - sum([len(files) for root, dirs, files in os.walk(self.spider_settings['image_download_folder'])])
         self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
         if download_image_miss_quota <= 0:
             self.logger.info('The result of downloading pictures is perfect.')
@@ -80,6 +81,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+        if not os.path.exists(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():
@@ -87,7 +90,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         # url is valid and never downloaded
         try:
-            resp = self.session.get(url, headers={}, timeout=self.spider_settings['http_timeout'])
+            resp = self.session.get(url, headers=self.request_headers(), timeout=self.spider_settings['http_timeout'])
 
             expected_length = resp.headers and resp.headers.get('Content-Length')
             actual_length = resp.raw.tell()
@@ -148,6 +151,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
+        if not os.path.exists(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():
@@ -155,7 +160,7 @@ class BaseNovelWebsiteSpider(ABC):
             return
 
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
-        async with session.get(url, timeout=timeout) as resp:
+        async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
             if resp.status < 400:
                 image = await resp.read()
 
