@@ -59,7 +59,7 @@ class BaseNovelWebsiteSpider(ABC):
             self.logger.info(f'Retry image links: {sorted_error_links}')
             error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
 
-        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [folder]/0-682-117082-50748.jpg
+        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [image_download_folder]/[117082]/50748.jpg
         # re-check image download result:
         # - happy result: urls_set - self.image_download_folder == 0
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
