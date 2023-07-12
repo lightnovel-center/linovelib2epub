@@ -14,7 +14,15 @@ class LightNovelVolume:
     vid: Union[int, str]
     title: str = ''
     chapters: list = field(default_factory=list)
+
+    # volume_img_folder is used to extract images in specific volume when "divide_volume=True"
     volume_img_folder: str = ''
+    # volume_cover is used as the cover image in specific volume when "divide_volume=True"
+    volume_cover: str = ''
+
+    # example: https://img.linovelib.com/0/682/117077/50675.jpg
+    # volume_img_folder = "117077"
+    # volume_cover = "50677.jpg"
 
     def add_chapter(self, cid: Union[int, str], title: str = '', content: str = ''):
         new_chapter = {
@@ -73,12 +81,13 @@ class LightNovel:
                 image_set.add(value)
         return image_set
 
-    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None, volume_img_folder: str = ''):
+    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None, volume_img_folder: str = '', volume_cover: str = ''):
         new_volume = {
             'vid': vid,
             'title': title,
             'chapters': chapters if chapters else [],
             'volume_img_folder': volume_img_folder,
+            'volume_cover': volume_cover,
         }
         self.volumes.append(new_volume)
 

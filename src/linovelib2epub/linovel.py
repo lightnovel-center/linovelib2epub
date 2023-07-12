@@ -47,9 +47,8 @@ class EpubWriter:
         else:
             for volume in novel.volumes:
                 # if volume image folder is not empty, then use the first image as the cover
-                if volume["volume_img_folder"]:
-                    cover_file = os.listdir(f'{self.epub_settings["image_download_folder"]}/{volume["volume_img_folder"]}')[0]
-                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume["volume_img_folder"]}/{cover_file}'
+                if volume["volume_cover"]:
+                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume["volume_img_folder"]}/{volume["volume_cover"]}'
                 self._write_epub(f'{book_title}_{volume["title"]}', author, volume, cover_file)
 
         # tips: show output file folder
@@ -193,7 +192,7 @@ class EpubWriter:
 
     def _add_images(self, book, images_folder, volume_img_folder):
 
-        def func(image_file):
+        def add_image(image_file):
             if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
                 return
             try:
@@ -216,12 +215,12 @@ class EpubWriter:
                 # grab all images under all [volume_img_folder]
                 for volume_img_folder in os.listdir(images_folder):
                     for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
-                        func(image_file)
+                        add_image(image_file)
             else:
                 # only grab images under current [volume_img_folder]
                 if volume_img_folder != "":
                     for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
-                        func(image_file)
+                        add_image(image_file)
 
     def _get_output_folder(self):
         if self.epub_settings['divide_volume']:

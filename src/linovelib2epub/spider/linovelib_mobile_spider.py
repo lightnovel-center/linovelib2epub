@@ -253,17 +253,18 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         content=chapter.content
                     )
 
-                # store [volume_img_folder] in volume dict
-                # [volume_img_folder] is used to extract images in specific volume when "divide_volume=True"
+                # store [volume_img_folder] and [volume_cover] in volume dict
                 if illustration_dict[volume['vid']]:
-                    sample_url = illustration_dict[volume['vid']][0]
-                    new_volume.volume_img_folder = sample_url.split("/")[-2]
+                    cover_image_url = illustration_dict[volume['vid']][0]
+                    path = self.get_image_filename(cover_image_url)
+                    new_volume.volume_img_folder, new_volume.volume_cover = path.split("/")
 
                 new_novel.add_volume(
                     vid=new_volume.vid,
                     title=new_volume.title,
                     chapters=new_volume.chapters,
-                    volume_img_folder=new_volume.volume_img_folder
+                    volume_img_folder=new_volume.volume_img_folder,
+                    volume_cover=new_volume.volume_cover
                 )
 
             new_novel.set_illustration_dict(illustration_dict)

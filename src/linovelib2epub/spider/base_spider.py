@@ -34,14 +34,11 @@ class BaseNovelWebsiteSpider(ABC):
     def fetch(self) -> LightNovel:
         raise NotImplementedError()
 
-    def request_headers(self, referer: str = '', random_ua: bool = True) -> dict:
-        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
-        default_referer = 'https://w.linovelib.com'
-        headers = {
-            'referer': referer if referer else default_referer,
-            'user-agent': self.spider_settings['random_useragent'] if random_ua else default_ua
-        }
-        return headers
+    def request_headers(self) -> dict:
+        return {}
+
+    def get_image_filename(self, url) -> str:
+        return url.rsplit('/', 1)[1]
 
     def download_images_by_multiprocessing(self, urls: Iterable = None) -> None:
         if urls is None:
