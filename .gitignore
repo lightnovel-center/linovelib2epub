@@ -30,3 +30,4 @@ logs
 local_use
 *.log
 /playground/refactor_image_download/images/
+/playground/js-anti-obfuscation/

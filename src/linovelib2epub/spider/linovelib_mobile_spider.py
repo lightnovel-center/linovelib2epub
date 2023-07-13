@@ -85,6 +85,135 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return None
 
     def _crawl_book_content(self, catalog_url):
+        def _anti_js_obfuscation(html):
+            """
+            recover original text of the novel content.
+
+            :param html:
+            :return: html after anti-js obfuscation
+            """
+            mapping_dict = {
+                '“': "「",
+                '’': "』",
+                "": "是",
+                "": "不",
+                "": "他",
+                "": "个",
+                "": "来",
+                "": "大",
+                "": "子",
+                "": "说",
+                "": "年",
+                "": "那",
+                "": "她",
+                "": "得",
+                "": "自",
+                "": "家",
+                "": "而",
+                "": "去",
+                "": "小",
+                "": "于",
+                "": "么",
+                "": "好",
+                "": "发",
+                "": "成",
+                "": "事",
+                "": "用",
+                "": "道",
+                "": "种",
+                "": "乳",
+                "": "茎",
+                "": "肉",
+                "": "胸",
+                "": "淫",
+                "": "射",
+                "": "骚",
+                '”': "」",
+                "": "的",
+                "": "了",
+                "": "人",
+                "": "有",
+                "": "上",
+                "": "到",
+                "": "地",
+                "": "中",
+                "": "生",
+                "": "着",
+                "": "和",
+                "": "出",
+                "": "里",
+                "": "以",
+                "": "可",
+                "": "过",
+                "": "能",
+                "": "多",
+                "": "心",
+                "": "之",
+                "": "看",
+                "": "当",
+                "": "只",
+                "": "把",
+                "": "第",
+                "": "想",
+                "": "开",
+                "": "阴",
+                "": "欲",
+                "": "交",
+                "": "私",
+                "": "臀",
+                "": "脱",
+                "": "唇",
+                '‘': "『",
+                "": "一",
+                "": "我",
+                "": "在",
+                "": "这",
+                "": "们",
+                "": "时",
+                "": "为",
+                "": "你",
+                "": "国",
+                "": "就",
+                "": "要",
+                "": "也",
+                "": "后",
+                "": "会",
+                "": "下",
+                "": "天",
+                "": "对",
+                "": "然",
+                "": "学",
+                "": "都",
+                "": "起",
+                "": "没",
+                "": "如",
+                "": "还",
+                "": "样",
+                "": "作",
+                "": "美",
+                "": "液",
+                "": "呻",
+                "": "性",
+                "": "穴",
+                "": "舔",
+                "": "裸",
+            }
+
+            table = str.maketrans(mapping_dict)
+            res = html.translate(table)
+            return res
+
+        def _sanitize_html(html):
+            """
+            strip useless script on body tag by reg or soup library method.
+
+            e.g. <script>zation();</script>
+
+            :param html:
+            :return:
+            """
+            return re.sub(r'<script.+?</script>', '', html, flags=re.DOTALL)
+
         book_catalog_rs = None
         try:
             book_catalog_rs = request_with_retry(self.session,
@@ -196,14 +325,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             if image_src:
                                 data_src_value = re.search('(?<= data-src=").*?(?=")', str(image))
                                 src_value = re.search('(?<= src=").*?(?=")', str(image))
-
                                 local_image_uri = self.get_image_filename(data_src_value.group())
-
-                            # img tag format: <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
+                            # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
                             else:
                                 image_src = image.get("src")
                                 src_value = re.search('(?<= src=").*?(?=")', str(image))
-
                                 local_image_uri = self.get_image_filename(src_value.group())
 
                             # local_image_uri is "[volume_img_folder]/[filename]"
@@ -219,7 +345,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                             illustration_dict[volume['vid']].append(image_src)
 
-                        article = self._sanitize_html(article)
+                        article = _sanitize_html(article)
+                        article = _anti_js_obfuscation(article)
                         chapter_content += article
 
                         self.logger.info(f'Processing page... {page_link}')
@@ -229,7 +356,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     chapter_list.append(new_chapter)
 
                 # removing duplicate images in the first chapter
-                def filter_duplicate_images(match, img_src_list):
+                def _filter_duplicate_images(match, img_src_list):
                     img = match.group()
                     img_src = re.search('(?<= src=").*?(?=")', match.group()).group()
                     if img_src in img_src_list:
@@ -244,7 +371,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     img_src_list.extend(
                         [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
                     )
-                chapter_list[0].content = re.sub('<img.*?/>', lambda match: filter_duplicate_images(match, img_src_list), chapter_list[0].content)
+                chapter_list[0].content = re.sub('<img.*?/>',
+                                                 lambda match: _filter_duplicate_images(match, img_src_list),
+                                                 chapter_list[0].content)
 
                 for chapter in chapter_list:
                     new_volume.add_chapter(
@@ -253,22 +382,35 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         content=chapter.content
                     )
 
-                # store [volume_img_folder] and [volume_cover] in volume dict
+                def _resolve_img_folders(img_list) -> set:
+                    unique_folders = set()
+                    for idx, image in enumerate(img_list):
+                        path = self.get_image_filename(image)
+                        folder, _ = path.split("/")
+                        unique_folders.add(folder)
+                    return unique_folders
+
+                # store [volume_img_folders] and [volume_cover] in volume dict
                 if illustration_dict[volume['vid']]:
-                    cover_image_url = illustration_dict[volume['vid']][0]
+                    volume_images = illustration_dict[volume['vid']]
+
+                    cover_image_url = volume_images[0]
                     path = self.get_image_filename(cover_image_url)
-                    new_volume.volume_img_folder, new_volume.volume_cover = path.split("/")
+                    new_volume.volume_cover = path
+
+                    # BUG case: https://w.linovelib.com/novel/3728/catalog 后记章节，图片缺失
+                    # 这里代码有问题，一卷也可以存在多个volume_id，folder应该定义为list
+                    new_volume.volume_img_folders = _resolve_img_folders(volume_images)
 
                 new_novel.add_volume(
                     vid=new_volume.vid,
                     title=new_volume.title,
                     chapters=new_volume.chapters,
-                    volume_img_folder=new_volume.volume_img_folder,
+                    volume_img_folders=new_volume.volume_img_folders,
                     volume_cover=new_volume.volume_cover
                 )
 
             new_novel.set_illustration_dict(illustration_dict)
-
             return new_novel
 
         else:
@@ -306,18 +448,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         answers = inquirer.prompt(questions)
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
-
-    @staticmethod
-    def _sanitize_html(html):
-        """
-        strip useless script on body tag by reg or soup method.
-
-        e.g. <script>zation();</script>
-
-        :param html:
-        :return:
-        """
-        return re.sub(r'<script.+?</script>', '', html, flags=re.DOTALL)
 
     def _convert_to_catalog_list(self, catalog_html_lis):
         # return example:

@@ -12,6 +12,7 @@ from rich.logging import RichHandler
 
 DEFAULT_LOG_FOLDER = os.path.join(os.path.dirname(os.getcwd()), 'logs')
 
+
 class Logger:
     LEVEL_MAP = {
         'INFO': INFO,
@@ -80,69 +81,3 @@ class Logger:
 
     def get_logger(self):
         return self.logger
-
-
-class MultiprocessingLogHelper:
-
-    def __init__(self, queue, log_name, log_file_path = None):
-        self.queue = queue
-        self.log_name = log_name
-        self.log_file_path = log_file_path or DEFAULT_LOG_FOLDER
-        self.logger = self.listener_configurer()
-
-    def listener_configurer(self):
-        """ Configures and returns a log file based on
-        the given name
-
-        Arguments:
-            log_name (str): String of the log name to use
-            log_file_path (str): String of the log file path
-
-        Returns:
-            logger: configured logging object
-        """
-        logger = logging.getLogger(self.log_name)
-
-        # fh = logging.FileHandler(
-        #     path.join(self.log_file_path, f'{self.log_name}.log'), encoding='utf-8')
-        # fmtr = logging.Formatter(
-        #     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        # fh.setFormatter(fmtr)
-        logger.setLevel(logging.INFO)
-
-        # current_fh_names = [fh.__dict__.get(
-        #     'baseFilename', '') for fh in logger.handlers]
-        # if not fh.__dict__['baseFilename'] in current_fh_names:  # This prevents multiple logs to the same file
-        #     logger.addHandler(fh)
-
-        stream_hanlder = StreamHandler()
-        # logger.addHandler(fh)
-        logger.addHandler(stream_hanlder)
-
-        return logger
-
-    def listener_process(self):
-        """ Listener process is a target for a multiprocess process
-        that runs and listens to a queue for logging events.
-
-        Arguments:
-            queue (multiprocessing.manager.Queue): queue to monitor
-            configurer (func): configures loggers
-            log_name (str): name of the log to use
-
-        Returns:
-            None
-        """
-        self.listener_configurer()
-
-        while True:
-            try:
-                record = self.queue.get()
-                if record is None:
-                    break
-                print(f'record: {record}')
-                logger = logging.getLogger(record.name)
-                logger.handle(record)
-            except Exception:
-                print('Failure in listener_process', file=sys.stderr)
-                traceback.print_last(limit=1, file=sys.stderr)

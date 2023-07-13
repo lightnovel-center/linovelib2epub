@@ -101,7 +101,7 @@ def main():
                                        args=(queue, listener_configurer))
     listener.start()
 
-    # 3
+    # 3 here use fixed number processes, not very flexible
     workers = []
     for i in range(10):
         worker = multiprocessing.Process(target=worker_process,

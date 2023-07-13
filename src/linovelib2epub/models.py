@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Set
 
 
 @dataclass
@@ -15,14 +15,14 @@ class LightNovelVolume:
     title: str = ''
     chapters: list = field(default_factory=list)
 
-    # volume_img_folder is used to extract images in specific volume when "divide_volume=True"
-    volume_img_folder: str = ''
+    # The set "volume_img_folders" is used to extract images in specific volume when "divide_volume=True"
+    volume_img_folders: set = field(default_factory=set)
     # volume_cover is used as the cover image in specific volume when "divide_volume=True"
     volume_cover: str = ''
 
     # example: https://img.linovelib.com/0/682/117077/50675.jpg
-    # volume_img_folder = "117077"
-    # volume_cover = "50677.jpg"
+    # volume_img_folder = {"117077","117900"} or {"117097"}
+    # volume_cover = "117077/50677.jpg"
 
     def add_chapter(self, cid: Union[int, str], title: str = '', content: str = ''):
         new_chapter = {
@@ -81,12 +81,13 @@ class LightNovel:
                 image_set.add(value)
         return image_set
 
-    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None, volume_img_folder: str = '', volume_cover: str = ''):
+    def add_volume(self, vid: Union[int, str], title: str = '', chapters: List = None, volume_img_folders: Set = None,
+                   volume_cover: str = ''):
         new_volume = {
             'vid': vid,
             'title': title,
             'chapters': chapters if chapters else [],
-            'volume_img_folder': volume_img_folder,
+            'volume_img_folders': volume_img_folders if volume_img_folders else set(),
             'volume_cover': volume_cover,
         }
         self.volumes.append(new_volume)
