@@ -1,16 +1,12 @@
-import logging
 import os
-import sys
-import traceback
 from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler,
-                     Formatter, StreamHandler, getLogger)
-from os import path
+                     Formatter, getLogger)
 from time import localtime, strftime
 from typing import Optional
 
 from rich.logging import RichHandler
 
-DEFAULT_LOG_FOLDER = os.path.join(os.path.dirname(os.getcwd()), 'logs')
+DEFAULT_LOG_FOLDER = os.path.join(os.getcwd(), 'logs')
 
 
 class Logger:

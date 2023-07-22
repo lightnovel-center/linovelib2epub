@@ -1,13 +1,14 @@
 import asyncio
 import logging
-from typing import Iterable, Optional
+import os
+from typing import Iterable
 
 import aiofiles
 import aiohttp as aiohttp
 from aiohttp import ClientSession
+
 from linovelib2epub.logger import Logger
 from linovelib2epub.utils import check_image_integrity
-
 from utils import async_timed, get_image_urls
 
 
@@ -127,6 +128,11 @@ def download_sync():
 
 
 if __name__ == '__main__':
+    # path = os.path.join(os.path.dirname(os.getcwd()), 'logs')
+    # print(os.getcwd())
+    # print(os.path.dirname(os.getcwd()))
+    # D:\Code\lightnovel-center\linovelib2epub\playground\logs
+
     download_sync()
     # asyncio.run(test_aiofiles())
 

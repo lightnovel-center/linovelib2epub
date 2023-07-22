@@ -93,6 +93,10 @@ if __name__ == '__main__':
 ```
 pip install linovelib2epub
 ```
+Or update to the latest version:
+```
+pip install linovelib2epub --upgrade
+```
 2. create a python file and edit the content as follows:
 ```python
 from linovelib2epub.linovel import Linovelib2Epub

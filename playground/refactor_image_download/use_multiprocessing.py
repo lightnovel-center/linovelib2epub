@@ -34,7 +34,7 @@ def download_image(url: str) -> Optional[str]:
 
 @async_timed()
 async def main():
-    image_sets = get_image_urls()
+    image_sets = set(get_image_urls())
     print(len(image_sets))
     # benchmark: 15 22 24 28 15 => AVG 20.8
     download_images(image_sets)
