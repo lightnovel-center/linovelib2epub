@@ -47,6 +47,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return '/'.join(url.split("/")[-2:])
 
     def _init_http_client(self):
+        """
+        Tunes http session as needed.
+
+        Guideline: Don't move many concrete init logics to super class __init__()
+        """
         self.session = requests.Session()
 
         if self.spider_settings["disable_proxy"]:
@@ -249,19 +254,19 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             url_next = ''
 
             volume_id = 0
-            for volume in catalog_list:
+            for volume_dict in catalog_list:
                 volume_id += 1
 
                 new_volume = LightNovelVolume(vid=volume_id)
-                new_volume.title = volume['volume_title']
+                new_volume.title = volume_dict['volume_title']
 
-                self.logger.info(f'volume: {volume["volume_title"]}')
+                self.logger.info(f'volume: {volume_dict["volume_title"]}')
 
-                illustration_dict.setdefault(volume['vid'], [])
+                illustration_dict.setdefault(volume_dict['vid'], [])
 
                 chapter_id = -1
                 chapter_list = []  # store chapter for removing duplicate images in the first chapter
-                for chapter in volume['chapters']:
+                for chapter in volume_dict['chapters']:
                     chapter_content = ''
                     chapter_title = chapter[0]
                     chapter_id += 1
@@ -343,7 +348,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             # replace all remote images src to local file path
                             article = article.replace(str(image), new_image)
 
-                            illustration_dict[volume['vid']].append(image_src)
+                            illustration_dict[volume_dict['vid']].append(image_src)
 
                         article = _sanitize_html(article)
                         article = _anti_js_obfuscation(article)
@@ -391,8 +396,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     return unique_folders
 
                 # store [volume_img_folders] and [volume_cover] in volume dict
-                if illustration_dict[volume['vid']]:
-                    volume_images = illustration_dict[volume['vid']]
+                if illustration_dict[volume_dict['vid']]:
+                    volume_images = illustration_dict[volume_dict['vid']]
 
                     cover_image_url = volume_images[0]
                     path = self.get_image_filename(cover_image_url)
@@ -449,7 +454,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
 
-    def _convert_to_catalog_list(self, catalog_html_lis):
+    def _convert_to_catalog_list(self, catalog_html_lis) -> list:
         # return example:
         # [{vid:1,volume_title: "XX", chapters:[[xxx,u1,u2,u3],[xx,u1,u2],[...] ]},{},{}]
 

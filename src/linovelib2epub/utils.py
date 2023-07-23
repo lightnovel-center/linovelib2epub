@@ -1,39 +1,45 @@
 import asyncio
+import logging
 import os
 import re
 import time
 from functools import wraps
 from http.cookies import SimpleCookie
-from typing import Any, Callable
+from typing import Any, Callable, Dict, Union, NoReturn, Optional
 
 import pkg_resources
 from fake_useragent import UserAgent
 
 
-def cookiedict_from_str(str=''):
-    cookie = SimpleCookie()
-    cookie.load(str)
+def cookiedict_from_str(cookie_str: str = '') -> Dict[str, str]:
+    cookie: SimpleCookie[str] = SimpleCookie()
+    cookie.load(cookie_str)
     cookie_dict = {k: v.value for k, v in cookie.items()}
     return cookie_dict
 
 
-def random_useragent():
+def random_useragent() -> str:
     try:
-        return UserAgent().random
+        return UserAgent().random  # type: ignore
     except (Exception,):
         return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
 
 
-def create_folder_if_not_exists(path):
+def create_folder_if_not_exists(path: str) -> None:
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def request_with_retry(client, url, headers=None, retry_max=5, timeout=10, logger=None):
+def request_with_retry(client: Any,
+                       url: str,
+                       headers: Dict[str, Any] | None = None,
+                       retry_max: int = 5,
+                       timeout: int = 10,
+                       logger: Any = None) -> Any:
     if headers is None:
         headers = {}
 
-    current_num_of_request = 0
+    current_num_of_request: int = 0
 
     while current_num_of_request <= retry_max:
         try:
@@ -42,7 +48,7 @@ def request_with_retry(client, url, headers=None, retry_max=5, timeout=10, logge
                 return response
             else:
                 if logger:
-                    logger.warn(f'Request {url} succeed but data is empty.')
+                    logger.warning(f'Request {url} succeed but data is empty.')
                 time.sleep(1)
         except (Exception,) as e:
             if logger:
@@ -51,12 +57,12 @@ def request_with_retry(client, url, headers=None, retry_max=5, timeout=10, logge
 
         current_num_of_request += 1
         if logger:
-            logger.warn('current_num_of_request: ', current_num_of_request)
+            logger.warning('current_num_of_request: ', current_num_of_request)
 
     return None
 
 
-def is_valid_image_url(url):
+def is_valid_image_url(url: str) -> bool:
     """
     Example image link: https://img.linovelib.com/3/3211/163938/193293.jpg
     Refer: https://www.ietf.org/rfc/rfc2396.txt, https://stackoverflow.com/a/169631
@@ -68,7 +74,7 @@ def is_valid_image_url(url):
     return bool(re.match(image_pattern, url))
 
 
-def check_image_integrity(expected_length, actual_length):
+def check_image_integrity(expected_length: str | int, actual_length: str | int) -> None | NoReturn:
     """
     check file integrity by comparing expected_get and actual_get
 
@@ -83,22 +89,24 @@ def check_image_integrity(expected_length, actual_length):
                 'incomplete read ({} bytes get, {} bytes expected)'.format(actual_length, expected_length)
             )
 
+    return None
+
 
 # Replace invalid character for file/folder name
-def sanitize_pathname(pathname):
+def sanitize_pathname(pathname: str) -> str:
     # '/ \ : * ? " < > |'
     return re.sub(r"[\/\\\:\*\?\"\<\>\|]", "_", pathname)
 
 
-def read_pkg_resource(file_path=''):
+def read_pkg_resource(file_path: str) -> bytes:
     # file_path example: "./styles/chapter.css"
     return pkg_resources.resource_string(__name__, file_path)
 
 
-def async_timed():
-    def wrapper(func: Callable) -> Callable:
+def async_timed() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapped(*args, **kwargs) -> Any:
+        async def wrapped(*args: Any, **kwargs: Any) -> Any:
             print(f'starting {func} with args {args} {kwargs}')
             start = time.time()
             try:
@@ -111,5 +119,6 @@ def async_timed():
 
     return wrapper
 
-def is_async(func):
+
+def is_async(func: Callable[..., Any]) -> bool:
     return asyncio.iscoroutinefunction(func)

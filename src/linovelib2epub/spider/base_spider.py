@@ -5,10 +5,11 @@ import time
 from abc import ABC, abstractmethod
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable, Awaitable, Union, Dict, Any
 
 import aiofiles
 import aiohttp as aiohttp
+import requests
 from aiohttp import ClientSession
 from requests.exceptions import ProxyError
 
@@ -25,22 +26,25 @@ ASYNCIO = 'ASYNCIO'
 
 class BaseNovelWebsiteSpider(ABC):
 
-    def __init__(self, spider_settings: Optional[dict] = None):
+    def __init__(self, spider_settings: Dict[str, Any]) -> None:
         self.spider_settings = spider_settings
-        self.logger = Logger(logger_name=self.__class__.__name__,
+        self.logger = Logger(logger_name=type(self).__name__,
                              log_filename=self.spider_settings["log_filename"]).get_logger()
+
+        # in base class, http session is bare
+        self.session = requests.session()
 
     @abstractmethod
     def fetch(self) -> LightNovel:
-        raise NotImplementedError()
+        raise NotImplementedError("Note: subclass must implement this method to do real fetch logic.")
 
-    def request_headers(self) -> dict:
+    def request_headers(self) -> Dict[str, Any]:
         return {}
 
-    def get_image_filename(self, url) -> str:
+    def get_image_filename(self, url: str) -> str:
         return url.rsplit('/', 1)[1]
 
-    def download_images_by_multiprocessing(self, urls: Iterable = None) -> None:
+    def download_images_by_multiprocessing(self, urls: Iterable[str] | None = None) -> None:
         if urls is None:
             urls = set()
         else:
@@ -68,7 +72,7 @@ class BaseNovelWebsiteSpider(ABC):
         if download_image_miss_quota <= 0:
             self.logger.info('The result of downloading pictures is perfect.')
         else:
-            self.logger.warn('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
+            self.logger.warning('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
 
     def _download_image_legacy(self, url: str) -> Optional[str]:
         """
@@ -78,7 +82,7 @@ class BaseNovelWebsiteSpider(ABC):
         :return: original url if failed, or None if succeeded.
         """
         if not is_valid_image_url(url):
-            return
+            return None
 
         filename = self.get_image_filename(url)
         save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
@@ -87,7 +91,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         filename_path = Path(save_path)
         if filename_path.exists():
-            return
+            return None
 
         # url is valid and never downloaded
         try:
@@ -104,11 +108,12 @@ class BaseNovelWebsiteSpider(ABC):
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
                 # HAPPY PATH
+                return None
             except (Exception,):
                 # SAD PATH
                 return url
 
-    async def download_images_by_asyncio(self, urls: Iterable = None):
+    async def download_images_by_asyncio(self, urls: Iterable[str] | None = None) -> None:
         if urls is None:
             urls = set()
         else:
@@ -160,6 +165,7 @@ class BaseNovelWebsiteSpider(ABC):
             self.logger.info(f"The image to download is alreay downloaded at {filename_path}.skip.")
             return
 
+        # todo timeout use settings value, don't hardcode
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
         async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
             if resp.status < 400:
@@ -179,14 +185,14 @@ class BaseNovelWebsiteSpider(ABC):
                 # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
                 pass
 
-    def post_fetch(self, novel: LightNovel):
+    def post_fetch(self, novel: LightNovel) -> None:
         self._save_novel_pickle(novel)
 
         start = time.perf_counter()
         self._process_image_download(novel)
         self.logger.info('(Perf metrics) Download Images took: {} seconds'.format(time.perf_counter() - start))
 
-    def _process_image_download(self, novel):
+    def _process_image_download(self, novel: LightNovel) -> None:
         create_folder_if_not_exists(self.spider_settings["image_download_folder"])
 
         strategy_to_method = {
@@ -194,16 +200,17 @@ class BaseNovelWebsiteSpider(ABC):
             ASYNCIO: self.download_images_by_asyncio,
             # add more
         }
-        _download_image = strategy_to_method.get(self.spider_settings['image_download_strategy'],
-                                                 self.download_images_by_asyncio)
+        _download_image: Callable[[Iterable], Union[None, Awaitable[None]]] = strategy_to_method.get(
+            self.spider_settings['image_download_strategy'],
+            self.download_images_by_asyncio)
 
         self.logger.info(f"Image download strategy: {self.spider_settings['image_download_strategy']}")
 
         if self.spider_settings['has_illustration']:
-            image_set = novel.get_illustration_set()
+            image_set: set = novel.get_illustration_set()
             image_set.add(novel.book_cover)
         else:
-            image_set = {novel.book_cover}
+            image_set: set = {novel.book_cover}
 
         if is_async(_download_image):
             asyncio.run(_download_image(image_set))

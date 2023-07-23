@@ -6,33 +6,34 @@ import time
 import urllib.parse
 import uuid
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any, List, cast, Set
 
 from ebooklib import epub
 from PIL import Image
+from ebooklib.epub import EpubItem, EpubBook, EpubHtml
 from rich import print as rich_print
 from rich.prompt import Confirm
 
 from . import settings
 from .exceptions import LinovelibException
 from .logger import Logger
-from .models import LightNovel
-from .spider import ASYNCIO, LinovelibMobileSpider
+from .models import LightNovel, LightNovelVolume
+from .spider import ASYNCIO, LinovelibMobileSpider  # type: ignore[attr-defined]
 from .utils import (create_folder_if_not_exists, random_useragent,
                     read_pkg_resource, sanitize_pathname)
 
 
 class EpubWriter:
 
-    def __init__(self, epub_settings) -> None:
+    def __init__(self, epub_settings: Dict[str, Any]) -> None:
         self.epub_settings = epub_settings
-        self.logger = Logger(logger_name=__class__.__name__,
+        self.logger = Logger(logger_name=type(self).__name__,
                              log_filename=self.epub_settings["log_filename"]).get_logger()
 
-    def dump_settings(self):
+    def dump_settings(self) -> None:
         self.logger.info(self.epub_settings)
 
-    def write(self, novel: LightNovel):
+    def write(self, novel: LightNovel) -> None:
         start = time.perf_counter()
         self.logger.info(f'[Config]: has_illustration: {self.epub_settings["has_illustration"]};'
                          f' divide_volume: {self.epub_settings["divide_volume"]}')
@@ -47,9 +48,9 @@ class EpubWriter:
         else:
             for volume in novel.volumes:
                 # if volume image folder is not empty, then use the first image as the cover
-                if volume["volume_cover"]:
-                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume["volume_cover"]}'
-                self._write_epub(f'{book_title}_{volume["title"]}', author, volume, cover_file)
+                if volume.volume_cover:
+                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume.volume_cover}'
+                self._write_epub(f'{book_title}_{volume.title}', author, volume, cover_file)
 
         # tips: show output file folder
         output_folder = os.path.join(os.getcwd(), self._get_output_folder())
@@ -57,7 +58,12 @@ class EpubWriter:
         rich_print(f"The output epub is located in [link={output_folder}]this folder[/link]. "
                    f"(You can see the link if you use a modern shell.)")
 
-    def _write_epub(self, title, author, volumes, cover_file, cover_filename: str = None):
+    def _write_epub(self,
+                    title: str,
+                    author: str,
+                    volumes: List[LightNovelVolume] | LightNovelVolume,
+                    cover_file: str,
+                    cover_filename: str | None = None) -> None:
         """
 
         :param title: for one epub has many volumes, the title should be book title.
@@ -84,12 +90,16 @@ class EpubWriter:
         book.spine = ["nav", ]
 
         default_style_chapter = self._get_default_chapter_style()
-        custom_style_chapter = self._get_cutom_chapter_style()
+        custom_style_chapter = self._get_custom_chapter_style()
 
         chapter_index = -1
         file_index = -1
 
-        def _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title):
+        def _write_volume(book: EpubBook,
+                          custom_style_chapter: EpubItem | None,
+                          default_style_chapter: EpubItem | None,
+                          volume: LightNovelVolume,
+                          volume_title: str) -> None:
             # reset content
             write_content = ""
             # use outer scope counters
@@ -103,19 +113,19 @@ class EpubWriter:
                 book.toc.append([epub.Link(f"{file_index + 1}.xhtml", volume_title, str(uuid.uuid4())), []])
 
             chapter_index += 1
-            for chapter in volume['chapters']:
+            for chapter in volume.chapters:
                 file_index += 1
-                chapter_title = chapter['title']
+                chapter_title = chapter.title
 
                 if not self.epub_settings["divide_volume"]:
                     # chapter_title as h2
                     html_chapter_title = "<h2>" + chapter_title + "</h2>"
-                    write_content += html_chapter_title + str(chapter["content"]).replace(
+                    write_content += html_chapter_title + str(chapter.content).replace(
                         """<div class="acontent" id="acontent">""", "")
                 else:
                     # chapter_title as h1
                     html_chapter_title = "<h1>" + chapter_title + "</h1>"
-                    write_content += html_chapter_title + str(chapter["content"]).replace(
+                    write_content += html_chapter_title + str(chapter.content).replace(
                         """<div class="acontent" id="acontent">""", "")
 
                 write_content = write_content.replace('png', 'jpg')
@@ -137,16 +147,22 @@ class EpubWriter:
 
                 write_content = ""
 
+        volume_img_folders: str | Set[str] | None = None
+
         if not self.epub_settings["divide_volume"]:
             volume_img_folders = ""
-            for volume in volumes:
-                volume_title = volume['title']
+
+            volumes_list = cast(List[LightNovelVolume], volumes)  # Cast to List[LightNovelVolume]
+            for volume in volumes_list:
+                volume_title = volume.title
                 _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
         else:
             create_folder_if_not_exists(self._novel_book_title)
-            volume = volumes
+
+            single_volume = cast(LightNovelVolume, volumes)  # Cast to LightNovelVolume
+            volume = single_volume
             volume_title = title
-            volume_img_folders = volume['volume_img_folders']
+            volume_img_folders = volume.volume_img_folders
             _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
 
         # DEFAULT CHAPTER STYLE & CUSTOM CHAPTER STYLE
@@ -158,7 +174,7 @@ class EpubWriter:
         images_folder = self.epub_settings["image_download_folder"]
         # handle volume_img_folders
         if volume_img_folders == "":
-            volume_img_folder = volume_img_folders
+            volume_img_folder = cast(str, volume_img_folders)
             self._add_images(book, images_folder, volume_img_folder)
         else:
             # now volume_img_folders is a collection
@@ -172,7 +188,7 @@ class EpubWriter:
         cover_html = book.get_item_with_id('cover')
         self._set_default_cover_style(book, cover_html)
         if self.epub_settings["custom_style_cover"]:
-            self._set_cutom_cover_style(book, cover_html)
+            self._set_custom_cover_style(book, cover_html)
 
         # NAV STYLE
         nav_html = book.get_item_with_id('nav')
@@ -183,22 +199,27 @@ class EpubWriter:
         # FINAL WRITE
         # if divide volume, create a folder named title, or leave folder as "“
         out_folder = self._get_output_folder()
+        prefix = ""
         if not self.epub_settings["divide_volume"]:
             prefix = ""
         else:
-            prefix = "%02d." % volume['vid']
+            if volume.vid is not None:
+                prefix = "%02d." % int(volume.vid)
 
         epub.write_epub(sanitize_pathname(out_folder) + "/" + prefix + sanitize_pathname(title) + '.epub', book)
 
     @staticmethod
-    def _set_page_style(book, custom_style_chapter, default_style_chapter, page):
+    def _set_page_style(book: EpubBook,
+                        custom_style_chapter: EpubItem | None,
+                        default_style_chapter: EpubItem | None,
+                        page: EpubHtml) -> None:
         page.add_item(default_style_chapter)
         if custom_style_chapter:
             page.add_item(custom_style_chapter)
         book.add_item(page)
 
-    def _add_images(self, book, images_folder, volume_img_folder):
-        def _add_image(image_file):
+    def _add_images(self, book: EpubBook, images_folder: str, volume_img_folder: str) -> None:
+        def _add_image(image_file: str) -> None:
             if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
                 return
             try:
@@ -229,14 +250,14 @@ class EpubWriter:
                     for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
                         _add_image(image_file)
 
-    def _get_output_folder(self):
+    def _get_output_folder(self) -> str:
         if self.epub_settings['divide_volume']:
             out_folder = str(self._novel_book_title)
         else:
             out_folder = '.'
         return out_folder
 
-    def _get_cutom_chapter_style(self):
+    def _get_custom_chapter_style(self) -> EpubItem | None:
         if self.epub_settings["custom_style_chapter"]:
             custom_style_chapter = epub.EpubItem(uid="style_chapter_custom", file_name="styles/chapter_custom.css",
                                                  media_type="text/css",
@@ -246,33 +267,36 @@ class EpubWriter:
 
         return custom_style_chapter
 
-    def _get_default_chapter_style(self):
+    @staticmethod
+    def _get_default_chapter_style() -> EpubItem:
         style_chapter = read_pkg_resource('./styles/chapter.css')
         default_style_chapter = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
                                               media_type="text/css", content=style_chapter)
         return default_style_chapter
 
-    def _set_cutom_cover_style(self, book, cover_html):
+    def _set_custom_cover_style(self, book: EpubBook, cover_html: EpubHtml) -> None:
         custom_style_cover = epub.EpubItem(uid="style_cover_custom", file_name="styles/cover_custom.css",
                                            media_type="text/css",
                                            content=self.epub_settings["custom_style_cover"])
         cover_html.add_item(custom_style_cover)
         book.add_item(custom_style_cover)
 
-    def _set_default_cover_style(self, book, cover_html):
+    @staticmethod
+    def _set_default_cover_style(book: EpubBook, cover_html: EpubHtml) -> None:
         default_style_cover_content = read_pkg_resource('./styles/cover.css')
         default_style_cover = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
                                             content=default_style_cover_content)
         cover_html.add_item(default_style_cover)
         book.add_item(default_style_cover)
 
-    def _set_custom_nav_style(self, book, nav_html):
+    def _set_custom_nav_style(self, book: EpubBook, nav_html: EpubHtml) -> None:
         custom_style_nav = epub.EpubItem(uid="style_nav_custom", file_name="styles/nav_custom.css",
                                          media_type="text/css", content=self.epub_settings["custom_style_nav"])
         nav_html.add_item(custom_style_nav)
         book.add_item(custom_style_nav)
 
-    def _set_default_nav_style(self, book, nav_html):
+    @staticmethod
+    def _set_default_nav_style(book: EpubBook, nav_html: EpubHtml) -> None:
         default_style_nav_content = read_pkg_resource('./styles/nav.css')
         default_style_nav = epub.EpubItem(uid="style_nav", file_name="styles/nav.css",
                                           media_type="text/css", content=default_style_nav_content)
@@ -280,7 +304,7 @@ class EpubWriter:
         book.add_item(default_style_nav)
 
 
-class Linovelib2Epub():
+class Linovelib2Epub:
 
     def __init__(self,
                  book_id: Optional[Union[int, str]] = None,
@@ -294,9 +318,9 @@ class Linovelib2Epub():
                  http_timeout: int = settings.HTTP_TIMEOUT,
                  http_retries: int = settings.HTTP_RETRIES,
                  http_cookie: str = settings.HTTP_COOKIE,
-                 custom_style_cover: str = None,
-                 custom_style_nav: str = None,
-                 custom_style_chapter: str = None,
+                 custom_style_cover: str | None = None,
+                 custom_style_nav: str | None = None,
+                 custom_style_chapter: str | None = None,
                  disable_proxy: bool = settings.DISABLE_PROXY,
                  image_download_strategy: str = ASYNCIO,
                  ):
@@ -312,7 +336,7 @@ class Linovelib2Epub():
         # identify one-time unique crawl
         # - use for novel_pickle_path
         # - use for a unique log_file name instead of timestamp to avoid big file in one day.
-        run_identifier = f'{u.hostname}_{book_id}'
+        run_identifier: str = f'{u.hostname}_{book_id}'
 
         self.common_settings = {
             'book_id': book_id,
@@ -347,16 +371,20 @@ class Linovelib2Epub():
         }
         self._epub_writer = EpubWriter(epub_settings=self.epub_settings)
 
-        self.logger = Logger(logger_name=__class__.__name__,
-                             log_filename=self.common_settings["log_filename"]).get_logger()
+        log_filename = self.common_settings["log_filename"]
+        log_filename_str = cast(str, log_filename)
+        self.logger = Logger(logger_name=type(self).__name__,
+                             log_filename=log_filename_str).get_logger()
 
-    def run(self):
+    def run(self) -> None:
         # recover from last work. only support this format: [hostname]_3573.pickle
         # 1.solve novel pickle
-        novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
+        pickle_path = self.common_settings['novel_pickle_path']
+        pickle_path = cast(str, pickle_path)
+        novel_pickle_path = Path(pickle_path)
         if novel_pickle_path.exists():
             if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
-                with open(self.common_settings['novel_pickle_path'], 'rb') as fp:
+                with open(pickle_path, 'rb') as fp:
                     novel = pickle.load(fp)
             else:
                 os.remove(novel_pickle_path)
@@ -378,12 +406,14 @@ class Linovelib2Epub():
 
             self.logger.info('=' * 80)
 
-    def _cleanup(self):
+    def _cleanup(self) -> None:
         # clean temporary files if clean_artifacts option is set to True
         if self.common_settings['clean_artifacts']:
-            novel_pickle_path = Path(self.common_settings['novel_pickle_path'])
+            pickle_path = self.common_settings['novel_pickle_path']
+            pickle_path = cast(str, pickle_path)
+            novel_pickle_path = Path(pickle_path)
             try:
-                shutil.rmtree(self.common_settings['image_download_folder'])
+                shutil.rmtree(self.common_settings['image_download_folder'])  # type: ignore[arg-type]
                 os.remove(novel_pickle_path)
             except (Exception,):
                 pass

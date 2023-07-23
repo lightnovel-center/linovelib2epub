@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 name = "linovelib2epub"
 description = "Craw light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = [
     'ebook',
     'epub',
@@ -28,8 +28,6 @@ classifiers = [
     "Natural Language :: Chinese (Traditional)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries",
@@ -73,10 +71,27 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 
 [tool.mypy]
+files = [
+#    "src/linovelib2epub/models.py",
+#    "src/linovelib2epub/utils.py",
+#    "src/linovelib2epub/settings.py",
+#    "src/linovelib2epub/exceptions.py",
+#    "src/linovelib2epub/__init__.py",
+#    "src/linovelib2epub/__about__.py",
+#    "src/linovelib2epub/logger.py",
+#    "src/linovelib2epub/linovel.py",
+    "src/linovelib2epub/spider/base_spider.py",
+]
+#pretty = true
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+# some third-party package has no typings, ignore it
+#See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+ignore_missing_imports = true
 #disallow_untyped_defs = false
 #follow_imports = "normal"
-#ignore_missing_imports = true
-#pretty = true
 #show_column_numbers = true
 #warn_no_return = false
-#warn_unused_ignores = true

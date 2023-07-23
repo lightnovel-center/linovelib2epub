@@ -27,6 +27,12 @@ class User:
 
 user = User('foo', 'Earth')
 print(user.__dict__)
+
+# TypeError: 'User' object is not subscriptable
+# print(user['name'])
+
+# . is ok
+print(user.name)
 print(user)
 
 

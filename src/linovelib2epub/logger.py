@@ -1,6 +1,6 @@
 import os
 from logging import (CRITICAL, DEBUG, ERROR, INFO, WARN, WARNING, FileHandler,
-                     Formatter, getLogger)
+                     Formatter, getLogger, Logger as LoggerAlias)
 from time import localtime, strftime
 from typing import Optional
 
@@ -10,7 +10,7 @@ DEFAULT_LOG_FOLDER = os.path.join(os.getcwd(), 'logs')
 
 
 class Logger:
-    LEVEL_MAP = {
+    NAME_TO_LEVEL = {
         'INFO': INFO,
         'DEBUG': DEBUG,
         'WARN': WARN,
@@ -20,18 +20,18 @@ class Logger:
     }
 
     def __init__(self,
-                 logger_level: Optional[str] = "INFO",
+                 logger_level: str = "INFO",
                  logger_name: Optional[str] = "logger",
                  log_dir: Optional[str] = None,
                  log_filename: Optional[str] = None):
-        self.logger = None
-        self.level = self.LEVEL_MAP.get(logger_level, 'INFO')
+        self.logger: LoggerAlias
+        self.level = self.NAME_TO_LEVEL.get(logger_level, 'INFO')
         self.name = logger_name
         self.log_dir = log_dir or DEFAULT_LOG_FOLDER
         self.log_filename = log_filename or strftime("%Y-%m-%d", localtime())
         self._set_logger()
 
-    def _set_logger(self):
+    def _set_logger(self) -> None:
         try:
             os.makedirs(self.log_dir)
         except (FileExistsError, OSError):
@@ -75,5 +75,5 @@ class Logger:
         self.logger.addHandler(shell_handler)
         self.logger.addHandler(file_handler)
 
-    def get_logger(self):
+    def get_logger(self) -> LoggerAlias:
         return self.logger

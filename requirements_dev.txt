@@ -3,6 +3,9 @@
 # dev
 InquirerPy==0.3.3
 
+# typings
+mypy
+
 # below are dev/build/test dependencies
 wheel
 build
