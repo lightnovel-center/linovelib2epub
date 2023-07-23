@@ -15,11 +15,11 @@ def download_images(urls: Iterable = None, pool_size=os.cpu_count()) -> None:
     else:
         urls = set(urls)
 
-    thread_pool = ThreadPoolExecutor(max_workers=int(pool_size))
-    error_links = thread_pool.map(download_image, urls)
+    with ThreadPoolExecutor(max_workers=int(pool_size)) as thread_pool:
+        error_links = thread_pool.map(download_image, urls)
 
-    while sorted_error_links := list(filter(None, error_links)):
-        error_links = thread_pool.map(download_image, sorted_error_links)
+        while sorted_error_links := list(filter(None, error_links)):
+            error_links = thread_pool.map(download_image, sorted_error_links)
 
 
 def download_image(url: str) -> Optional[str]:

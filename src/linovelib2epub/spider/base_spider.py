@@ -48,13 +48,13 @@ class BaseNovelWebsiteSpider(ABC):
 
         self.logger.info(f'len of image set = {len(urls)}')
 
-        process_pool = Pool(processes=os.cpu_count() or 4)
-        error_links = process_pool.map(self._download_image_legacy, urls)
+        with Pool(processes=os.cpu_count() or 4) as process_pool:
+            error_links = process_pool.map(self._download_image_legacy, urls)
 
-        while sorted_error_links := list(filter(None, error_links)):
-            self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
-            self.logger.info(f'Retry image links: {sorted_error_links}')
-            error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
+            while sorted_error_links := list(filter(None, error_links)):
+                self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
+                self.logger.info(f'Retry image links: {sorted_error_links}')
+                error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
 
         # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [image_download_folder]/[117082]/50748.jpg
         # re-check image download result:
@@ -62,7 +62,8 @@ class BaseNovelWebsiteSpider(ABC):
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
 
-        download_image_miss_quota = len(urls) - sum([len(files) for root, dirs, files in os.walk(self.spider_settings['image_download_folder'])])
+        download_image_miss_quota = len(urls) - sum(
+            [len(files) for root, dirs, files in os.walk(self.spider_settings['image_download_folder'])])
         self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
         if download_image_miss_quota <= 0:
             self.logger.info('The result of downloading pictures is perfect.')

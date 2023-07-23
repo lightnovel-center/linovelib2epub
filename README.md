@@ -22,13 +22,13 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 ## Features
 
 - [x] flexible `has_illustration` and `divide_volume` option for epub output
-- [x] support download a certain volume of a novel
+- [x] support downloading a certain volume of a novel
 - [x] built-in http request retry mechanism to improve network fault tolerance
 - [x] built-in random browser user_agent through fake_useragent library
 - [x] built-in strict integrity check about image download
 - [x] built-in mechanism for saving temporary book data by pickle library
-- [x] use multi-process to download images
-- [x] support add custom css style to epub
+- [x] use multiprocessing to download images
+- [x] support adding custom css styles to epub
 
 ## Supported  Websites (plan)
 
@@ -112,22 +112,24 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 ## Options
 
-| Parameters            | type    | required | default                         | description                                                 |
-| --------------------- | ------- | -------- | ------------------------------- | ----------------------------------------------------------- |
-| book_id               | number  | YES      | None                            | 书籍ID。                                                    |
-| base_url              | string  | NO       | 'https://w.linovelib.com/novel' | 哔哩轻小说主页URL                                           |
-| divide_volume         | boolean | NO       | False                           | 是否分卷                                                    |
-| select_volume_mode     | boolean | NO       | False                           | 选择卷模式，它为True时 divide_volume 强制为True。                                                   |
+| Parameters            | type    | required | default                         | description                                           |
+| --------------------- |---------| -------- |---------------------------------|-------------------------------------------------------|
+| book_id               | number  | YES      | None                            | 书籍ID。                                                 |
+| base_url              | string  | NO       | 'https://w.linovelib.com/novel' | 哔哩轻小说主页URL                                            |
+| divide_volume         | boolean | NO       | False                           | 是否分卷                                                  |
+| select_volume_mode     | boolean | NO       | False                           | 选择卷模式，它为True时 divide_volume 强制为True。                  |
 | has_illustration      | boolean | NO       | True                            | 是否下载插图                                                |
-| image_download_folder | string  | NO       | "images"                        | 图片下载临时文件夹. 不允许以相对路径../开头。               |
-| pickle_temp_folder    | string  | NO       | "pickle"                        | pickle临时数据保存的文件夹。                                |
-| http_timeout          | number  | NO       | 10                              | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。 |
-| http_retries          | number  | NO       | 5                               | 当一个HTTP请求失败后，重试的最大次数。                      |
-| http_cookie           | string  | NO       | ''                              | 自定义HTTP cookie。                                         |
-| custom_style_cover    | string  | NO       | ''               | 自定义cover.xhtml的样式                                     |
-| custom_style_nav      | string  | NO       | ''               | 自定义nav.xhtml的样式                                       |
-| custom_style_chapter  | string  | NO       | ''              | 自定义每章(?.xhtml)的样式                                   |
-|disable_proxy |boolean|NO| True| 是否禁用所在的代理环境，默认禁用|
+| image_download_folder | string  | NO       | "images"                        | 图片下载临时文件夹. 不允许以相对路径../开头。                             |
+| pickle_temp_folder    | string  | NO       | "pickle"                        | pickle临时数据保存的文件夹。                                     |
+| clean_artifacts    | boolean | NO       | True                            | 是否删除临时数据/工件，指的是pickle和下载的图片文件。                        |
+| http_timeout          | number  | NO       | 10                              | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。            |
+| http_retries          | number  | NO       | 5                               | 当一个HTTP请求失败后，重试的最大次数。                                 |
+| http_cookie           | string  | NO       | ''                              | 自定义HTTP cookie。                                       |
+| custom_style_cover    | string  | NO       | ''                              | 自定义cover.xhtml的样式                                     |
+| custom_style_nav      | string  | NO       | ''                              | 自定义nav.xhtml的样式                                       |
+| custom_style_chapter  | string  | NO       | ''                              | 自定义每章(?.xhtml)的样式                                     |
+|disable_proxy | boolean |NO| True                            | 是否禁用所在的代理环境，默认禁用                                      |
+|image_download_strategy | string  |NO| 'ASYNCIO'                            | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
 
 
 ## Todo

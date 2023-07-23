@@ -286,19 +286,20 @@ class Linovelib2Epub():
                  book_id: Optional[Union[int, str]] = None,
                  base_url: str = settings.BASE_URL,
                  divide_volume: bool = settings.DIVIDE_VOLUME,
+                 select_volume_mode: bool = settings.SELECT_VOLUME_MODE,
                  has_illustration: bool = settings.HAS_ILLUSTRATION,
                  image_download_folder: str = settings.IMAGE_DOWNLOAD_FOLDER,
                  pickle_temp_folder: str = settings.PICKLE_TEMP_FOLDER,
                  clean_artifacts: bool = settings.CLEAN_ARTIFACTS,
-                 select_volume_mode: bool = settings.SELECT_VOLUME_MODE,
                  http_timeout: int = settings.HTTP_TIMEOUT,
                  http_retries: int = settings.HTTP_RETRIES,
                  http_cookie: str = settings.HTTP_COOKIE,
-                 disable_proxy: bool = settings.DISABLE_PROXY,
-                 image_download_strategy: str = ASYNCIO,
                  custom_style_cover: str = None,
                  custom_style_nav: str = None,
-                 custom_style_chapter: str = None):
+                 custom_style_chapter: str = None,
+                 disable_proxy: bool = settings.DISABLE_PROXY,
+                 image_download_strategy: str = ASYNCIO,
+                 ):
 
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
