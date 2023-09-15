@@ -42,6 +42,16 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "haruki-nikaidou",
+      "name": "Nikaidou Haruki",
+      "avatar_url": "https://avatars.githubusercontent.com/u/135048882?v=4",
+      "profile": "http://en.blog.nyaame.moe",
+      "contributions": [
+        "bug",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
