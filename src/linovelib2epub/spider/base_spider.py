@@ -165,7 +165,6 @@ class BaseNovelWebsiteSpider(ABC):
             self.logger.info(f"The image to download is alreay downloaded at {filename_path}.skip.")
             return
 
-        # todo timeout use settings value, don't hardcode
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
         async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
             if resp.status < 400:

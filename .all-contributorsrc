@@ -52,6 +52,15 @@
         "bug",
         "code"
       ]
+    },
+    {
+      "login": "kahosan",
+      "name": "kaho",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33192552?v=4",
+      "profile": "https://hitorinbc.com/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
