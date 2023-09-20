@@ -61,6 +61,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "Papersman",
+      "name": "Papersman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/58485012?v=4",
+      "profile": "https://github.com/Papersman",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
