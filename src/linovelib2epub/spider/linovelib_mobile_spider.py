@@ -13,6 +13,7 @@ from ..models import LightNovel, LightNovelChapter, LightNovelVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
                      request_with_retry)
 from . import BaseNovelWebsiteSpider
+from .linovelib_mobile_rules import generate_mapping_rules
 
 
 class LinovelibMobileSpider(BaseNovelWebsiteSpider):
@@ -20,6 +21,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
     def __init__(self, spider_settings: Optional[Dict] = None):
         super().__init__(spider_settings)
         self._init_http_client()
+        self._mapping_rules = generate_mapping_rules()
 
     def dump_settings(self):
         self.logger.info(self.spider_settings)
@@ -97,113 +99,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             :param html:
             :return: html after anti-js obfuscation
             """
-            mapping_dict = {
-                "\u201C": "「",
-                "\u201D": "」",
-                "\u2018": "『",
-                "\u2019": "』",
-                "\uE80C": "的",
-                "\uE80D": "一",
-                "\uE80E": "是",
-                "\uE806": "了",
-                "\uE807": "我",
-                "\uE808": "不",
-                "\uE80F": "人",
-                "\uE810": "在",
-                "\uE811": "他",
-                "\uE812": "有",
-                "\uE809": "这",
-                "\uE80A": "个",
-                "\uE80B": "上",
-                "\uE813": "们",
-                "\uE814": "来",
-                "\uE815": "到",
-                "\uE802": "时",
-                "\uE803": "大",
-                "\uE804": "地",
-                "\uE805": "为",
-                "\uE817": "子",
-                "\uE818": "中",
-                "\uE819": "你",
-                "\uE81D": "说",
-                "\uE81E": "生",
-                "\uE816": "国",
-                "\uE800": "年",
-                "\uE801": "着",
-                "\uE81A": "就",
-                "\uE81B": "那",
-                "\uE81C": "和",
-                "\uE81F": "要",
-                "\uE820": "她",
-                "\uE821": "出",
-                "\uE822": "也",
-                "\uE823": "得",
-                "\uE824": "里",
-                "\uE825": "后",
-                "\uE826": "自",
-                "\uE827": "以",
-                "\uE828": "会",
-                "\uE82D": "家",
-                "\uE82E": "可",
-                "\uE831": "下",
-                "\uE832": "而",
-                "\uE833": "过",
-                "\uE834": "天",
-                "\uE82F": "去",
-                "\uE830": "能",
-                "\uE829": "对",
-                "\uE82A": "小",
-                "\uE82B": "多",
-                "\uE82C": "然",
-                "\uE837": "于",
-                "\uE838": "心",
-                "\uE839": "学",
-                "\uE835": "么",
-                "\uE846": "之",
-                "\uE847": "都",
-                "\uE83A": "好",
-                "\uE83B": "看",
-                "\uE836": "起",
-                "\uE84A": "发",
-                "\uE84B": "当",
-                "\uE84C": "没",
-                "\uE84D": "成",
-                "\uE83C": "只",
-                "\uE83D": "如",
-                "\uE83E": "事",
-                "\uE841": "把",
-                "\uE842": "还",
-                "\uE843": "用",
-                "\uE844": "第",
-                "\uE845": "样",
-                "\uE83F": "道",
-                "\uE840": "想",
-                "\uE858": "作",
-                "\uE859": "种",
-                "\uE85A": "开",
-                "\uE84F": "美",
-                "\uE848": "乳",
-                "\uE849": "阴",
-                "\uE84E": "液",
-                "\uE855": "茎",
-                "\uE856": "欲",
-                "\uE857": "呻",
-                "\uE850": "肉",
-                "\uE851": "交",
-                "\uE852": "性",
-                "\uE853": "胸",
-                "\uE854": "私",
-                "\uE85D": "穴",
-                "\uE85E": "淫",
-                "\uE85F": "臀",
-                "\uE860": "舔",
-                "\uE85B": "射",
-                "\uE85C": "脱",
-                "\uE861": "裸",
-                "\uE862": "骚",
-                "\uE863": "唇"
-            }
-
+            mapping_dict = self._mapping_rules
             table = str.maketrans(mapping_dict)
             res = html.translate(table)
             return res
