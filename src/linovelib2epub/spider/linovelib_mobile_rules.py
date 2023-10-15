@@ -1,17 +1,34 @@
 import re
+from typing import Dict
+
 import requests
 import json
 
 from linovelib2epub.utils import request_with_retry
 
 
-def generate_mapping_rules():
+class ParsedRuleResult:
+    def __init__(self,
+                 mapping_dict: Dict,
+                 content_id: str,
+                 ):
+        self.mapping_dict = mapping_dict
+        self.content_id = content_id
+
+
+def generate_mapping_result():
     js_text = _fetch_js_text()
     mapping_rules = _parse_mapping_rules(js_text)
     return mapping_rules
 
 
-def _parse_mapping_rules(js_text):
+def _parse_mapping_rules_legacy(js_text) -> dict:
+    """
+    Don't use this method anymore.
+
+    :param js_text:
+    :return:
+    """
     # extract needed string
     js_pattern = r'\(null,\s*"(.*?)"\['
     matches = re.findall(js_pattern, js_text)
@@ -37,6 +54,30 @@ def _parse_mapping_rules(js_text):
     return replace_rules
 
 
+def _parse_mapping_rules(js_text) -> ParsedRuleResult:
+    decoded_s = js_text.encode('utf-8').decode('unicode_escape')
+
+    # resolve content_id
+    pattern_content_id = r"window\[\"document\"\]\[\'getElementById']\(\'(.+?)\'\)"
+    match = re.search(pattern_content_id, decoded_s)
+
+    content_id = ""
+    if match:
+        content_id = match[1]
+
+    assert content_id, "content_id can't be empty string, please submit this bug to github issue."
+
+    # resolve mapping rule
+    pattern = r"\"RegExp\"]\([\'|\"]([^\"]+?)[\"|\'],\s*[\'|\"]gi[\'|\"]\),\s*[\'|\"]([^\"]+?)[\"|\']"
+    matches = re.findall(pattern, decoded_s)
+    replace_rules = {match[0]: match[1] for match in matches}
+
+    # merge result
+    parsed_rule_result = ParsedRuleResult(mapping_dict=replace_rules, content_id=content_id)
+
+    return parsed_rule_result
+
+
 def write_rules(rules):
     """
     For debug only.
@@ -57,8 +98,8 @@ def write_rules(rules):
 
 
 def _fetch_js_text():
-    url = "https://w.linovelib.com/themes/zhmb/js/readtools.js"
+    url = "https://w.linovelib.com/themes/zhmb/js/hm.js"
     # should handle network retry
     session = requests.session()
-    resp = request_with_retry(session,url)
+    resp = request_with_retry(session, url)
     return resp.text

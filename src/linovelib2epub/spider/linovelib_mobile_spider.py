@@ -13,7 +13,7 @@ from ..models import LightNovel, LightNovelChapter, LightNovelVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
                      request_with_retry)
 from . import BaseNovelWebsiteSpider
-from .linovelib_mobile_rules import generate_mapping_rules
+from .linovelib_mobile_rules import generate_mapping_result
 
 
 class LinovelibMobileSpider(BaseNovelWebsiteSpider):
@@ -21,7 +21,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
     def __init__(self, spider_settings: Optional[Dict] = None):
         super().__init__(spider_settings)
         self._init_http_client()
-        self._mapping_rules = generate_mapping_rules()
+
+        # it might be better to refactor to asyncio mode
+        self._mapping_result = generate_mapping_result()
+        self._html_content_id = self._mapping_result.content_id
+        self._mapping_dict = self._mapping_result.mapping_dict
 
     def dump_settings(self):
         self.logger.info(self.spider_settings)
@@ -99,7 +103,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             :param html:
             :return: html after anti-js obfuscation
             """
-            mapping_dict = self._mapping_rules
+            mapping_dict = self._mapping_dict
             table = str.maketrans(mapping_dict)
             res = html.translate(table)
             return res
@@ -217,7 +221,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             raise Exception(f'[ERROR]: request {page_link} failed.')
 
                         images = soup.find_all('img')
-                        article = str(soup.find(id="acontent"))
+                        # don't hardcode content div selector id, get from parsed_result
+                        article = str(soup.find(id=self._html_content_id))
                         for _, image in enumerate(images):
 
                             # images in the first chapter are lazyload, their urls are inside "data-src"
