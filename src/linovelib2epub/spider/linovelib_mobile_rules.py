@@ -18,8 +18,8 @@ class ParsedRuleResult:
 
 def generate_mapping_result():
     js_text = _fetch_js_text()
-    mapping_rules = _parse_mapping_rules(js_text)
-    return mapping_rules
+    result_set = _parse_mapping(js_text)
+    return result_set
 
 
 def _parse_mapping_rules_legacy(js_text) -> dict:
@@ -54,7 +54,7 @@ def _parse_mapping_rules_legacy(js_text) -> dict:
     return replace_rules
 
 
-def _parse_mapping_rules(js_text) -> ParsedRuleResult:
+def _parse_mapping(js_text) -> ParsedRuleResult:
     decoded_s = js_text.encode('utf-8').decode('unicode_escape')
 
     # resolve content_id
