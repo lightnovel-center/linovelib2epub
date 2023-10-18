@@ -7,6 +7,7 @@ from functools import wraps
 from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, Union, NoReturn, Optional
 
+import aiohttp
 import pkg_resources
 from fake_useragent import UserAgent
 
@@ -30,12 +31,13 @@ def create_folder_if_not_exists(path: str) -> None:
         os.makedirs(path)
 
 
-def request_with_retry(client: Any,
-                       url: str,
-                       headers: Dict[str, Any] | None = None,
-                       retry_max: int = 5,
-                       timeout: int = 10,
-                       logger: Any = None) -> Any:
+# TODO extract retry logic from these http helper function or use retry library like tenacity
+def requests_get_with_retry(client: Any,
+                            url: str,
+                            headers: Dict[str, Any] | None = None,
+                            retry_max: int = 5,
+                            timeout: int = 10,
+                            logger: Any = None) -> Any:
     if headers is None:
         headers = {}
 
@@ -60,6 +62,76 @@ def request_with_retry(client: Any,
             logger.warning('current_num_of_request: ', current_num_of_request)
 
     return None
+
+
+async def aiohttp_get_with_retry(client: aiohttp.ClientSession,
+                                 url: str,
+                                 headers: Dict[str, Any] | None = None,
+                                 retry_max: int = 5,
+                                 timeout: int = 10,
+                                 logger: Any = None) -> Any:
+    if headers is None:
+        headers = {}
+
+    current_num_of_request: int = 0
+
+    while current_num_of_request <= retry_max:
+        try:
+            async with client.get(url, headers=headers, timeout=timeout) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    if logger:
+                        logger.warning(f'Request {url} succeed but status code is {response.status}.')
+                    await asyncio.sleep(1)
+        except Exception as e:
+            if logger:
+                logger.error(f'Request {url} failed: {e}')
+            await asyncio.sleep(1)
+
+        current_num_of_request += 1
+        if logger:
+            logger.warning('current_num_of_request: ', current_num_of_request)
+
+    return None
+
+
+async def aiohttp_post_with_retry(client: aiohttp.ClientSession,
+                                  url: str,
+                                  params: Any,
+                                  headers: Dict[str, Any] | None = None,
+                                  retry_max: int = 5,
+                                  timeout: int = 10,
+                                  logger: Any = None,
+                                  ) -> Any:
+    if headers is None:
+        headers = {}
+
+    current_num_of_request: int = 0
+
+    while current_num_of_request <= retry_max:
+        try:
+            async with client.post(url, data=params, headers=headers, timeout=timeout) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    if logger:
+                        logger.warning(f'Request {url} succeed but status code is {response.status}.')
+                    await asyncio.sleep(1)
+        except Exception as e:
+            if logger:
+                logger.error(f'Request {url} failed: {e}')
+            await asyncio.sleep(1)
+
+        current_num_of_request += 1
+        if logger:
+            logger.warning('current_num_of_request: ', current_num_of_request)
+
+    return None
+
+
+#             response = await session.post(url=url, headers=headers, proxy=proxy,
+#                                           data=param, timeout=config.read('time_out'))
 
 
 def is_valid_image_url(url: str) -> bool:

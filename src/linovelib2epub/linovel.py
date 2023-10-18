@@ -4,6 +4,8 @@ import pickle
 import shutil
 import time
 import urllib.parse
+from enum import Enum, auto
+
 import uuid
 from pathlib import Path
 from typing import Optional, Union, Dict, Any, List, cast, Set
@@ -19,6 +21,7 @@ from .exceptions import LinovelibException
 from .logger import Logger
 from .models import LightNovel, LightNovelVolume
 from .spider import ASYNCIO, LinovelibMobileSpider  # type: ignore[attr-defined]
+from .spider.masiro_spider import MasiroSpider
 from .utils import (create_folder_if_not_exists, random_useragent,
                     read_pkg_resource, sanitize_pathname)
 
@@ -304,10 +307,17 @@ class EpubWriter:
         book.add_item(default_style_nav)
 
 
+class TargetSite(Enum):
+    LINOVELIB_MOBILE = 'linovelib_mobile'
+    LINOVELIB_WEB = 'linovelib_web'
+    MASIRO = 'masiro'
+
+
 class Linovelib2Epub:
 
     def __init__(self,
                  book_id: Optional[Union[int, str]] = None,
+                 target_site: TargetSite = TargetSite.LINOVELIB_MOBILE,
                  base_url: str = settings.BASE_URL,
                  divide_volume: bool = settings.DIVIDE_VOLUME,
                  select_volume_mode: bool = settings.SELECT_VOLUME_MODE,
@@ -324,12 +334,12 @@ class Linovelib2Epub:
                  disable_proxy: bool = settings.DISABLE_PROXY,
                  image_download_strategy: str = ASYNCIO,
                  ):
-
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
         if base_url is None:
             raise LinovelibException('base_url parameter must be set.')
-        # add option spider_class
+
+        self.target_site = target_site
 
         u = urllib.parse.urlsplit(base_url)
 
@@ -360,8 +370,11 @@ class Linovelib2Epub:
             'http_cookie': http_cookie,
             'disable_proxy': disable_proxy
         }
-        # dynamic inject LinovelibSpider or otherSpider definitions
-        self._spider = LinovelibMobileSpider(spider_settings=self.spider_settings)
+        site_to_spider ={
+            TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
+            TargetSite.MASIRO: MasiroSpider,
+        }
+        self._spider = site_to_spider[self.target_site](spider_settings=self.spider_settings)
 
         self.epub_settings = {
             **self.common_settings,

@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from ..exceptions import LinovelibException
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
-                     request_with_retry)
+                     requests_get_with_retry)
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rules import generate_mapping_result
 
@@ -70,12 +70,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             self.session.cookies = cookiejar
 
     def _crawl_book_basic_info(self, url):
-        result = request_with_retry(self.session,
-                                    url,
-                                    headers=self.request_headers(),
-                                    retry_max=self.spider_settings['http_retries'],
-                                    timeout=self.spider_settings["http_timeout"],
-                                    logger=self.logger)
+        result = requests_get_with_retry(self.session,
+                                         url,
+                                         headers=self.request_headers(),
+                                         retry_max=self.spider_settings['http_retries'],
+                                         timeout=self.spider_settings["http_timeout"],
+                                         logger=self.logger)
 
         if result and result.status_code == 200:
             self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
@@ -121,12 +121,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         book_catalog_rs = None
         try:
-            book_catalog_rs = request_with_retry(self.session,
-                                                 catalog_url,
-                                                 headers=self.request_headers(),
-                                                 retry_max=self.spider_settings['http_retries'],
-                                                 timeout=self.spider_settings["http_timeout"],
-                                                 logger=self.logger)
+            book_catalog_rs = requests_get_with_retry(self.session,
+                                                      catalog_url,
+                                                      headers=self.request_headers(),
+                                                      retry_max=self.spider_settings['http_retries'],
+                                                      timeout=self.spider_settings["http_timeout"],
+                                                      logger=self.logger)
         except (Exception,):
             self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
@@ -188,7 +188,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # goal: solve all page links of a certain chapter
                     while True:
-                        resp = request_with_retry(self.session, url_next, logger=None)
+                        resp = requests_get_with_retry(self.session, url_next, logger=None)
                         if resp:
                             soup = BeautifulSoup(resp.text, 'lxml')
                         else:
@@ -211,10 +211,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # handle page content(text and img)
                     for page_link in chapter[1:]:
-                        page_resp = request_with_retry(self.session, page_link,
-                                                       retry_max=self.spider_settings['http_retries'],
-                                                       timeout=self.spider_settings["http_timeout"],
-                                                       logger=self.logger)
+                        page_resp = requests_get_with_retry(self.session, page_link,
+                                                            retry_max=self.spider_settings['http_retries'],
+                                                            timeout=self.spider_settings["http_timeout"],
+                                                            logger=self.logger)
                         if page_resp:
                             soup = BeautifulSoup(page_resp.text, 'lxml')
                         else:

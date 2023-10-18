@@ -4,7 +4,7 @@ from typing import Dict
 import requests
 import json
 
-from linovelib2epub.utils import request_with_retry
+from linovelib2epub.utils import requests_get_with_retry
 
 
 class ParsedRuleResult:
@@ -101,5 +101,5 @@ def _fetch_js_text():
     url = "https://w.linovelib.com/themes/zhmb/js/hm.js"
     # should handle network retry
     session = requests.session()
-    resp = request_with_retry(session, url)
+    resp = requests_get_with_retry(session, url)
     return resp.text

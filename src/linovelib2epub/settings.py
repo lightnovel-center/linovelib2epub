@@ -1,5 +1,7 @@
 # -----------DEFAULT USER SETTINGS---------------------
 
+DEFAULT_TARGET_SITE = 'LINOVELIB_MOBILE'
+
 # 主页URL
 BASE_URL = 'https://w.linovelib.com/novel'
 

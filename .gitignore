@@ -31,3 +31,6 @@ local_use
 *.log
 /playground/refactor_image_download/images/
 #**/js-anti-obfuscation*
+
+# Ignore dynaconf secret files
+.secrets.*

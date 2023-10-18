@@ -41,6 +41,8 @@ async def main():
         result = await aiohttp_with_retry(session, 'https://example.com')
         if result:
             print(result)
+    return 123
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    res = asyncio.run(main())
+    print(res)

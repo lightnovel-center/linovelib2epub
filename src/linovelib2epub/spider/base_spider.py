@@ -39,6 +39,10 @@ class BaseNovelWebsiteSpider(ABC):
         raise NotImplementedError("Note: subclass must implement this method to do real fetch logic.")
 
     def request_headers(self) -> Dict[str, Any]:
+        """
+        Act as a common headers
+        :return:
+        """
         return {}
 
     def get_image_filename(self, url: str) -> str:

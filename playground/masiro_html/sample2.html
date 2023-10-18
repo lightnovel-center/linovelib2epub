@@ -1,0 +1,3127 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="csrf-token" content="7VCmjQuZHWbt6FMd0XXweHoe5BUbwKIpm9HBBc26">
+<title>真白萌  | 不在手游里拿到人气投票第一名就回不去！</title>
+
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+<style type="text/css">
+    /*html {visibility:hidden; background-color: #36393f; }*/
+
+    </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://masiro.me/css/style.css?timestamp=1647339458">
+<link rel="stylesheet" href="https://masiro.me/css/public/message.css?timestamp=1626511375">
+<link rel="stylesheet" href="https://masiro.me/layui/css/layui.css?timestamp=1626511376">
+<link rel="stylesheet" href="https://masiro.me/css/app.css?timestamp=1672027093">
+<link rel="stylesheet" href="https://masiro.me/vendor/laravel-admin-ext/wang-editor/wangEditor-3.0.10/release/wangEditor.css">
+<link rel="stylesheet" href="https://masiro.me/vendor/laravel-admin/AdminLTE/dist/css/skins/skin-blue-light.min.css">
+<link rel="stylesheet" href="https://masiro.me/vendor/laravel-admin/AdminLTE/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://masiro.me/vendor/laravel-admin/font-awesome/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://masiro.me/vendor/laravel-admin/AdminLTE/dist/css/AdminLTE.min.css">
+<script src="https://masiro.me/vendor/laravel-admin/AdminLTE/plugins/jQuery/jQuery-2.1.4.min.js"></script>
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script>
+        // Render blocking JS: reduce dark mode flickering
+        document.documentElement.setAttribute("data-theme", localStorage.theme || 1);
+    </script>
+<!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body class="hold-transition skin-blue-light sidebar-mini sidebar-collapse">
+<div class="wrapper">
+
+<header class="main-header">
+
+<a href="https://masiro.me/admin" class="logo">
+
+<span class="logo-mini"><img src="https://www.masiro.me/masiroImg/logo-small.ico" alt="masiro"></span>
+
+<span class="logo-lg"><b>Masiro</b></span>
+</a>
+
+<nav class="navbar navbar-static-top" role="navigation">
+
+<a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+<span class="sr-only">Toggle navigation</span>
+</a>
+<ul class="nav navbar-nav" style="float: left;">
+</ul>
+
+<div class="navbar-custom-menu">
+<ul class="nav navbar-nav">
+<li><div id="message" style="float:left;margin-right:5px;"></div></li>
+
+<li class="dropdown user user-menu">
+
+<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+
+<img src="/masiroImg/header-default.jpg" class="user-image" alt="User Image">
+
+<span class="hidden-xs">wdpm</span>
+</a>
+<ul class="dropdown-menu">
+
+<li class="user-header">
+<img src="/masiroImg/header-default.jpg" class="img-circle user-header-to-center" alt="User Image">
+<p>
+wdpm<span class="user-lev">lv2</span>
+<small>金币:71 粉丝:<span class="fans">0</span>
+<br>
+<small>ID:187748</small>
+</small>
+</p>
+</li>
+<li class="user-footer">
+<div class="pull-left">
+<a href="https://masiro.me/admin/auth/setting" class="btn btn-default btn-flat">设置</a>
+</div>
+<div class="pull-right">
+<a href="https://masiro.me/admin/auth/logout" class="btn btn-default btn-flat">登出</a>
+</div>
+</li>
+</ul>
+</li>
+
+</ul>
+</div>
+</nav>
+</header>
+<aside class="main-sidebar">
+
+<section class="sidebar">
+
+<div class="user-panel">
+<div class="pull-left image">
+<img src="/masiroImg/header-default.jpg" class="img-circle" alt="User Image">
+</div>
+<div class="pull-left info">
+<p>wdpm <small class="s s-lv">Lv2</small></p>
+<p><small class="s">金币:71 粉丝:0</small></p>
+</div>
+</div>
+
+<ul class="sidebar-menu">
+<li class="header">菜单</li>
+<li>
+<a href="https://masiro.me/admin">
+<i class="fa fa-bank fa-fw"></i>
+<span>首页</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/announcementListShow">
+<i class="fa fa-bullhorn fa-fw"></i>
+<span>公告</span>
+</a>
+</li>
+<li class="treeview">
+<a href="#">
+<i class="fa fa-book fa-fw"></i>
+<span>小说论坛</span>
+<i class="fa fa-angle-left pull-right"></i>
+</a>
+<ul class="treeview-menu">
+<li>
+<a href="https://masiro.me/admin/novels">
+<i class="fa fa-book fa-fw"></i>
+<span>全部小说</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/novels?ori=0">
+<i class="fa fa-book fa-fw"></i>
+<span>日轻</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/novels?ori=1">
+<i class="fa fa-industry fa-fw"></i>
+<span>原创</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/forumList?type=1">
+<i class="fa fa-commenting fa-fw"></i>
+<span>小说论坛</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/forumList?type=2">
+<i class="fa fa-coffee fa-fw"></i>
+<span>独立论坛</span>
+</a>
+</li>
+</ul>
+</li>
+<li class="treeview">
+<a href="#">
+<i class="fa fa-list-ul fa-fw"></i>
+<span>排行榜</span>
+<i class="fa fa-angle-left pull-right"></i>
+</a>
+<ul class="treeview-menu">
+<li>
+<a href="https://masiro.me/admin/novelRank">
+<i class="fa fa-indent fa-fw"></i>
+<span>小说排行</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/forumRank">
+<i class="fa fa-align-justify fa-fw"></i>
+<span>论坛排行</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/translatorRank">
+<i class="fa fa-file-text-o fa-fw"></i>
+<span>翻译排行</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/authorRank">
+<i class="fa fa-pencil fa-fw"></i>
+<span>作者排行</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/aidoruRank">
+<i class="fa fa-intersex fa-fw"></i>
+<span>爱抖露榜</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/tuhaoRank">
+<i class="fa fa-money fa-fw"></i>
+<span>土豪榜</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/fuhaoRank">
+<i class="fa fa-dollar fa-fw"></i>
+<span>负豪榜</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/guguRank">
+<i class="fa fa-twitter fa-fw"></i>
+<span>鸽子榜</span>
+</a>
+</li>
+</ul>
+</li>
+<li class="treeview">
+<a href="#">
+<i class="fa fa-user fa-fw"></i>
+<span>个人中心</span>
+<i class="fa fa-angle-left pull-right"></i>
+</a>
+<ul class="treeview-menu">
+<li>
+<a href="https://masiro.me/admin/userCenterShow">
+<i class="fa fa-home fa-fw"></i>
+<span>个人主页</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/novels?collection=1">
+<i class="fa fa-bookmark fa-fw"></i>
+<span>小说收藏</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/postCollection">
+<i class="fa fa-star fa-fw"></i>
+<span>论坛收藏</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/readingConfig/1/edit">
+<i class="fa fa-cogs fa-fw"></i>
+<span>阅读设置</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/myItemBox">
+<i class="fa fa-cubes fa-fw"></i>
+<span>我的物品</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/myStyle">
+<i class="fa fa-puzzle-piece fa-fw"></i>
+<span>我的样式</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/shop">
+<i class="fa fa-scribd fa-fw"></i>
+<span>道具拍卖</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/styleShop">
+<i class="fa fa-dollar fa-fw"></i>
+<span>样式拍卖</span>
+</a>
+</li>
+</ul>
+</li>
+<li class="treeview">
+<a href="#">
+<i class="fa fa-shopping-cart fa-fw"></i>
+<span>扭蛋</span>
+<i class="fa fa-angle-left pull-right"></i>
+</a>
+<ul class="treeview-menu">
+<li>
+<a href="https://masiro.me/admin/gachiyaIndex">
+<i class="fa fa-diamond fa-fw"></i>
+<span>蛋池</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/gachiyaRecords">
+<i class="fa fa-file-o fa-fw"></i>
+<span>扭蛋记录</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/wishingPondIndex">
+<i class="fa fa-birthday-cake fa-fw"></i>
+<span>祈愿池</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/wishingPondRecords">
+<i class="fa fa-file-text-o fa-fw"></i>
+<span>祈愿记录</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/itemShopIndex">
+<i class="fa fa-shopping-cart fa-fw"></i>
+<span>道具商城</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/styleShopIndex">
+<i class="fa fa-shopping-cart fa-fw"></i>
+<span>样式商城</span>
+</a>
+</li>
+</ul>
+</li>
+<li class="treeview">
+<a href="#">
+<i class="fa fa-file-o fa-fw"></i>
+<span>我的申请</span>
+<i class="fa fa-angle-left pull-right"></i>
+</a>
+<ul class="treeview-menu">
+<li>
+<a href="https://masiro.me/admin/authApply">
+<i class="fa fa-file-o fa-fw"></i>
+<span>权限申请</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/novelApply">
+<i class="fa fa-file-o fa-fw"></i>
+<span>小说申请</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/forumApply">
+<i class="fa fa-file-o fa-fw"></i>
+<span>论坛申请</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/unsealApply">
+<i class="fa fa-file-o fa-fw"></i>
+<span>解封申请</span>
+</a>
+</li>
+<li>
+<a href="https://masiro.me/admin/tipOff">
+<i class="fa fa-clone fa-fw"></i>
+<span>我的举报</span>
+</a>
+</li>
+</ul>
+</li>
+</ul>
+
+</section>
+
+</aside>
+<div class="background-img"></div>
+<div class="content-wrapper" id="pjax-container">
+<style type="text/css">
+            .n-h{
+    border-radius: 20px 20px 0px 0px !important;
+    color: #ffffff;
+    min-height: 450px;
+    font-weight: 800;
+}
+.n-h a{
+    color: white;
+}
+.s-font{
+    font-size: 10px;
+    -webkit-transform: scale(0.8);
+}
+.z-i{
+    z-index: 1;
+    position: relative;
+}
+.box-footer{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    background: none;
+    border-top: 0.5px solid #939393;
+}
+.content-header{
+    height: 0px;
+    padding: 0px;
+}
+.box{
+    position: relative;
+    border-radius: 3px;
+    border-top: 0px solid #d2d6de;
+    margin-bottom: 20px;
+    width: 80%;
+    box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+    margin: auto;
+    overflow: hidden;
+}
+
+.content-header h1{
+    display: none;
+}
+
+.bg{
+    position: absolute;
+    top: -30px;
+    bottom: -30px;
+    left: -30px;
+    right: -30px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(10px) brightness(0.6);
+    background-color: white;
+}
+
+/*.box.n-h::before {*/
+/*    content: "";*/
+/*    position: absolute;*/
+/*    top: 0;*/
+/*    bottom: 0;*/
+/*    left: 0;*/
+/*    right: 0;*/
+/*    backdrop-filter: blur(15px) brightness(0.5);*/
+/*    border-radius: 20px 20px 0px 0px !important;*/
+/*}*/
+
+.novel-title {
+	font-weight: bold;
+	text-align:center;
+	width: 100%;
+	font-size: 20px;
+    padding-top: .5em;
+}
+
+.author{
+	width: 100%;
+	/*margin-top: 5px;*/
+}
+.tags{
+	width: 100%;
+	display: block;
+	margin-top: 5px;
+}
+.brief{
+    display: inline-block;
+    width: 100%;
+    padding: 0 8%;
+    margin: auto;
+	text-align:left;
+	font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,SimSun,sans-serif;
+    font-size: 12px;
+}
+
+.author,.n-translator,.n-chapters{
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.n-ori{
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: visible;
+}
+
+.tags,.n-update,.novel-title,.n-hot{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.with-border{
+    float: left;
+    width: 30%;
+    height:180px;
+    margin-top: 10px;
+    padding-left: 10px;
+}
+.n-detail{
+    float: left;
+    width: 45%;
+    height:200px;
+    margin-top: 10px;
+    text-align: left;
+    font-size: 10px;
+}
+.btn-box{
+    display: block;
+    float: left;
+    width: 20%;
+    height: 180px;
+    margin-top: 10px;
+}
+
+.btn-font{
+	font-family: 'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif;
+    font-size: 12px;
+}
+.chapter-title{
+	cursor:pointer;
+}
+.btn-pics,.btn-forum{
+    margin-top:5px;
+}
+
+.n-btn{
+    text-align: center;
+    background-color: #add8e645;
+    line-height: 25px;
+    border-radius: 5px;
+    font-size: 10px;
+    cursor: pointer;
+    display: block;
+    margin: 10px;
+}
+
+.n-translator,.n-status,.tags,.n-update,.n-hot,.n-chapters,.n-ori{
+    margin-top: 5px;
+}
+
+/**章节目录**/
+.chapter-ul{
+	display: block;
+    list-style-type: decimal;
+    width: 100%;
+    padding: 0px;
+    list-style: none;
+}
+.chapter-ul .chapter-box{
+	display: block;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    overflow: hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+    cursor:pointer;
+}
+
+.chapter-ul .episode-box{
+	display: block;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    text-align: left;
+    overflow-wrap: break-word;
+    border: 0 0 0.5px 0 solid white;
+    overflow: hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+.chapter-ul .episode-box span{
+	color: black;
+    font-size: 15px;
+    text-decoration:none;
+    -webkit-transform:translateZ(0) scale(1,1);
+    -webkit-transition:all .14s linear;
+    transition:all .14s linear;
+    font-family: 'Strait', sans-serif;
+    text-shadow: 1px 1px 1px  #fff;
+    margin-left: 20px;
+}
+
+.episode-ul{
+    padding: 0px;
+    overflow: hidden;
+    transition: height 0.6s;
+}
+
+.history-read{
+    background-color: #d0dae6;
+}
+
+.size{
+    font-size: 16px;
+    margin-right:2px;
+}
+.chapter-box:hover{
+    background: #EDEDED;
+}
+
+.episode-box:hover{
+    background-color: skyblue;
+    background-image: -webkit-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    text-shadow: 0px 0px 0px;
+    color: white;
+}
+.episode-box:hover>span{
+    color:white !important;
+}
+
+.comment_list{
+    width: 80%;
+}
+
+.cp-btn{
+    width: 80px;
+    float: right;
+    background-color: #274988;
+    color: white;
+    text-align: center;
+    line-height: 25px;
+    border-radius: 5px;
+    font-size: 10px;
+    cursor: pointer;
+    display: block;
+    margin: 10px;
+}
+/*.box:first-of-type{*/
+/*    padding: 0 10%;*/
+/*}*/
+
+@media screen and (max-width: 960px){
+    .n-h{
+        border-radius: 0px !important;
+        height: 500px;
+    }
+    .content{
+        padding-top: 0px;
+    }
+    .col-md-12,.content-header{
+        padding:0px;
+    }
+    .comment-content{
+        margin:5px 20px;
+    }
+    .n-detail{
+        margin-left: 10px;
+    }
+    .box{
+        margin-bottom:0px;
+        border:none;
+        position: relative;
+        border-radius: 3px;
+        background: #ffffff;
+        border-top: 0px solid #d2d6de;
+        width: 100%;
+        box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+        margin: auto;
+    }
+    .brief{
+        padding:0px;
+        font-size: 11px;
+    }
+    .box:first-of-type{
+        padding: 0px;
+    }
+}
+
+#novel-comment-list {
+    overflow: visible;
+}
+.show_reply_list {
+  margin-right:45px;
+  color: blue;
+  cursor:pointer;
+}
+.left-box{
+    float: left;
+    display: grid;
+    grid-template-rows: 70% auto;
+}
+.comment_list {
+  background-color: #ffffff;
+  padding-top:5px;
+  padding-left: 5px;
+  width:100%;
+  margin:0 auto;
+}
+.comment {
+  width:100%;
+  margin-top:10px;
+}
+.comment-details {
+  float: left;
+  width: calc(100% - 60px);
+}
+.comment-content {
+  clear:both;
+  margin:5px 45px 5px 10px;
+  font-size:14px;
+  overflow: hidden;
+}
+.comment_add_or_last {
+  margin:0 auto;
+  clear: both;
+  width:70%;
+  height:40px;
+  background: #F0F0F0;
+  text-align: center;
+  font-size:18px;
+  line-height: 40px;
+  margin-bottom: 40px;
+  cursor:pointer;
+}
+.imgdiv{
+  width:60px;
+  height:60px;
+  float:left;
+}
+.simgdiv{
+  width:30px;
+  height:30px;
+  float:left;
+  display: inline-block;
+}
+.reply-box{
+  display: inline-block;
+  float: left;
+  width: calc(100% - 35px);
+  margin-top: 5px;
+  min-height: 50px;
+  line-height: 30px;
+  margin-left: 5px;
+  /*max-height: 200px;*/
+  overflow: hidden;
+}
+.imgcss {
+  width:50px;
+  height:50px;
+  border-radius: 50%;
+}
+.simg {
+  width:30px;
+  height:30px;
+  border-radius: 50%;
+}
+.comment_name {
+  margin-left:10px;
+  color:#3D9EEA;
+  font-size:16px;
+  font-weight: bolder;
+}
+.layui-icon {
+  font-size: 13px;
+  color: grey;
+}
+.del {
+  float:right;
+}
+.del_comment {
+  margin-right:20px;
+  cursor:pointer;
+}
+
+
+
+.reply_list {
+  clear:both;
+/*  display:none;*/
+  width:100%;
+  padding-right:15px;
+  margin-top:10px;
+  font-size:13px;
+}
+.reply {
+  clear:both;
+  width:90%;
+  margin:4px auto;
+}
+.reply_name {
+  color:#3D9EEA;
+  display: inline-block;
+  float: left;
+}
+.reply_content{
+  display: inline-block;
+}
+
+.show_remain_reply {
+   width:80%;
+   height:40px;
+   text-align:center;font-size:15px;
+   background-color: #F0F0F0;
+   margin:0 auto;
+   line-height: 40px;
+   display:none;
+}
+.comment-box{
+  display: none;
+}
+.layui-layer-wrap{
+  padding: 0px !important;
+}
+#comment-info{
+  max-height: 200px;
+  overflow: hidden;
+  text-overflow:ellipsis;
+}
+.layui-layer-content::-webkit-scrollbar{
+    width : 5px;
+    height: 1px;
+}
+.layui-layer-content::-webkit-scrollbar-thumb{
+    border-radius   : 10px;
+    background-color: skyblue;
+    background-image: -webkit-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+}
+.hide-reply{
+  display: none;
+}
+.reply-btn-box{
+  float: right;
+  text-align: right;
+}
+.del_reply,.reply-btn,.reply-comment{
+  cursor:pointer;
+}
+.reply-time{
+  float: right;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.pagination{
+  float: right;
+  margin-right: 8%;
+}
+    </style>
+<div id="app">
+<section class="content-header">
+<h1>
+不在手游里拿到人气投票第一名就回不去！
+<small> </small>
+</h1>
+
+
+</section>
+<section class="content">
+<div class="row"><div class="col-md-12">
+
+
+<input class="share-hide" type="text" style="opacity: 0;position:fixed;z-index: -1000;" value="https://masi.ro/n875" />
+<div class="box n-h">
+<div class="bg" style="--bg-image:url(/images/encode/other-221013092053-jVfb.png);"></div>
+<div class="box-body z-i">
+<div class="novel-title">不在手游里拿到人气投票第一名就回不去！</div>
+<div class="with-border">
+<span>
+<div class="mailbox-attachment-icon has-img">
+<a href="/admin/novelManage?novel_id=875">
+<img src="/images/encode/other-221013092053-jVfb.png?quality=60" style="width: 120px;" class="img img-thumbnail">
+</a>
+</div>
+</span>
+</div>
+<div class="n-detail">
+<div class="author">作者 : <a href="/admin/novelIndex?title=作者:夢泉&author=夢泉" target="_blank">夢泉</a></div>
+<div class="n-translator">翻译 :
+<a href="/admin/novelIndex?title=翻译:光闇深い&translator=光闇深い" target="_blank">
+光闇深い
+</a>
+&nbsp;
+</div>
+<div class="n-status">状态 :
+连载中
+</div>
+<div class="tags">
+<span style="display: block;">
+标签 :
+<a href="/admin/novelIndex?title=标签:TS&tag=23" target="_blank">
+<span class="label label-success">TS</span>
+</a>
+<a href="/admin/novelIndex?title=标签:穿越/转生&tag=24" target="_blank">
+<span class="label label-success">穿越/转生</span>
+</a>
+<a href="/admin/novelIndex?title=标签:异能/超自然&tag=26" target="_blank">
+<span class="label label-success">异能/超自然</span>
+</a>
+</span>
+</div>
+<div class="n-update">
+更新 : <a class="nw-a" href="/admin/novelReading?cid=75290" target="_blank">第四章 第四话 『机械都市米卡尼亚』</a>
+<span class="s-font">2023-10-18 12:00:06</span>
+</div>
+<div class="n-hot">
+热度 : 2393评论 54636点赞 4203收藏 8945阅读
+</div>
+<div class="n-chapters">字数 : 232815字共59话</div>
+<div class="n-ori">原作 : https://syosetu.org/novel/286002/</div>
+</div>
+<div class="btn-box">
+<span class="n-btn btn-collect btn-font" data-nid="875">收&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;藏</span>
+<span class="n-btn btn-uncollect btn-font" style="display: none;" data-nid="875">已收藏</span>
+
+<span class="n-btn btn-share btn-font ">分&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;享</span>
+<span class="n-btn btn-read btn-font reading" data-cid="59512">继续阅读</span>
+<input type="hidden" class="csrf" name="_token" value="7VCmjQuZHWbt6FMd0XXweHoe5BUbwKIpm9HBBc26">
+</div>
+</div>
+<div class="box-footer z-i">
+<div class="brief">简介：<p>TS转生手游世界！为了回到有家人和朋友在的原世界，似乎必须拿到手游人气投票第一名才行！</p>
+<p>别开玩笑了！但只能努力去做了！……就是这样一个故事。</p>
+<p>向各位玩家全力献媚献媚献媚，目标是有朝一日实装的人权角色（泳装）！</p>
+<p>另外，玩家对主角的爱称似乎变成了「妈妈」。</p>
+<p>图随便做的）AI真nb</p></div>
+</div>
+<div style="clear: both;"></div>
+</div>
+</div></div><div class="row"><div class="col-md-12"><input type="hidden" class="user_id" value="187748">
+<div class="box">
+<div class="box-body">
+<div>
+<span class="cp-btn all-pull-down">全部收起</span>
+<span class="cp-btn cp-rank">倒序排列</span>
+</div>
+<div class="chapter-content">
+<ul class="chapter-ul">
+<li class="chapter-box" id="阅读说明"><span class="sign minus">-</span><b>阅读说明&nbsp;</b></li>
+<li>
+<ul class="episode-ul" data-enum="2" style="height: 100px;">
+<a href="/admin/novelReading?cid=59489" class="to-read" data-id="59489" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+译者杂叙&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 09:54:48；更新时间：2023-08-07 22:45:28">
+22-08-27 09:54
+</span>
+&nbsp;
+<small title="更新时间：2023-08-07 22:45:28">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=67187" class="to-read" data-id="67187" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+杂谈&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-03-11 16:55:46；更新时间：2023-08-07 22:42:09">
+23-03-11 16:55
+</span>
+&nbsp;
+<small title="更新时间：2023-08-07 22:42:09">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="WF情报（请在想详细了解作品中游戏情报时阅读）"><span class="sign minus">-</span><b>WF情报（请在想详细了解作品中游戏情报时阅读）&nbsp;</b></li>
+<li>
+<ul class="episode-ul" data-enum="3" style="height: 150px;">
+<a href="/admin/novelReading?cid=59512" class="to-read" data-id="59512" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box  history-read " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+【5000Pt突破纪念】WF攻略网站【开服后】★&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 22:07:33；更新时间：2022-09-02 09:29:46">
+22-08-27 22:07
+</span>
+&nbsp;
+<small title="更新时间：2022-09-02 09:29:46">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=61455" class="to-read" data-id="61455" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+【10000Pt到达纪念】WF角色设定大放出SP①&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-10-07 16:57:58；更新时间：2022-10-07 19:31:04">
+22-10-07 16:57
+</span>
+&nbsp;
+<small title="更新时间：2022-10-07 19:31:04">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72745" class="to-read" data-id="72745" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+【15000Pt到达纪念】WF角色设定大放出SP②&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-07 22:07:32；更新时间：2023-10-08 12:43:21">
+23-10-07 22:07
+</span>
+&nbsp;
+<small title="更新时间：2023-10-08 12:43:21">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="序章"><span class="sign minus">-</span><b>序章&nbsp;</b></li>
+<li>
+<ul class="episode-ul" data-enum="1" style="height: 50px;">
+<a href="/admin/novelReading?cid=59490" class="to-read" data-id="59490" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+不拿到人气投票第一名就回不去！★&nbsp;
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 10:10:00；更新时间：2022-08-27 10:41:11">
+22-08-27 10:10
+</span>
+&nbsp;
+<small title="更新时间：2022-08-27 10:41:11">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="第一章"><span class="sign minus">-</span><b>第一章&nbsp;【原作开始前】以人气第一的超绝女主角为目标</b></li>
+<li>
+<ul class="episode-ul" data-enum="5" style="height: 250px;">
+<a href="/admin/novelReading?cid=59491" class="to-read" data-id="59491" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第一话&nbsp;「私」是「俺」，「俺」是「私」
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 10:23:10；更新时间：2022-08-27 10:24:42">
+22-08-27 10:23
+</span>
+&nbsp;
+<small title="更新时间：2022-08-27 10:24:42">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59492" class="to-read" data-id="59492" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第二话&nbsp;果然手游里有人气的是高性能角色
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 10:34:35；更新时间：2022-08-27 10:36:16">
+22-08-27 10:34
+</span>
+&nbsp;
+<small title="更新时间：2022-08-27 10:36:16">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59496" class="to-read" data-id="59496" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第三话&nbsp;美少女精灵缇艾菈酱的异世界生活日记！
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 14:12:15；更新时间：2022-08-27 14:15:55">
+22-08-27 14:12
+</span>
+&nbsp;
+<small title="更新时间：2022-08-27 14:15:55">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59497" class="to-read" data-id="59497" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+闲话①&nbsp;【莉兹视角】后辈系美少女精灵【爱了】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 17:32:58；更新时间：2022-08-27 20:19:23">
+22-08-27 17:32
+</span>
+&nbsp;
+<small title="更新时间：2022-08-27 20:19:23">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59498" class="to-read" data-id="59498" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第四话&nbsp;命运之日
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 20:23:38；更新时间：2022-08-27 20:23:38">
+22-08-27 20:23
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="第二章"><span class="sign minus">-</span><b>第二章&nbsp;【原作开始】神秘缇艾菈</b></li>
+<li>
+<ul class="episode-ul" data-enum="14" style="height: 700px;">
+<a href="/admin/novelReading?cid=59508" class="to-read" data-id="59508" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板①&nbsp;【那家伙是】讨论新CM【最终BOSS】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-27 21:24:06；更新时间：2022-08-28 17:50:25">
+22-08-27 21:24
+</span>
+&nbsp;
+<small title="更新时间：2022-08-28 17:50:25">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59510" class="to-read" data-id="59510" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第一话&nbsp;『War Fairy』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-28 16:01:58；更新时间：2022-08-28 16:37:11">
+22-08-28 16:01
+</span>
+&nbsp;
+<small title="更新时间：2022-08-28 16:37:11">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59516" class="to-read" data-id="59516" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第二话&nbsp;那一定是命运的邂逅（真）★
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-28 17:27:33；更新时间：2022-08-28 17:29:12">
+22-08-28 17:27
+</span>
+&nbsp;
+<small title="更新时间：2022-08-28 17:29:12">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59517" class="to-read" data-id="59517" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+闲话②&nbsp;某位玩家的序章
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-28 21:36:47；更新时间：2022-08-29 09:53:00">
+22-08-28 21:36
+</span>
+&nbsp;
+<small title="更新时间：2022-08-29 09:53:00">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59518" class="to-read" data-id="59518" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第三话&nbsp;那一定是命运的邂逅（伪）★
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-29 23:34:36；更新时间：2022-08-29 23:35:24">
+22-08-29 23:34
+</span>
+&nbsp;
+<small title="更新时间：2022-08-29 23:35:24">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59519" class="to-read" data-id="59519" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第四话&nbsp;舞台背后的缇艾菈
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-08-31 21:19:51；更新时间：2022-08-31 21:22:10">
+22-08-31 21:19
+</span>
+&nbsp;
+<small title="更新时间：2022-08-31 21:22:10">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59521" class="to-read" data-id="59521" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板②&nbsp;【游戏】讨论WF角色【开始】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-02 01:23:25；更新时间：2023-08-06 18:10:58">
+22-09-02 01:23
+</span>
+&nbsp;
+<small title="更新时间：2023-08-06 18:10:58">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=59837" class="to-read" data-id="59837" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第五话&nbsp;『第一座迷宫』★
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-04 23:25:26；更新时间：2022-09-04 23:25:26">
+22-09-04 23:25
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60263" class="to-read" data-id="60263" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第六话&nbsp;『岳魔迷宫加马尔·玛塔哈』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-11 15:04:36；更新时间：2022-09-11 15:04:36">
+22-09-11 15:04
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60278" class="to-read" data-id="60278" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第七话&nbsp;『vs集积机兵■■■・■■■■』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-18 14:01:09；更新时间：2022-09-18 14:01:09">
+22-09-18 14:01
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60587" class="to-read" data-id="60587" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第八话&nbsp;新的伙伴＝便利的脚★
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-20 00:02:40；更新时间：2022-09-20 00:04:35">
+22-09-20 00:02
+</span>
+&nbsp;
+<small title="更新时间：2022-09-20 00:04:35">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60679" class="to-read" data-id="60679" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+【幕间】&nbsp;星地流斗与探泽璃推【过去篇】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-20 21:03:35；更新时间：2023-03-12 09:44:36">
+22-09-20 21:03
+</span>
+&nbsp;
+<small title="更新时间：2023-03-12 09:44:36">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60680" class="to-read" data-id="60680" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+闲话③&nbsp;玩家「ID:GrEEn0223」
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-21 09:30:41；更新时间：2022-09-21 13:17:36">
+22-09-21 09:30
+</span>
+&nbsp;
+<small title="更新时间：2022-09-21 13:17:36">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=60687" class="to-read" data-id="60687" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板③&nbsp;【考察】神秘的缇艾菈【天使？】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-09-21 21:14:48；更新时间：2022-09-21 21:42:59">
+22-09-21 21:14
+</span>
+&nbsp;
+<small title="更新时间：2022-09-21 21:42:59">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="第三章"><span class="sign minus">-</span><b>第三章&nbsp;【夏活】最初的祭典骚动</b></li>
+<li>
+<ul class="episode-ul" data-enum="29" style="height: 1450px;">
+<a href="/admin/novelReading?cid=61456" class="to-read" data-id="61456" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第一话&nbsp;「俺」与「私」与『　』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-10-07 17:59:21；更新时间：2022-10-07 18:05:03">
+22-10-07 17:59
+</span>
+&nbsp;
+<small title="更新时间：2022-10-07 18:05:03">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=61680" class="to-read" data-id="61680" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第二话&nbsp;『帕德伦·札尔费达尔』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2022-10-13 21:42:40；更新时间：2022-10-14 21:08:11">
+22-10-13 21:42
+</span>
+&nbsp;
+<small title="更新时间：2022-10-14 21:08:11">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72717" class="to-read" data-id="72717" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第三话&nbsp;『皮斯卡·丘玛·巴恩』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-04 14:46:49；更新时间：2023-08-04 14:48:18">
+23-08-04 14:46
+</span>
+&nbsp;
+<small title="更新时间：2023-08-04 14:48:18">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72724" class="to-read" data-id="72724" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第四话&nbsp;第一次正妻战争？
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-04 21:36:13；更新时间：2023-08-04 21:36:13">
+23-08-04 21:36
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72725" class="to-read" data-id="72725" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第五话&nbsp;这份感情，正是（虚假的）爱！
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-04 23:52:46；更新时间：2023-08-05 21:07:22">
+23-08-04 23:52
+</span>
+&nbsp;
+<small title="更新时间：2023-08-05 21:07:22">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72736" class="to-read" data-id="72736" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+公开请求①&nbsp;「吞世者」
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-05 08:34:46；更新时间：2023-08-05 08:34:46">
+23-08-05 08:34
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72743" class="to-read" data-id="72743" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+闲话④&nbsp;某位玩家的第一章最终战！
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-05 11:55:43；更新时间：2023-08-05 12:02:37">
+23-08-05 11:55
+</span>
+&nbsp;
+<small title="更新时间：2023-08-05 12:02:37">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72744" class="to-read" data-id="72744" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第六话&nbsp;『新的伙伴。下一场冒险。』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-05 14:03:12；更新时间：2023-08-07 23:01:18">
+23-08-05 14:03
+</span>
+&nbsp;
+<small title="更新时间：2023-08-07 23:01:18">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72755" class="to-read" data-id="72755" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+官方直播①&nbsp;『第一次夏季活动』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-05 15:46:59；更新时间：2023-08-05 15:48:05">
+23-08-05 15:46
+</span>
+&nbsp;
+<small title="更新时间：2023-08-05 15:48:05">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72756" class="to-read" data-id="72756" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第七话&nbsp;随意的故事导入……但这是夏活，快乐就OK
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-06 09:46:26；更新时间：2023-08-06 10:44:31">
+23-08-06 09:46
+</span>
+&nbsp;
+<small title="更新时间：2023-08-06 10:44:31">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72757" class="to-read" data-id="72757" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第八话&nbsp;缇艾菈老师的暑期讲座
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-06 18:00:27；更新时间：2023-08-07 22:37:35">
+23-08-06 18:00
+</span>
+&nbsp;
+<small title="更新时间：2023-08-07 22:37:35">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72813" class="to-read" data-id="72813" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第九话&nbsp;夏活《风波》/泳装露妮爆冲
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-07 14:37:42；更新时间：2023-08-07 14:37:42">
+23-08-07 14:37
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72909" class="to-read" data-id="72909" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十话&nbsp;夏活《惊愕》/帕德伦觉醒
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-07 16:33:05；更新时间：2023-08-07 16:38:33">
+23-08-07 16:33
+</span>
+&nbsp;
+<small title="更新时间：2023-08-07 16:38:33">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72910" class="to-read" data-id="72910" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十一话&nbsp;夏活《休息》/两位「兄长」
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-08 09:16:58；更新时间：2023-08-08 09:20:09">
+23-08-08 09:16
+</span>
+&nbsp;
+<small title="更新时间：2023-08-08 09:20:09">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72949" class="to-read" data-id="72949" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十二话&nbsp;夏活《妖艳》/浴衣缇艾菈开幕
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-08 20:36:29；更新时间：2023-08-13 15:13:59">
+23-08-08 20:36
+</span>
+&nbsp;
+<small title="更新时间：2023-08-13 15:13:59">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72962" class="to-read" data-id="72962" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十三话&nbsp;夏活《艳舞》/浴衣缇艾菈据腰
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-09 11:37:46；更新时间：2023-08-09 11:37:46">
+23-08-09 11:37
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=72982" class="to-read" data-id="72982" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十四话&nbsp;夏活《艳技》/浴衣缇艾菈幕后
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-12 21:59:41；更新时间：2023-08-12 22:28:28">
+23-08-12 21:59
+</span>
+&nbsp;
+<small title="更新时间：2023-08-12 22:28:28">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73141" class="to-read" data-id="73141" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+闲话⑤&nbsp;某位玩家的夏活第一天！
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-13 16:24:17；更新时间：2023-08-16 22:51:56">
+23-08-13 16:24
+</span>
+&nbsp;
+<small title="更新时间：2023-08-16 22:51:56">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73149" class="to-read" data-id="73149" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板④&nbsp;【WF】讨论夏活【初次活动】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-26 22:36:14；更新时间：2023-08-27 18:49:21">
+23-08-26 22:36
+</span>
+&nbsp;
+<small title="更新时间：2023-08-27 18:49:21">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73626" class="to-read" data-id="73626" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板⑤&nbsp;【WF】关于缇艾菈·阿斯的讨论串【夏活】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-27 18:45:05；更新时间：2023-08-27 18:45:05">
+23-08-27 18:45
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73627" class="to-read" data-id="73627" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十五话&nbsp;夏活《绚烂》/夏夜烟花绽放
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-27 23:12:58；更新时间：2023-08-27 23:14:22">
+23-08-27 23:12
+</span>
+&nbsp;
+<small title="更新时间：2023-08-27 23:14:22">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73690" class="to-read" data-id="73690" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十六话&nbsp;夏活《清晨》/厨师起得很早
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-28 20:59:01；更新时间：2023-08-29 08:29:55">
+23-08-28 20:59
+</span>
+&nbsp;
+<small title="更新时间：2023-08-29 08:29:55">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73691" class="to-read" data-id="73691" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十七话&nbsp;夏活《优雅》/帕德伦优雅的一天《前篇》
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-08-30 21:24:05；更新时间：2023-08-30 21:24:05">
+23-08-30 21:24
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73779" class="to-read" data-id="73779" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十八话&nbsp;夏活《优雅》/帕德伦优雅的一天《后篇》
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-01 23:17:54；更新时间：2023-09-01 23:17:54">
+23-09-01 23:17
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73825" class="to-read" data-id="73825" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第十九话&nbsp;夏活《袭来》／沉眠于湖底之物
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-01 23:45:00；更新时间：2023-09-02 08:15:39">
+23-09-01 23:45
+</span>
+&nbsp;
+<small title="更新时间：2023-09-02 08:15:39">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73826" class="to-read" data-id="73826" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第二十话&nbsp;夏活《终焉》／祭典尾声
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-02 14:33:05；更新时间：2023-09-02 15:30:22">
+23-09-02 14:33
+</span>
+&nbsp;
+<small title="更新时间：2023-09-02 15:30:22">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73844" class="to-read" data-id="73844" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+揭示板⑥&nbsp;【远未结束】神秘缇艾菈【谜】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-02 15:26:52；更新时间：2023-09-02 15:30:48">
+23-09-02 15:26
+</span>
+&nbsp;
+<small title="更新时间：2023-09-02 15:30:48">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73850" class="to-read" data-id="73850" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+WF攻略网站&nbsp;【夏活（第一年）举办中】
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-02 16:21:45；更新时间：2023-09-02 16:35:51">
+23-09-02 16:21
+</span>
+&nbsp;
+<small title="更新时间：2023-09-02 16:35:51">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=73853" class="to-read" data-id="73853" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+泰拉的往事①&nbsp;『永恒与破灭的交换魔法・上』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-09-02 17:12:39；更新时间：2023-09-02 17:12:39">
+23-09-02 17:12
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+<li class="chapter-box" id="第四章"><span class="sign minus">-</span><b>第四章&nbsp;【本篇进行】努力维持存在感</b></li>
+<li>
+<ul class="episode-ul" data-enum="5" style="height: 250px;">
+<a href="/admin/novelReading?cid=73854" class="to-read" data-id="73854" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+官方直播②&nbsp;『第二章发布预热』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-13 22:19:58；更新时间：2023-10-13 22:28:18">
+23-10-13 22:19
+</span>
+&nbsp;
+<small title="更新时间：2023-10-13 22:28:18">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=75282" class="to-read" data-id="75282" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第一话&nbsp;排斥变化的世界/目标是成为信息传诵者
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-15 16:13:53；更新时间：2023-10-15 16:13:53">
+23-10-15 16:13
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=75284" class="to-read" data-id="75284" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第二话&nbsp;出发，前往机械都市米卡尼亚！/这就是卡奥斯！
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-16 12:00:02；更新时间：2023-10-17 19:03:41">
+23-10-16 12:00
+</span>
+&nbsp;
+<small title="更新时间：2023-10-17 19:03:41">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=75287" class="to-read" data-id="75287" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第三话&nbsp;恶辣小丑
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-17 12:00:03；更新时间：2023-10-17 12:00:03">
+23-10-17 12:00
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+<a href="/admin/novelReading?cid=75290" class="to-read" data-id="75290" data-cost="0" data-payed="0" data-uid="444" onclick="return false;">
+<li class="episode-box " style="display: grid;grid-template-columns: 18fr 1fr 3fr; width: 100%; padding: 0% 5% 0% 5%;">
+<span style="overflow: hidden; text-overflow: ellipsis; margin: 0;">
+第四话&nbsp;『机械都市米卡尼亚』
+</span>
+<small style="font-size:10px;-webkit-transform: scale(0.8);color:red; text-align: right;">
+</small>
+<span style="font-size: 10px; text-align: right;">
+<span title="创建时间：2023-10-18 12:00:06；更新时间：2023-10-18 12:00:06">
+23-10-18 12:00
+</span>
+&nbsp;
+<small style="filter:opacity(0)">(<u>更新</u>)</small>
+</span>
+</li>
+</a>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div style="clear: both;"></div>
+</div>
+</div></div><div class="row"><div class="col-md-12"><div id="novel-comment-list" class="box">
+<div class="box-body">
+<div class="comment_list">
+<h3>评论(共320条)<button class="btn btn-primary" id="comment-btn" style="padding: 4px 26px;font-size: 13px;float: right;margin-right: 10px;border-radius: 3px;border-color: #14B9C8;background: #14B9C8;" type="button">发表评论</button></h3>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="56654">
+<img class="imgcss" src="/images/encode/other-210825002032-8xYB.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604557" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(147)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">wanchet</span>
+<span class="c-floor">1楼</span>
+<data-time time="1661569913"></data-time>
+</div>
+<div class="del">
+<span class="show_reply_list" data-num="14">查看剩余14条回复
+</span>
+<i class="fa fa-bolt tipoff" data-uid="56654" data-ctype="1" data-id="604557" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="56654" data-id="604557" data-avatar="/images/encode/other-210825002032-8xYB.jpg" data-name="wanchet"><p>手游，人权，泳装，妈……<span style="background-color: initial;">是可可萝</span><img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="25340">
+<img class="simg" src="/images/encode/other-210810193454-gAGZ.jpeg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>雅伯渡：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="25340" data-ctype="1" data-id="604656">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="25340" data-id="604656" data-avatar="/images/encode/other-210810193454-gAGZ.jpeg" data-name="雅伯渡" data-top="604557"><p>同樣想到可可蘿⋯⋯<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="-webkit-text-size-adjust: 100%;" /></p></span>
+</div>
+<data-time class="reply-time" time="1661578725"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="23134">
+<img class="simg" src="/images/encode/other-210613131123-xIDB.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>巷弄小學生：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="23134" data-ctype="1" data-id="604814">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="23134" data-id="604814" data-avatar="/images/encode/other-210613131123-xIDB.jpg" data-name="巷弄小學生" data-top="604557"><p>看到這簡介，馬上想到咲戀媽媽的二顆大饅頭。</p></span>
+</div>
+<data-time class="reply-time" time="1661592004"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="138042">
+<img class="simg" src="/images/encode/other-220521132127-Eo6O.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>CovertrickJr：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="138042" data-ctype="1" data-id="610630">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="138042" data-id="610630" data-avatar="/images/encode/other-220521132127-Eo6O.jpg" data-name="CovertrickJr" data-top="604557"><p>可可萝是我的本命角色，所有可可萝都把强度拉满了!自豪!</p></span>
+</div>
+<data-time class="reply-time" time="1662087141"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="10874">
+<img class="simg" src="/images/encode/other-220605191235-THlC.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>Arimani：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="10874" data-ctype="1" data-id="630848">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="10874" data-id="630848" data-avatar="/images/encode/other-220605191235-THlC.jpg" data-name="Arimani" data-top="604557"><p>那麼我來當凱留</p></span>
+</div>
+<data-time class="reply-time" time="1663639365"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="131072">
+<img class="simg" src="/images/encode/other-220506153651-IN2Y.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>是咖啡猫：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="131072" data-ctype="1" data-id="775533">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="131072" data-id="775533" data-avatar="/images/encode/other-220506153651-IN2Y.jpg" data-name="是咖啡猫" data-top="604557"><p>pcr玩家慕名而来<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" /></p></span>
+</div>
+<data-time class="reply-time" time="1678078070"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="161347">
+<img class="simg" src="/images/encode/other-230217220030-V3kf.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>栀海：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="161347" data-ctype="1" data-id="779948">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="161347" data-id="779948" data-avatar="/images/encode/other-230217220030-V3kf.jpg" data-name="栀海" data-top="604557"><p>你这么一说我满脑子都是可可萝了草（虽然阿妈真的爱</p></span>
+</div>
+<data-time class="reply-time" time="1678683631"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="238682">
+<img class="simg" src="/images/encode/other-230511083820-k7zu.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>RANG17：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="238682" data-ctype="1" data-id="818234">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="238682" data-id="818234" data-avatar="/images/encode/other-230511083820-k7zu.jpg" data-name="RANG17" data-top="604557"><p>草，确实</p></span>
+</div>
+<data-time class="reply-time" time="1683866408"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="260731">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>李睿：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="260731" data-ctype="1" data-id="873757">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="260731" data-id="873757" data-avatar="/masiroImg/header-default.jpg" data-name="李睿" data-top="604557"><p>&#43;1</p></span>
+</div>
+<data-time class="reply-time" time="1691231344"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="268435">
+<img class="simg" src="/images/encode/other-230902142049-IICQ.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>thewaymimi：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="268435" data-ctype="1" data-id="890083">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="268435" data-id="890083" data-avatar="/images/encode/other-230902142049-IICQ.jpg" data-name="thewaymimi" data-top="604557"><p>好家伙<span style="background-color: initial;">😃</span><br/></p></span>
+</div>
+<data-time class="reply-time" time="1693636465"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="56654">
+<img class="simg" src="/images/encode/other-210825002032-8xYB.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>wanchet</b> 回复 <b>巷弄小學生</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="56654" data-ctype="1" data-id="604833">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="56654" data-id="604833" data-avatar="/images/encode/other-210825002032-8xYB.jpg" data-name="wanchet" data-top="604557"><p>可是<span style="background-color: initial;">咲恋妈妈回血不行啊</span><img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /><img src="https://masiro.me/smiley/35.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p></span>
+</div>
+<data-time class="reply-time" time="1661593799"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="260731">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>李睿</b> 回复 <b>巷弄小學生</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="260731" data-ctype="1" data-id="873758">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="260731" data-id="873758" data-avatar="/masiroImg/header-default.jpg" data-name="李睿" data-top="604557"><p>&#43;1</p></span>
+</div>
+<data-time class="reply-time" time="1691231355"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="58868">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>百骑兵</b> 回复 <b>wanchet</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="58868" data-ctype="1" data-id="605089">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="58868" data-id="605089" data-avatar="/masiroImg/header-default.jpg" data-name="百骑兵" data-top="604557"><p>那就是弥撒头妈妈了，回血不错，馒头也不小</p></span>
+</div>
+<data-time class="reply-time" time="1661610352"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="152680">
+<img class="simg" src="/images/encode/other-220630115851-RqTn.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>某科学的法师</b> 回复 <b>CovertrickJr</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="152680" data-ctype="1" data-id="610681">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="152680" data-id="610681" data-avatar="/images/encode/other-220630115851-RqTn.jpg" data-name="某科学的法师" data-top="604557"><p>R18蝶妈，会长<span style="background-color: initial;">震怒</span><img src="https://masiro.me/smiley/22.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p></span>
+</div>
+<data-time class="reply-time" time="1662090751"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="61579">
+<img class="simg" src="/images/encode/other-210910030759-2eTa.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>传奇萝莉</b> 回复 <b>CovertrickJr</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="61579" data-ctype="1" data-id="630041">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="61579" data-id="630041" data-avatar="/images/encode/other-210910030759-2eTa.jpg" data-name="传奇萝莉" data-top="604557"><p>奶可以拉满？一般不是卡R12吗<br/></p></span>
+</div>
+<data-time class="reply-time" time="1663578850"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="138042">
+<img class="simg" src="/images/encode/other-220521132127-Eo6O.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>CovertrickJr</b> 回复 <b>某科学的法师</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="138042" data-ctype="1" data-id="610877">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="138042" data-id="610877" data-avatar="/images/encode/other-220521132127-Eo6O.jpg" data-name="CovertrickJr" data-top="604557"><p>😡😡😡😡😡😡</p></span>
+</div>
+<data-time class="reply-time" time="1662109718"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="138042">
+<img class="simg" src="/images/encode/other-220521132127-Eo6O.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>CovertrickJr</b> 回复 <b>传奇萝莉</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="138042" data-ctype="1" data-id="630209">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="138042" data-id="630209" data-avatar="/images/encode/other-220521132127-Eo6O.jpg" data-name="CovertrickJr" data-top="604557"><p>我才一百一哥哥</p></span>
+</div>
+<data-time class="reply-time" time="1663591958"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="138042">
+<img class="simg" src="/images/encode/other-220521132127-Eo6O.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>CovertrickJr</b> 回复 <b>传奇萝莉</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="138042" data-ctype="1" data-id="630212">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="138042" data-id="630212" data-avatar="/images/encode/other-220521132127-Eo6O.jpg" data-name="CovertrickJr" data-top="604557"><p>而且我指的是公主可可萝满星装备全部拉满</p></span>
+</div>
+<data-time class="reply-time" time="1663592003"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="61579">
+<img class="simg" src="/images/encode/other-210910030759-2eTa.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>传奇萝莉</b> 回复 <b>CovertrickJr</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="61579" data-ctype="1" data-id="630214">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="61579" data-id="630214" data-avatar="/images/encode/other-210910030759-2eTa.jpg" data-name="传奇萝莉" data-top="604557"><p>反正我是五星满级R12<br/></p></span>
+</div>
+<data-time class="reply-time" time="1663592242"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="10152">
+<img class="simg" src="/images/encode/other-210523163112-VzCU.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>鹿马</b> 回复 <b>传奇萝莉</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="10152" data-ctype="1" data-id="650471">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="10152" data-id="650471" data-avatar="/images/encode/other-210523163112-VzCU.jpg" data-name="鹿马" data-top="604557"><p>现在卡装备还有用吗？不是缺ub充能buff吗</p></span>
+</div>
+<data-time class="reply-time" time="1665366430"></data-time>
+</div>
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="160378">
+<img class="imgcss" src="/images/encode/other-220827111908-ptBg.png?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604566" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(106)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">闪电速说</span>
+<span class="c-floor">2楼</span>
+<data-time time="1661570481"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="160378" data-ctype="1" data-id="604566" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="160378" data-id="604566" data-avatar="/images/encode/other-220827111908-ptBg.png" data-name="闪电速说"><p>是新TS！收藏了</p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="26808">
+<img class="imgcss" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604575" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(102)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">LLLL</span>
+<span class="c-floor">3楼</span>
+<data-time time="1661571576"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="26808" data-ctype="1" data-id="604575" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="26808" data-id="604575" data-avatar="/masiroImg/header-default.jpg" data-name="LLLL"><p>主角莫不是穿到了PCR？<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" /></p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="24462">
+<img class="imgcss" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604578" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(111)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">pulatina</span>
+<span class="c-floor">4楼</span>
+<data-time time="1661572103"></data-time>
+</div>
+<div class="del">
+<span class="show_reply_list" data-num="1">查看剩余1条回复
+</span>
+<i class="fa fa-bolt tipoff" data-uid="24462" data-ctype="1" data-id="604578" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="24462" data-id="604578" data-avatar="/masiroImg/header-default.jpg" data-name="pulatina"><p>初始、群奶、前女友、人权，不是ue吗<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="172062">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>斯卡蒂酱：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="172062" data-ctype="1" data-id="632645">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="172062" data-id="632645" data-avatar="/masiroImg/header-default.jpg" data-name="斯卡蒂酱" data-top="604578"><p>啊这</p></span>
+</div>
+<data-time class="reply-time" time="1663770971"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="68794">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>诸神之镰：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="68794" data-ctype="1" data-id="638682">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="68794" data-id="638682" data-avatar="/masiroImg/header-default.jpg" data-name="诸神之镰" data-top="604578"><p>哈哈哈</p></span>
+</div>
+<data-time class="reply-time" time="1664244497"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="205754">
+<img class="simg" src="/images/encode/other-230407173541-aG9C.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>凌霜繁雪：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="205754" data-ctype="1" data-id="798527">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="205754" data-id="798527" data-avatar="/images/encode/other-230407173541-aG9C.jpg" data-name="凌霜繁雪" data-top="604578"><p>果咩呐，UE<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p></span>
+</div>
+<data-time class="reply-time" time="1681059063"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="238682">
+<img class="simg" src="/images/encode/other-230511083820-k7zu.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>RANG17：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="238682" data-ctype="1" data-id="818235">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="238682" data-id="818235" data-avatar="/images/encode/other-230511083820-k7zu.jpg" data-name="RANG17" data-top="604578"><p>这也能迫害</p></span>
+</div>
+<data-time class="reply-time" time="1683866427"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="262654">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>御坂10288：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="262654" data-ctype="1" data-id="877766">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="262654" data-id="877766" data-avatar="/masiroImg/header-default.jpg" data-name="御坂10288" data-top="604578"><p>乐了</p></span>
+</div>
+<data-time class="reply-time" time="1691744771"></data-time>
+</div>
+<div class="reply  hide-reply ">
+<div class="simgdiv user-info-show" data-uid="244880">
+<img class="simg" src="/images/encode/other-230815132606-VrSQ.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>日寂：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="244880" data-ctype="1" data-id="880260">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="244880" data-id="880260" data-avatar="/images/encode/other-230815132606-VrSQ.jpg" data-name="日寂" data-top="604578"><p>这也能迫害<img src="https://masiro.me/smiley/33.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p></span>
+</div>
+<data-time class="reply-time" time="1692077597"></data-time>
+</div>
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="93605">
+<img class="imgcss" src="/images/encode/other-220126120301-xP31.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604579" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(90)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">大家好</span>
+<span class="c-floor">5楼</span>
+<data-time time="1661572616"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="93605" data-ctype="1" data-id="604579" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="93605" data-id="604579" data-avatar="/images/encode/other-220126120301-xP31.jpg" data-name="大家好"><p>期待</p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="27730">
+<img class="imgcss" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604585" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(111)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">GGInInDer</span>
+<span class="c-floor">6楼</span>
+<data-time time="1661573158"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="27730" data-ctype="1" data-id="604585" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="27730" data-id="604585" data-avatar="/masiroImg/header-default.jpg" data-name="GGInInDer"><p>低cost才是王道啊</p><p>當眾多高cost人權角為了唯一的c位搶得頭破血流時 低cost角已經歲月靜好的待在輔助位上摸魚了</p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="85043">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>MkoTenshi：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="85043" data-ctype="1" data-id="604588">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="85043" data-id="604588" data-avatar="/masiroImg/header-default.jpg" data-name="MkoTenshi" data-top="604585"><p>铁打的辅助流水的c</p></span>
+</div>
+<data-time class="reply-time" time="1661573267"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="56217">
+<img class="simg" src="/images/encode/other-210822162604-kFVW.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>Rofferia：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="56217" data-ctype="1" data-id="610632">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="56217" data-id="610632" data-avatar="/images/encode/other-210822162604-kFVW.jpg" data-name="Rofferia" data-top="604585"><p>你以为是可可萝？其实是我IDW哒喵！</p></span>
+</div>
+<data-time class="reply-time" time="1662087234"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="51517">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>雪月霜天：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="51517" data-ctype="1" data-id="746187">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="51517" data-id="746187" data-avatar="/masiroImg/header-default.jpg" data-name="雪月霜天" data-top="604585"><p>马修不哭</p></span>
+</div>
+<data-time class="reply-time" time="1674624743"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="28097">
+<img class="simg" src="/images/encode/other-220711145409-EkYp.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>ayanami-rei</b> 回复 <b>Rofferia</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="28097" data-ctype="1" data-id="615100">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="28097" data-id="615100" data-avatar="/images/encode/other-220711145409-EkYp.jpg" data-name="ayanami-rei" data-top="604585"><p>拆了拆了！一定得拆了，这猫猫一点都不可爱！</p></span>
+</div>
+<data-time class="reply-time" time="1662442846"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="119654">
+<img class="simg" src="/images/encode/other-230603183711-HJyd.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>为葬花</b> 回复 <b>Rofferia</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="119654" data-ctype="1" data-id="873569">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="119654" data-id="873569" data-avatar="/images/encode/other-230603183711-HJyd.jpg" data-name="为葬花" data-top="604585"><p>不好，脑袋里已经有声音了。<img src="https://masiro.me/smiley/33.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p></span>
+</div>
+<data-time class="reply-time" time="1691211035"></data-time>
+</div>
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="85043">
+<img class="imgcss" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604586" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(91)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">MkoTenshi</span>
+<span class="c-floor">7楼</span>
+<data-time time="1661573225"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="85043" data-ctype="1" data-id="604586" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="85043" data-id="604586" data-avatar="/masiroImg/header-default.jpg" data-name="MkoTenshi"><p>设定真有点pcr的味道</p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="80838">
+<img class="imgcss" src="/images/encode/other-220106010653-WBDx.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604601" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(92)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">NealR</span>
+<span class="c-floor">8楼</span>
+<data-time time="1661574211"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="80838" data-ctype="1" data-id="604601" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="80838" data-id="604601" data-avatar="/images/encode/other-220106010653-WBDx.jpg" data-name="NealR"><p>噢！！是新的ts哒</p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="26388">
+<img class="imgcss" src="/images/encode/other-230226142147-gxQj.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604627" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(93)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">kdhr单推人</span>
+<span class="c-floor">9楼</span>
+<data-time time="1661576014"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="26388" data-ctype="1" data-id="604627" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="26388" data-id="604627" data-avatar="/images/encode/other-230226142147-gxQj.jpg" data-name="kdhr单推人"><p>献媚系ts还挺吸引人的<img src="https://masiro.me/smiley/25.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="134230">
+<img class="simg" src="/images/encode/other-230110214932-GI23.WEBP?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>百梦幻境：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="134230" data-ctype="1" data-id="695700">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="134230" data-id="695700" data-avatar="/images/encode/other-230110214932-GI23.WEBP" data-name="百梦幻境" data-top="604627"><p>确实</p></span>
+</div>
+<data-time class="reply-time" time="1669671668"></data-time>
+</div>
+</div>
+</div>
+<hr>
+<div class="comment  hot-comment ">
+<div class="left-box">
+<div class="imgdiv user-info-show" data-uid="166228">
+<img class="imgcss" src="/images/encode/other-221006195435-cGGy.jpg?quality=20" />
+</div>
+<div class="thumbs-up do-thumbs-up" data-id="604683" data-type="2">
+<i class="glyphicon glyphicon-thumbs-up">(97)</i>
+</div>
+</div>
+<div class="comment-details">
+<div class="comment-title">
+<span class="comment_name">和歌酱prpr</span>
+<span class="c-floor">10楼</span>
+<data-time time="1661580786"></data-time>
+</div>
+<div class="del">
+<i class="fa fa-bolt tipoff" data-uid="166228" data-ctype="1" data-id="604683" style="margin-right: 20px;">举报</i>
+</div>
+<div class="comment-content" data-uid="166228" data-id="604683" data-avatar="/images/encode/other-221006195435-cGGy.jpg" data-name="和歌酱prpr"><p>宅男才更懂如何媚宅<img src="https://masiro.me/smiley/5.png" alt="[表情]" data-w-e="1" style="background-color: initial;" /></p>
+</div>
+<div style="width: 100%;">
+<i class="fa fa-commenting-o reply-comment" style="float: right;margin-right: 20px;margin-bottom:8px;">回复</i>
+</div>
+</div>
+<div class="reply_list">
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="51517">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>雪月霜天：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="51517" data-ctype="1" data-id="746188">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="51517" data-id="746188" data-avatar="/masiroImg/header-default.jpg" data-name="雪月霜天" data-top="604683"><p>男人最懂男人心</p></span>
+</div>
+<data-time class="reply-time" time="1674624784"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="277749">
+<img class="simg" src="/masiroImg/header-default.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>肆拾伍：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="277749" data-ctype="1" data-id="910760">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="277749" data-id="910760" data-avatar="/masiroImg/header-default.jpg" data-name="肆拾伍" data-top="604683"><div class="comment-escape"><p>只有男人最懂男人对吧？我记得这是哪部电影花絮的吧？</p></div></span>
+</div>
+<data-time class="reply-time" time="1696694309"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="252724">
+<img class="simg" src="/images/encode/other-231015190627-Qtn8.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>童佳一：</b>
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="252724" data-ctype="1" data-id="917494">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="252724" data-id="917494" data-avatar="/images/encode/other-231015190627-Qtn8.jpg" data-name="童佳一" data-top="604683"><p>zmsji</p></span>
+</div>
+<data-time class="reply-time" time="1697368215"></data-time>
+</div>
+<div class="reply ">
+<div class="simgdiv user-info-show" data-uid="238682">
+<img class="simg" src="/images/encode/other-230511083820-k7zu.jpg?quality=20" />
+</div>
+<div class="reply-box">
+<span class="reply_name">
+<b>RANG17</b> 回复 <b>雪月霜天</b>：
+</span>
+<span class="reply-btn-box">
+<i class="fa fa-bolt tipoff" data-uid="238682" data-ctype="1" data-id="818236">举报</i>
+<i class="fa fa-commenting-o reply-btn" style="margin-left: 40px;">回复</i>
+</span>
+<span class="reply_content" data-uid="238682" data-id="818236" data-avatar="/images/encode/other-230511083820-k7zu.jpg" data-name="RANG17" data-top="604683"><p>南通发言（</p></span>
+</div>
+<data-time class="reply-time" time="1683866487"></data-time>
+</div>
+</div>
+</div>
+</div>
+<div class="box-footer clearfix" style="float: right;width: 100%;">
+<ul class="pagination">
+<li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+<li class="page-item active"><span class="page-link">1</span></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=2#novel-comment-list">2</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=3#novel-comment-list">3</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=4#novel-comment-list">4</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=5#novel-comment-list">5</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=6#novel-comment-list">6</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=7#novel-comment-list">7</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=8#novel-comment-list">8</a></li>
+<li class="page-item disabled"><span class="page-link">...</span></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=21#novel-comment-list">21</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=22#novel-comment-list">22</a></li>
+<li class="page-item"><a class="page-link" href="https://masiro.me/admin/novelView?novel_id=875&amp;page=2#novel-comment-list" rel="next">&raquo;</a></li>
+</ul>
+</div>
+</div>
+<div class="box-footer comment-box">
+<form id="commentForm">
+<div id="comment-info">
+</div>
+<div id="editor"></div>
+<input type="hidden" name="novel_id" id="novel_id" value="875">
+<input type="hidden" name="parent_id" id="parent_comment" value>
+<input type="hidden" name="top_id" id="top_comment" value>
+<input type="hidden" name="reply_user" id="reply_user" value>
+<input type="hidden" class="csrf" name="_token" value="7VCmjQuZHWbt6FMd0XXweHoe5BUbwKIpm9HBBc26">
+<input type="hidden" class="page" name="page" value="1">
+</form>
+</div>
+<div style="clear: both;"></div>
+</div>
+</div></div>
+</section>
+</div>
+<script data-exec-on-popstate>
+
+    $(function () {
+                    $("#totop").remove();
+$('.content').attr('style',$('.bg').attr('style'));
+
+var screenWidth = $(window).width();
+var csrf = $('.csrf').val();
+
+$.ajaxSetup({
+  headers: {
+    'X-CSRF-TOKEN': csrf
+  }
+});
+
+$('body').on('click', '.btn-collect', function () {
+  var novel_id = $(this).attr('data-nid');
+  $.get("/admin/collectNovel?novel_id=" + novel_id, {}, function (res) {
+    $('.btn-collect').hide();
+    $('.btn-uncollect').show();
+  }, 'json');
+});
+
+$('body').on('click', '.btn-uncollect', function () {
+  var novel_id = $(this).attr('data-nid');
+  $.get("/admin/uncollectNovel?novel_id=" + novel_id, {}, function (res) {
+    $('.btn-collect').show();
+    $('.btn-uncollect').hide();
+  }, 'json');
+});
+
+$('body').on('click', '.reading', function () {
+  var chapter_id = $(this).attr('data-cid');
+  if (chapter_id) {
+    window.open("/admin/novelReading?cid=" + chapter_id);
+  } else {
+    layer.msg('当前小说尚未发布章节内容', { time: 1000 });
+  }
+
+});
+
+$('body').on('click', '.chapter-title', function () {
+  var collapse = $(this).parent().parent().children().eq(0);
+  var expand = $(this).parent().parent().children().eq(1);
+  if (collapse.css('display') == 'none') {
+    expand.click();
+  } else {
+    collapse.click();
+  }
+});
+
+let chapter_state = window.cache.getItem('chapter_state');
+if (chapter_state) {
+  const novel_id = $(".btn-collect")[0].getAttribute('data-nid');
+  let chapter_state_list = chapter_state[novel_id] || []
+  for (const chapter in chapter_state_list) {
+    if (chapter_state[novel_id][chapter]) {
+      continue
+    }
+
+    let episode = document.querySelector(`[data-id='${chapter}']`).parentNode;
+
+    const chapter_box = episode.parentNode.previousElementSibling;
+    let sign = chapter_box.querySelector('.sign');
+
+    sign.classList.remove("minus");
+    sign.classList.add("plus");
+    sign.innerHTML = "+";
+
+    episode.style.height = 0;
+  }
+}
+
+$('body').on('click', '.chapter-box', function () {
+  var episode = $(this).next().children('.episode-ul');
+  var sign = $(this).children('.sign');
+  var novel_id = $(".btn-collect")[0].getAttribute('data-nid');
+
+  if (sign.hasClass('minus')) {
+    sign.removeClass('minus');
+    sign.addClass('plus');
+    episode.css("height", "0px");
+    sign.html("+");
+
+    var chapter_state = window.cache.getItem('chapter_state')
+    if (!('novel_id' in chapter_state)) {
+      chapter_state[novel_id] = {}
+    }
+
+    [].forEach.call(episode.children(), function (ele) {
+      const chapter = chapter_state[ele.getAttribute('data-id')];
+      delete chapter_state[novel_id][chapter];
+    })
+
+    const chapter = episode.children()[0];
+    if (chapter) {
+      if (!chapter_state[novel_id]) { chapter_state[novel_id] = {} }
+      chapter_state[novel_id][chapter.getAttribute('data-id')] = false;
+    }
+    window.cache.setItem('chapter_state', chapter_state);
+  } else if (sign.hasClass('plus')) {
+    var height = episode.attr("data-enum") * 50;
+    sign.removeClass('plus');
+    sign.addClass('minus');
+    episode.css("height", height);
+    sign.html("-");
+
+    var chapter_state = window.cache.getItem('chapter_state');
+    if (!('novel_id' in chapter_state)) {
+      chapter_state[novel_id] = {}
+    }
+
+    [].forEach.call(episode.children(), function (ele) {
+      const chapter = chapter_state[ele.getAttribute('data-id')];
+      delete chapter_state[novel_id][chapter];
+    })
+
+    const chapter = episode.children()[0];
+    if (chapter) {
+      chapter_state[novel_id][chapter.getAttribute('data-id')] = true;
+    }
+
+    window.cache.setItem('chapter_state', chapter_state);
+  }
+})
+
+$('body').on('click', '.btn-pics', function () {
+  layer.msg('功能尚未开发', { time: 1000 });
+});
+
+$('body').on('click', '.btn-forum', function () {
+  var forum_id = $(this).attr("data-fid");
+  window.open("/admin/forum?forum_id=" + forum_id);
+  //window.location.href = "/admin/forum?forum_id="+forum_id;
+});
+
+$('body').on('click', '.btn-noveledit', function () {
+  var novel_id = $(this).attr("data-nid");
+  window.open("/admin/chapters?nid=" + novel_id);
+  //window.location.href = "/admin/forum?forum_id="+forum_id;
+});
+
+$('body').on('click', '.create-forum', function () {
+  var novel_id = $(this).attr("data-nid");
+  layer.confirm('确定要开启论坛吗?开了论坛要管', { icon: 3, title: '开启论坛' }, function (index) {
+    $.post("/admin/createForum", { 'novel_id': novel_id }, function (res) {
+      if (res.code == 1) {
+        layer.msg('开启成功!', { time: 500 });
+        window.location.href = "/admin/forum?forum_id=" + res.forum_id;
+      } else {
+        layer.msg(res.msg, { time: 1000 });
+      }
+    }, 'json');
+    layer.close(index);
+  });
+});
+
+$('body').on('click', '.all-pull-down', function () {
+  $('.episode-ul').css('height', "0px");
+  let sign = $('.minus');
+  sign.addClass('plus');
+  sign.removeClass('minus');
+  sign.html("+");
+
+  var chapter_state = window.cache.getItem('chapter_state')
+
+  const novel_id = $(".btn-collect")[0].getAttribute('data-nid');
+  chapter_state[novel_id] = {};
+
+  [].forEach.call($('.episode-ul'), function (episode) {
+    const chapter = episode.children[0];
+    if (chapter) {
+      chapter_state[novel_id][chapter.getAttribute('data-id')] = false;
+    }
+  })
+
+  window.cache.setItem('chapter_state', chapter_state);
+});
+
+$.fn.reverseChildren = function () {
+  return this.each(function () {
+    var $this = $(this);
+    $this.children().each(function () { $this.prepend(this) });
+  });
+};
+
+function reverseChapters(parent) {
+  for (let i = 0; i < parent.childNodes.length; i++) {
+    if (parent.childNodes[i].className !== "chapter-box") {
+      parent.insertBefore(parent.childNodes[i], parent.firstChild.nextSibling);
+    } else {
+      parent.insertBefore(parent.childNodes[i], parent.firstChild);
+    }
+  }
+}
+
+let inverse_state = window.cache.getItem('inverse_state');
+if (inverse_state) {
+  const novel_id = $(".btn-collect")[0].getAttribute('data-nid');
+  const is_reverse = inverse_state[novel_id];
+  if (is_reverse) {
+    $('.cp-rank').text('正序排列');
+
+    let chapter_list = document.getElementsByClassName("chapter-ul")[0]
+    reverseChapters(chapter_list);
+    $('.episode-ul').reverseChildren();
+  }
+}
+
+$('body').on('click', '.cp-rank', function () {
+  const x = document.getElementsByClassName("chapter-ul")[0]
+  reverseChapters(x);
+  $('.episode-ul').reverseChildren();
+
+  let inverse_state = window.cache.getItem('inverse_state')
+  const novel_id = $(".btn-collect")[0].getAttribute('data-nid');
+
+  const is_reverse = ((flag) => flag ? !flag : true)(inverse_state[novel_id]);
+  if (is_reverse) {
+    $('.cp-rank').text('正序排列');
+  } else {
+    $('.cp-rank').text('倒序排列');
+  }
+
+  inverse_state[novel_id] = is_reverse;
+  window.cache.setItem('inverse_state', inverse_state);
+});
+
+$('body').on('click', '.to-read', function () {
+  var cid = $(this).attr("data-id");
+  var cost = $(this).attr("data-cost");
+  var payed = $(this).attr("data-payed");
+  var user_id = $(this).attr("data-uid");
+  var my_id = $(".user_id").val();
+  var that = $(this);
+
+  if (cost > 0 && payed == 0 && user_id != my_id) {
+    layer.confirm('确定要支付' + cost + '金币吗?', { icon: 3, title: '积分支付' }, function (index) {
+      $.ajax({
+        type: 'post',
+        url: '/admin/pay',
+        dataType: 'json',
+        data: { 'type': 2, 'object_id': cid, 'cost': cost },
+        success: function (data) {
+          if (data.code == 1) {
+            that.attr("data-payed", 1);
+            layer.open({
+              title: '金币支付',
+              content: data.msg,
+              yes: function (index, layero) {
+                window.location.href = "/admin/novelReading?cid=" + cid;
+                layer.close(index);
+              }
+            });
+          } else {
+            layer.msg(data.msg, { icon: 2 });
+          }
+        },
+        error: function (data) {
+          layer.close(load);
+          if (data.code == 1) {
+            layer.msg(data.msg, { icon: 1 });
+          } else if (data.code == -1) {
+            layer.msg(data.msg, { icon: 2 });
+          } else {
+            layer.msg('网络错误，稍后重试!', { icon: 2 });
+          }
+        }
+      })
+    });
+  } else {
+    window.location.href = "/admin/novelReading?cid=" + cid;
+    return false;
+  }
+})
+
+            });
+</script>
+<meta name="chinese" content="n">
+<meta name="scroll_switch_mobile" content="1">
+<meta name="scroll_switch_desktop" content="0">
+<meta name="sys_refresh_time" content="1697642355">
+</div>
+
+<footer class="main-footer">
+
+
+</footer>
+</div>
+<button id="totop" title="Go to top" style="display: none;"><i class="fa fa-chevron-up"></i></button>
+<script>
+    function LA() {}
+    LA.token = "7VCmjQuZHWbt6FMd0XXweHoe5BUbwKIpm9HBBc26";
+</script>
+
+<script src="https://masiro.me/vendor/laravel-admin/AdminLTE/bootstrap/js/bootstrap.min.js"></script>
+<script src="https://masiro.me/vendor/laravel-admin/AdminLTE/dist/js/app.min.js"></script>
+<script src="https://masiro.me/vendor/laravel-admin/laravel-admin/laravel-admin.js"></script>
+<script src="https://masiro.me/js/jquery.cookie.js?timestamp=1626511376"></script>
+<script src="https://masiro.me/js/public/message.js?timestamp=1626511376"></script>
+<script src="https://masiro.me/layui/layui.js?timestamp=1691478958"></script>
+<script src="https://masiro.me/js/public/cache.js?timestamp=1629359702"></script>
+<script src="https://masiro.me/js/main.js?timestamp=1697533068"></script>
+<script src="https://masiro.me/js/function.js?timestamp=1697533068"></script>
+<script src="https://masiro.me/js/app.js?timestamp=1693534778"></script>
+<script src="https://masiro.me/js/public/chinese-change.js?timestamp=1649679805"></script>
+<script src="https://masiro.me/js/public/date.format.js?timestamp=1626511376"></script>
+<script src="https://masiro.me/js/public/init-time.js?timestamp=1629272253"></script>
+<script src="https://masiro.me/js/public/insert-at-caret.js?timestamp=1626511376"></script>
+<script src="https://masiro.me/js/wangEditor/release/wangEditor.js?timestamp=1659017975"></script>
+<script src="https://masiro.me/js/public/init-wang-editor.js?timestamp=1626511376"></script>
+<script src="https://masiro.me/js/novel-comment.js?timestamp=1697533068"></script>
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script>(function(){var js = "window['__CF$cv$params']={r:'8181c22d99726bb8',t:'MTY5NzY0MjM1Ni42NjcwMDA='};_cpo=document.createElement('script');_cpo.nonce='',_cpo.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js',document.getElementsByTagName('head')[0].appendChild(_cpo);";var _0xh = document.createElement('iframe');_0xh.height = 1;_0xh.width = 1;_0xh.style.position = 'absolute';_0xh.style.top = 0;_0xh.style.left = 0;_0xh.style.border = 'none';_0xh.style.visibility = 'hidden';document.body.appendChild(_0xh);function handler() {var _0xi = _0xh.contentDocument || _0xh.contentWindow.document;if (_0xi) {var _0xj = _0xi.createElement('script');_0xj.innerHTML = js;_0xi.getElementsByTagName('head')[0].appendChild(_0xj);}}if (document.readyState !== 'loading') {handler();} else if (window.addEventListener) {document.addEventListener('DOMContentLoaded', handler);} else {var prev = document.onreadystatechange || function () {};document.onreadystatechange = function (e) {prev(e);if (document.readyState !== 'loading') {document.onreadystatechange = prev;handler();}};}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v84a3a4012de94ce1a686ba8c167c359c1696973893317" integrity="sha512-euoFGowhlaLqXsPWQ48qSkBSCFs3DPRyiwVu3FjR96cMPx+Fr+gpWRhIafcHwqwCqWS42RZhIudOvEI+Ckf6MA==" data-cf-beacon='{"rayId":"8181c22d99726bb8","r":1,"version":"2023.10.0","token":"e03378cd4aa4441f976ee7e34e666cc7"}' crossorigin="anonymous"></script>
+</body>
+</html>
