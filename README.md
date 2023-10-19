@@ -65,17 +65,20 @@ git clone https://github.com/lightnovel-center/linovelib2epub.git
 replace `py` with your real python command if needed. e.g. `python` or `python3`.
 
 ```bash
+# Make sure you are under this project root folder: linovelib2epub/
+# The following instructions are based on Windows 10.
+# If you use a different os, please adjust it according to the actual situation.
+
 # new a venv
-py -m venv venv
+py -m venv .venv
 
 # activate venv
-.\venv\Scripts\activate
+.\.venv\Scripts\activate
 
 # install dependencies
 py -m pip install -r requirements.txt
 
 # install this package in local
-# under project root folder: linovelib2epub/
 python -m pip install -e .
 ```
 
@@ -90,6 +93,8 @@ if __name__ == '__main__':
 ```
 
 ### install from pypi
+> 注意: 由于爬虫程序对时效非常敏感，而pypi发布的版本一般是滞后的，因此不推荐这种安装方式。
+
 1. Install this package from pypi:
 ```
 pip install linovelib2epub
