@@ -37,7 +37,6 @@ def _parse_mapping_rules_legacy(js_text) -> dict:
     # parse to js
     code_tokens = re.split(r'[a-zA-Z]+', long_string)
     js_code = ''.join(chr(int(token)) for token in code_tokens)
-    # print(js_code)
 
     # find mapping
     pattern = r"RegExp\([\"|\']([^\"]+?)[\"|\'],\s*\"gi\"\),\s*\"([^\"]+?)\"\)"
