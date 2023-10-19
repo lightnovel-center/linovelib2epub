@@ -150,10 +150,14 @@ class EpubWriter:
 
                 write_content = ""
 
-        volume_img_folders: str | Set[str] | None = None
+        volume_img_folders: Set[str] | None = None
 
         if not self.epub_settings["divide_volume"]:
-            volume_img_folders = ""
+            # compute all volume img folders
+            # alternatives implement:
+            # arr = [[1, 2], [3, 4], [5, 6]]
+            # flatten_arr = list(itertools.chain.from_iterable(arr))
+            volume_img_folders = {folder for volume in volumes for folder in volume.volume_img_folders}
 
             volumes_list = cast(List[LightNovelVolume], volumes)  # Cast to List[LightNovelVolume]
             for volume in volumes_list:
@@ -175,14 +179,8 @@ class EpubWriter:
 
         # IMAGES
         images_folder = self.epub_settings["image_download_folder"]
-        # handle volume_img_folders
-        if volume_img_folders == "":
-            volume_img_folder = cast(str, volume_img_folders)
-            self._add_images(book, images_folder, volume_img_folder)
-        else:
-            # now volume_img_folders is a collection
-            for folder in volume_img_folders:
-                self._add_images(book, images_folder, folder)
+        self.logger.info(f"volume_img_folders: {volume_img_folders}")
+        self._add_images(book, images_folder, volume_img_folders)
 
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
@@ -221,12 +219,12 @@ class EpubWriter:
             page.add_item(custom_style_chapter)
         book.add_item(page)
 
-    def _add_images(self, book: EpubBook, images_folder: str, volume_img_folder: str) -> None:
-        def _add_image(image_file: str) -> None:
-            if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_file)):
+    def _add_images(self, book: EpubBook, images_folder: str, volume_img_folders: Set[str]) -> None:
+        def _add_image(images_folder: str, volume_img_folder: str, image_filename: str) -> None:
+            if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_filename)):
                 return
             try:
-                img = Image.open(f'{images_folder}/{volume_img_folder}/{image_file}')
+                img = Image.open(f'{images_folder}/{volume_img_folder}/{image_filename}')
             except (Exception,):
                 return
 
@@ -235,23 +233,16 @@ class EpubWriter:
             img.save(b, 'jpeg')
             data_img = b.getvalue()
 
-            new_image_file = image_file.replace('png', 'jpg')
+            new_image_file = image_filename.replace('png', 'jpg')
             img = epub.EpubItem(file_name=f'{images_folder}/{volume_img_folder}/{new_image_file}',
                                 media_type="image/jpeg",
                                 content=data_img)
             book.add_item(img)
 
-        if self.epub_settings["has_illustration"]:
-            if not self.epub_settings["divide_volume"]:
-                # grab all images under all [volume_img_folder]
-                for volume_img_folder in os.listdir(images_folder):
-                    for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
-                        _add_image(image_file)
-            else:
-                # only grab images under current [volume_img_folder]
-                if volume_img_folder != "":
-                    for image_file in os.listdir(f'{images_folder}/{volume_img_folder}'):
-                        _add_image(image_file)
+        if volume_img_folders:
+            for volume_img_folder in volume_img_folders:
+                for image_filename in os.listdir(f'{images_folder}/{volume_img_folder}'):
+                    _add_image(images_folder, volume_img_folder, image_filename)
 
     def _get_output_folder(self) -> str:
         if self.epub_settings['divide_volume']:
@@ -370,7 +361,7 @@ class Linovelib2Epub:
             'http_cookie': http_cookie,
             'disable_proxy': disable_proxy
         }
-        site_to_spider ={
+        site_to_spider = {
             TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
             TargetSite.MASIRO: MasiroSpider,
         }

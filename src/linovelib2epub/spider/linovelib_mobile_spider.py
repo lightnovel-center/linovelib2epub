@@ -277,6 +277,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     img_src_list.extend(
                         [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
                     )
+                # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
                 chapter_list[0].content = re.sub('<img.*?/>',
                                                  lambda match: _filter_duplicate_images(match, img_src_list),
                                                  chapter_list[0].content)
@@ -304,8 +305,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     path = self.get_image_filename(cover_image_url)
                     new_volume.volume_cover = path
 
-                    # BUG case: https://w.linovelib.com/novel/3728/catalog 后记章节，图片缺失
-                    # 这里代码有问题，一卷也可以存在多个volume_id，folder应该定义为list
                     new_volume.volume_img_folders = _resolve_img_folders(volume_images)
 
                 new_novel.add_volume(

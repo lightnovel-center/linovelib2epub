@@ -11,4 +11,5 @@ aiofiles==23.1.0
 aiohttp==3.8.4
 dynaconf==3.2.3
 brotli==1.1.0
+lxml==4.9.2
 

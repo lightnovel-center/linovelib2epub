@@ -20,7 +20,7 @@ DIVIDE_VOLUME = False
 HAS_ILLUSTRATION = True
 
 # 图片下载临时文件夹. 不允许以相对路径../开头。一般不建议修改。
-IMAGE_DOWNLOAD_FOLDER = 'images'
+IMAGE_DOWNLOAD_FOLDER = 'novel_images'
 
 # pickle临时数据保存的文件夹。一般不建议修改。
 PICKLE_TEMP_FOLDER = 'pickle'

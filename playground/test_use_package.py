@@ -36,7 +36,7 @@ def test_basic_run():
     #                                 image_download_strategy=linovel.MULTIPROCESSING)
 
     # linovelib_epub = Linovelib2Epub(book_id=18, clean_artifacts=False)
-    linovelib_epub = Linovelib2Epub(book_id=3279)
+    linovelib_epub = Linovelib2Epub(book_id=3392,clean_artifacts=False)
     # linovelib_epub = Linovelib2Epub(book_id=3728, divide_volume=True, clean_artifacts=False)
     linovelib_epub.run()
 

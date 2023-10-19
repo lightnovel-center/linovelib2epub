@@ -120,7 +120,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 | divide_volume         | boolean | NO       | False                           | 是否分卷                                                  |
 | select_volume_mode     | boolean | NO       | False                           | 选择卷模式，它为True时 divide_volume 强制为True。                  |
 | has_illustration      | boolean | NO       | True                            | 是否下载插图                                                |
-| image_download_folder | string  | NO       | "images"                        | 图片下载临时文件夹. 不允许以相对路径../开头。                             |
+| image_download_folder | string  | NO       | "novel_images"                  | 图片下载临时文件夹. 不允许以相对路径../开头。                             |
 | pickle_temp_folder    | string  | NO       | "pickle"                        | pickle临时数据保存的文件夹。                                     |
 | clean_artifacts    | boolean | NO       | True                            | 是否删除临时数据/工件，指的是pickle和下载的图片文件。                        |
 | http_timeout          | number  | NO       | 10                              | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。            |
@@ -130,7 +130,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 | custom_style_nav      | string  | NO       | ''                              | 自定义nav.xhtml的样式                                       |
 | custom_style_chapter  | string  | NO       | ''                              | 自定义每章(?.xhtml)的样式                                     |
 |disable_proxy | boolean |NO| True                            | 是否禁用所在的代理环境，默认禁用                                      |
-|image_download_strategy | string  |NO| 'ASYNCIO'                            | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
+|image_download_strategy | string  |NO| 'ASYNCIO'                       | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
 
 
 ## Todo

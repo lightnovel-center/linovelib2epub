@@ -24,8 +24,6 @@
 # venv
 venv
 
-logs
-
 # local do remote package test
 local_use
 *.log
@@ -34,3 +32,12 @@ local_use
 
 # Ignore dynaconf secret files
 .secrets.*
+
+# local artifacts
+*.epub
+novel_images
+logs
+pickle
+
+# demo py
+*demo.py
