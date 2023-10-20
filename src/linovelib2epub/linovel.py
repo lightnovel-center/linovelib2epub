@@ -421,8 +421,7 @@ class Linovelib2Epub:
     def _cleanup(self) -> None:
         # clean temporary files if clean_artifacts option is set to True
         if self.common_settings['clean_artifacts']:
-            pickle_path = self.common_settings['novel_pickle_path']
-            pickle_path = cast(str, pickle_path)
+            pickle_path = cast(str, self.common_settings['novel_pickle_path'])
             novel_pickle_path = Path(pickle_path)
             try:
                 shutil.rmtree(self.common_settings['image_download_folder'])  # type: ignore[arg-type]

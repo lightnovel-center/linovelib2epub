@@ -41,7 +41,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     def fetch(self) -> LightNovel:
         novel = asyncio.run(self._fetch())
-        # print(novel)
         return novel
 
     async def _fetch(self) -> Any:

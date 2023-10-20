@@ -1,6 +1,43 @@
 import urllib
 from dataclasses import dataclass, field
-from typing import List, Any
+from typing import List, Type
+from urllib.parse import urlparse
+
+
+class ImageDuplicateCheckingStrategy:
+
+    def is_duplicate(self, url_1, url_2):
+        return False
+
+
+class LinovelibMobileImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
+
+    def is_duplicate(self, url_1, url_2):
+        # https://linovelib-img.zezefans.com/3/3843/206654/227245.jpg => /3/3843/206654/227245.jpg
+        # https://img3.readpai.com/3/3843/206654/227245.jpg => /3/3843/206654/227245.jpg
+        # linovelib 这种实际上应该也算重复，但是从地址来看，无法感知是否重复。
+
+        path_1 = urlparse(url_1).path
+        path_2 = urlparse(url_2).path
+        if path_1 == path_2:
+            return True
+        else:
+            return False
+
+
+class MasiroImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
+
+    def is_duplicate(self, url_1, url_2):
+        # 完全一致，才被认为是重复
+        return url_1 == url_2
+
+
+class ImageDuplicationChecker:
+    def __init__(self, duplicate_checking_strategy):
+        self.duplicate_checking_strategy: ImageDuplicateCheckingStrategy = duplicate_checking_strategy
+
+    def is_duplicate(self, url_1, url_2):
+        return self.duplicate_checking_strategy.is_duplicate(url_1, url_2)
 
 
 @dataclass
@@ -63,11 +100,7 @@ class LightNovelChapter:
     chapter_id: int | str | None
     title: str = ''
     content: str = ''
-
     illustrations: List[LightNovelImage] = field(default_factory=list)
-
-    def add_illustration(self, light_novel_image: LightNovelImage):
-        self.illustrations.append(light_novel_image)
 
 
 @dataclass
@@ -83,14 +116,52 @@ class LightNovelVolume:
             return illustrations[0]
         return None
 
+    def _resolve_image_duplicate_checking_strategy(self) -> Type[ImageDuplicateCheckingStrategy]:
+        if self.chapters and self.chapters[0].illustrations:
+            image_sample = self.chapters[0].illustrations[0]
+            hostname = image_sample.hostname
+            hostname_to_strategy = {
+                'w.linovelib.com': LinovelibMobileImageDuplicateCheckingStrategy,
+                'masiro.me': MasiroImageDuplicateCheckingStrategy
+            }
+            return hostname_to_strategy.get(hostname, ImageDuplicateCheckingStrategy)
+
+        return ImageDuplicateCheckingStrategy
+
     def get_illustrations(self) -> List:
+        """
+        # 注意，不同章节的 image remote src 之间可能会存在重复。为了加速图片下载，这里需要去重。
+        由于LightNovelImage 是一个复杂对象，因此需要自定义逻辑去重，而不能依赖简单的set() 来去重。
+
+        :return: unique image list
+        """
         volume_illustrations: List[LightNovelImage] = []
         for chapter in self.chapters:
             volume_illustrations.extend(chapter.illustrations)
-        return volume_illustrations
 
-    def add_chapter(self, cid: int | str | None, title: str = '', content: str = '') -> None:
-        new_chapter: LightNovelChapter = LightNovelChapter(cid, title, content)
+        Strategy = self._resolve_image_duplicate_checking_strategy()
+        duplication_checker = ImageDuplicationChecker(Strategy())
+
+        # dedupe
+        unique_image_list = []
+        # for debug
+        duplicate_image_list = []
+
+        for image_obj in volume_illustrations:
+            is_duplicate_flag = False
+            for unique_obj in unique_image_list:
+                if duplication_checker.is_duplicate(image_obj.remote_src, unique_obj.remote_src):
+                    duplicate_image_list.append(image_obj.remote_src)
+                    is_duplicate_flag = True
+                    break
+            if not is_duplicate_flag:
+                unique_image_list.append(image_obj)
+
+        return unique_image_list
+
+    def add_chapter(self, cid: int | str | None, title: str = '', content: str = '',
+                    illustrations: List[LightNovelImage] = None) -> None:
+        new_chapter: LightNovelChapter = LightNovelChapter(cid, title, content, illustrations)
         self.chapters.append(new_chapter)
 
 
@@ -117,6 +188,10 @@ class LightNovel:
         return sum([len(volume.chapters) for volume in self.volumes if volume.chapters])
 
     def get_illustrations(self) -> List:
+        """
+        这里不需要设计为去重，去重逻辑放在volume的粒度范围
+        :return:
+        """
         illustrations = []
         for volume in self.volumes:
             illustrations.extend(volume.get_illustrations())

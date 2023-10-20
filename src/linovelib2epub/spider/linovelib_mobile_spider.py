@@ -173,7 +173,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
                     light_novel_chapter.title = chapter_title
-                    # light_novel_chapter.content = 'UNSOLVED'
+                    chapter_illustrations: List[LightNovelImage] = []
 
                     self.logger.info(f'chapter : {chapter_title}')
 
@@ -245,7 +245,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
                             local_image = str(image).replace(str(html_image_src.group()), image_local_src)
                             article = article.replace(str(image), local_image)
-                            light_novel_chapter.add_illustration(light_novel_image)
+                            chapter_illustrations.append(light_novel_image)
+                            # light_novel_chapter.add_illustration(light_novel_image)
 
                         article = _sanitize_html(article)
                         article = _anti_js_obfuscation(article)
@@ -255,7 +256,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # Here, current chapter's content has been solved
                     light_novel_chapter.content = chapter_content
+                    light_novel_chapter.illustrations = chapter_illustrations
                     chapter_list.append(light_novel_chapter)
+
+                #  todo refactor this dedupe logic to other functions
 
                 # removing duplicate images in the first chapter
                 def _filter_duplicate_images(match, img_src_list):
@@ -264,23 +268,24 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     if img_src in img_src_list:
                         self.logger.info(f'Remove duplicate image in the first chapter... {img_src}')
                         return ""
-
                     else:
                         return img
 
                 img_src_list = []
+                # chapter_list[0] 表示这一卷的第1个章节，在bilinovel中是插图页，这个页面部分插图会重复，会出现在这一卷的后续章节中。
+                # chapter_list[1:] 表示这一卷的第2个章节开始的所有章节，也就是正文章节。
                 for chapter in chapter_list[1:]:
                     img_src_list.extend(
                         [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
                     )
                 # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
-                # todo fix why remove needed images?
                 chapter_list[0].content = re.sub('<img.*?/>',
                                                  lambda match: _filter_duplicate_images(match, img_src_list),
                                                  chapter_list[0].content)
 
                 for chapter in chapter_list:
-                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content)
+                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
+                                           illustrations = chapter.illustrations)
 
                 new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 
