@@ -46,9 +46,9 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 > - 1.访问门槛。是否需要登陆以及积分。
 > - 2.页面结构。一个章节多页渲染的视为中等难度。
 
-如果你发现其他的很好轻小说目标源，资源丰富，更新及时，插图清晰，并且爬虫门槛合理的，可以在issue发起补充。
+优质的轻小说目标源标准：资源丰富，更新迅速，插图清晰，爬虫门槛合理。可以在issue发起补充。
 
-代码实现中对其他轻小说源的支持，关键是继承并重写这个 `BaseNovelWebsiteSpider` 类。
+其他代码参考：
 - 真白萌/轻之国度/百合会旧站参考：https://github.com/ilusrdbb/lightnovel-pydownloader
 - bilinovel/wenku8 参考：https://github.com/Montaro2017/bili_novel_packer
 

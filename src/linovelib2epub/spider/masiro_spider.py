@@ -1,5 +1,6 @@
 import asyncio
 import re
+import sys
 from dataclasses import dataclass
 from typing import Dict, Any, List
 from urllib.parse import urljoin
@@ -89,6 +90,11 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         # word_count_text
         # original
         # brief_introduction √
+
+        index = html_text.find("小孩子不能看")
+        if index != -1:
+            self.logger.error(f"[等级限制]: 你在真白萌的用户等级不足以查看链接: {url}")
+            sys.exit()
 
         soup = BeautifulSoup(html_text, 'lxml')
 
@@ -204,7 +210,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         :return:
         """
         html_content = BeautifulSoup(page, 'lxml')
-        body_content = html_content.find('div', {'class': 'nvl-content'}).text
+        body_content = html_content.find('div', {'class': 'nvl-content'}).prettify()
         return body_content
 
     async def download_page_urls(self, session, page_url_set: set):
