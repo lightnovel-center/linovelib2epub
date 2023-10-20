@@ -19,7 +19,7 @@ from rich.prompt import Confirm
 from . import settings
 from .exceptions import LinovelibException
 from .logger import Logger
-from .models import LightNovel, LightNovelVolume
+from .models import LightNovel, LightNovelVolume, LightNovelImage
 from .spider import ASYNCIO, LinovelibMobileSpider  # type: ignore[attr-defined]
 from .spider.masiro_spider import MasiroSpider
 from .utils import (create_folder_if_not_exists, random_useragent,
@@ -29,6 +29,7 @@ from .utils import (create_folder_if_not_exists, random_useragent,
 class EpubWriter:
 
     def __init__(self, epub_settings: Dict[str, Any]) -> None:
+        self._novel_book_title = ''
         self.epub_settings = epub_settings
         self.logger = Logger(logger_name=type(self).__name__,
                              log_filename=self.epub_settings["log_filename"]).get_logger()
@@ -41,10 +42,9 @@ class EpubWriter:
         self.logger.info(f'[Config]: has_illustration: {self.epub_settings["has_illustration"]};'
                          f' divide_volume: {self.epub_settings["divide_volume"]}')
 
-        # remember _novel_book_title for later usage, don't want to pass novel_book_title
         book_title = self._novel_book_title = novel.book_title
         author = novel.author
-        cover_file = self.epub_settings["image_download_folder"] + "/" + novel.book_cover_local
+        cover_file = self.epub_settings["image_download_folder"] + "/" + novel.book_cover.local_relative_path
 
         if not self.epub_settings["divide_volume"]:
             self._write_epub(book_title, author, novel.volumes, cover_file)
@@ -52,7 +52,7 @@ class EpubWriter:
             for volume in novel.volumes:
                 # if volume image folder is not empty, then use the first image as the cover
                 if volume.volume_cover:
-                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume.volume_cover}'
+                    cover_file = f'{self.epub_settings["image_download_folder"]}/{volume.volume_cover.local_relative_path}'
                 self._write_epub(f'{book_title}_{volume.title}', author, volume, cover_file)
 
         # tips: show output file folder
@@ -75,7 +75,7 @@ class EpubWriter:
         :param volumes: if divide_volume is False, this parameter should be volume list(List[LightNovelVolume]).
            if divide_volume is True, it should be one volume(LightNovelVolume).
         :param cover_file: local image file path
-        :param cover_filename: cover_filename has no format suffix such as ".jpg"
+        :param cover_filename: cover_filename has no format suffix(e.g. ".jpg")
         :return:
         """
 
@@ -85,10 +85,12 @@ class EpubWriter:
         book.set_title(title)
         book.set_language('zh')
         book.add_author(author)
+
         cover_type = cover_file.split('.')[-1]
         if cover_filename is None:
             cover_filename = 'cover'
-        book.set_cover(cover_filename + '.' + cover_type, open(cover_file, 'rb').read())
+        _cover_file = cover_filename + '.' + cover_type
+        book.set_cover(_cover_file, open(cover_file, 'rb').read())
 
         book.spine = ["nav", ]
 
@@ -150,17 +152,12 @@ class EpubWriter:
 
                 write_content = ""
 
-        volume_img_folders: Set[str] | None = None
+        illustrations: List[LightNovelVolume] = []
 
         if not self.epub_settings["divide_volume"]:
-            # compute all volume img folders
-            # alternatives implement:
-            # arr = [[1, 2], [3, 4], [5, 6]]
-            # flatten_arr = list(itertools.chain.from_iterable(arr))
-            volume_img_folders = {folder for volume in volumes for folder in volume.volume_img_folders}
-
             volumes_list = cast(List[LightNovelVolume], volumes)  # Cast to List[LightNovelVolume]
             for volume in volumes_list:
+                illustrations.extend(volume.get_illustrations())
                 volume_title = volume.title
                 _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
         else:
@@ -168,8 +165,9 @@ class EpubWriter:
 
             single_volume = cast(LightNovelVolume, volumes)  # Cast to LightNovelVolume
             volume = single_volume
+
+            illustrations = volume.get_illustrations()
             volume_title = title
-            volume_img_folders = volume.volume_img_folders
             _write_volume(book, custom_style_chapter, default_style_chapter, volume, volume_title)
 
         # DEFAULT CHAPTER STYLE & CUSTOM CHAPTER STYLE
@@ -179,8 +177,7 @@ class EpubWriter:
 
         # IMAGES
         images_folder = self.epub_settings["image_download_folder"]
-        self.logger.info(f"volume_img_folders: {volume_img_folders}")
-        self._add_images(book, images_folder, volume_img_folders)
+        self._add_images(book, images_folder, illustrations)
 
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
@@ -204,8 +201,8 @@ class EpubWriter:
         if not self.epub_settings["divide_volume"]:
             prefix = ""
         else:
-            if volume.vid is not None:
-                prefix = "%02d." % int(volume.vid)
+            if volume.volume_id is not None:
+                prefix = "%02d." % int(volume.volume_id)
 
         epub.write_epub(sanitize_pathname(out_folder) + "/" + prefix + sanitize_pathname(title) + '.epub', book)
 
@@ -219,30 +216,34 @@ class EpubWriter:
             page.add_item(custom_style_chapter)
         book.add_item(page)
 
-    def _add_images(self, book: EpubBook, images_folder: str, volume_img_folders: Set[str]) -> None:
-        def _add_image(images_folder: str, volume_img_folder: str, image_filename: str) -> None:
-            if not ((".jpg" or ".png" or ".webp" or ".jpeg" or ".bmp" or "gif") in str(image_filename)):
+    def _add_images(self, book: EpubBook, images_folder: str, illustrations: List[LightNovelImage]) -> None:
+        def _add_image(images_folder: str, illustration: LightNovelImage) -> None:
+
+            image_extensions_white_list = [".jpg", ".png", ".webp", ".jpeg", ".bmp", ".gif"]
+            image_filename = illustration.filename
+            if not any(image_filename.endswith(ext) for ext in image_extensions_white_list):
                 return
+
+            image_path = f'{images_folder}/{illustration.local_relative_path}'
             try:
-                img = Image.open(f'{images_folder}/{volume_img_folder}/{image_filename}')
+                img = Image.open(image_path)
             except (Exception,):
                 return
 
+            # why should we convert all images to jpeg format? => unify to JPEG => get better epub reader support
             b = io.BytesIO()
             img = img.convert('RGB')
             img.save(b, 'jpeg')
             data_img = b.getvalue()
 
-            new_image_file = image_filename.replace('png', 'jpg')
-            img = epub.EpubItem(file_name=f'{images_folder}/{volume_img_folder}/{new_image_file}',
+            new_image_relative_path = os.path.splitext(illustration.local_relative_path)[0] + ".jpg"
+            img = epub.EpubItem(file_name=f'{images_folder}/{new_image_relative_path}',
                                 media_type="image/jpeg",
                                 content=data_img)
             book.add_item(img)
 
-        if volume_img_folders:
-            for volume_img_folder in volume_img_folders:
-                for image_filename in os.listdir(f'{images_folder}/{volume_img_folder}'):
-                    _add_image(images_folder, volume_img_folder, image_filename)
+        for illustration in illustrations:
+            _add_image(images_folder, illustration)
 
     def _get_output_folder(self) -> str:
         if self.epub_settings['divide_volume']:
@@ -332,6 +333,13 @@ class Linovelib2Epub:
 
         self.target_site = target_site
 
+        site_to_base_url = {
+            TargetSite.LINOVELIB_MOBILE: 'https://w.linovelib.com/novel',
+            TargetSite.MASIRO: 'https://masiro.me',
+        }
+        # user override base_url
+        base_url = base_url or site_to_base_url[self.target_site]
+
         u = urllib.parse.urlsplit(base_url)
 
         # identify one-time unique crawl
@@ -344,7 +352,7 @@ class Linovelib2Epub:
             'base_url': base_url,
             'divide_volume': True if select_volume_mode else divide_volume,
             'has_illustration': has_illustration,
-            'image_download_folder': f'{image_download_folder}/{u.hostname}',
+            'image_download_folder': image_download_folder,
             'pickle_temp_folder': pickle_temp_folder,
             'novel_pickle_path': f'{pickle_temp_folder}/{run_identifier}.pickle',
             'clean_artifacts': clean_artifacts,

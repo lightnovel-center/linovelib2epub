@@ -124,7 +124,8 @@ class Page:
 
 ## 爬虫关键的设计点
 
-由于每个novel website的页面结构不同，应该抽象出一个抽象类，例如 NovelWebsite。 不同的网站，例如website-a,website-b应该继承自这个 基类，然后重写对应的方法实现。
+由于每个novel website的页面结构不同，应该抽象出一个抽象类，例如 NovelWebsite。 不同的网站，例如website-a,website-b应该继承自这个
+基类，然后重写对应的方法实现。
 
 BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 
@@ -134,7 +135,8 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 
 不同的轻小说来源网站就是 BaseNovelWebsiteSpider 的子类。
 
-但是此时会导致不同的用户调用时需要手动引入不同的子类，然后初始化。 为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
+但是此时会导致不同的用户调用时需要手动引入不同的子类，然后初始化。
+为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
 
 将普适的方法抽象泛化（上移）到基类 BaseNovelWebsiteSpider ，具体的方法实现特化（下移）在具体的实现类 LinovelibMobileSpider。
 
@@ -144,31 +146,33 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 
 ## 文件下载目录规定
 
-> 这部分内容已经过时， 目录分割方式已经变化。
+对于一个特定的图片，在下载之前，需要这些信息：
 
-目录组织：
+- 这个图片的远程链接地址。这个属性不需要设计。
+- 这个图片本地保存的相对路径，而且这个相对路径必须隔离其他下载。这个路径格式需要设计。
+  > 路径划分到volume的粒度就足够了。思考为什么？因为用户下载最多是分卷，不会按章节划分下载。
+
+对于一个实例链接，例如 http://example.com/parh/to/some/123.jpg
+
+在下载图片时，除了它原本的远程url地址，最好可以感知它所属的book_id，volume_id，chapter，以及是否为cover。
+或者 cover 单独处理，后续再添加到下载目标集合中。
 
 ```
 pickel/
     w.linovelib.com_3610.pickle  => hostname_book_id (unique)
+    masiro.me_1039.pickle  => ...
   
 images/
     w.linovelib.com/
-        3-3610-182485-209179.jpg
-        3-3610-182485-209180.jpg
-        3-3610-182486-209181.jpg
-        image-3-3610-3610s.jpg
-```
-
-图片：
-
-```
-remote:
-https://img.linovelib.com/3/3211/163938/193293.jpg
-
-local path & epub content:
-format:  [image_download_folder]/[image_filename]
-example: images/.../3-3211-163938-193293.jpg
+        3610/         => book_id
+            3610s.jpg => book_cover
+            182485/   => an unique id like volume_id(folder)
+                209180.jpg
+    masiro.me/
+        875/          => book_id
+            xxx.jpg   => book_cover
+            875-1/    => book_id_volume_id(folder)
+                yyy.jpg
 ```
 
 ## async syntax tradeoff
@@ -177,8 +181,10 @@ async/await 语法会扩散到最外层的调用，会造成非常多的语法�
 
 如果想尽可能避免async/await语法扩散的污染,有两种方式：
 
-1. 将异步函数包装为同步函数，然后导出同步函数作为API。这种方式可以隐藏异步实现的细节，让调用方仍然可以使用同步方式调用API。例如，以下代码演示了如何将异步函数async_function()
-   包装为同步函数sync_function()：
+1.
+
+将异步函数包装为同步函数，然后导出同步函数作为API。这种方式可以隐藏异步实现的细节，让调用方仍然可以使用同步方式调用API。例如，以下代码演示了如何将异步函数async_function()
+包装为同步函数sync_function()：
 
 ```python
 import asyncio
@@ -193,15 +199,18 @@ def sync_function():
     return asyncio.run(async_function())
 ```
 
-2. 将异步函数包装为异步上下文管理器或异步迭代器，并导出为API。这种方式可以让调用方使用async with或async for语法来运行异步函数，从而避免显式地使用asyncio.run()
+2. 将异步函数包装为异步上下文管理器或异步迭代器，并导出为API。这种方式可以让调用方使用async with或async
+   for语法来运行异步函数，从而避免显式地使用asyncio.run()
    函数。例如，以下代码演示了如何将异步函数async_function()包装为异步上下文管理器AsyncContext()：
 
 ```python
 import asyncio
 
+
 async def async_function():
     # 异步函数实现
     return result
+
 
 class AsyncContext:
     async def __aenter__(self):
@@ -211,6 +220,7 @@ class AsyncContext:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 ```
+
 ```python
 async with AsyncContext() as result:
     print(result)

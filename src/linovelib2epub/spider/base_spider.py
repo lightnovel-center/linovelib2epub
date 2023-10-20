@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Optional, Callable, Awaitable, Union, Dict, Any
+from typing import Iterable, Optional, Callable, Awaitable, Union, Dict, Any, List
 
 import aiofiles
 import aiohttp as aiohttp
@@ -14,7 +14,7 @@ from aiohttp import ClientSession
 from requests.exceptions import ProxyError
 
 from ..logger import Logger
-from ..models import LightNovel
+from ..models import LightNovel, LightNovelImage
 from ..utils import (check_image_integrity, create_folder_if_not_exists,
                      is_async, is_valid_image_url)
 
@@ -45,6 +45,7 @@ class BaseNovelWebsiteSpider(ABC):
         """
         return {}
 
+    # @suppress
     def get_image_filename(self, url: str) -> str:
         return url.rsplit('/', 1)[1]
 
@@ -117,17 +118,20 @@ class BaseNovelWebsiteSpider(ABC):
                 # SAD PATH
                 return url
 
-    async def download_images_by_asyncio(self, urls: Iterable[str] | None = None) -> None:
-        if urls is None:
-            urls = set()
-        else:
-            urls = set(urls)
+    async def download_images_by_asyncio(self, light_novel_images: List[LightNovelImage]) -> None:
+        self.logger.info(f'len of light_novel_images= {len(light_novel_images)}')
 
-        self.logger.info(f'len of image set = {len(urls)}')
+        download_url_to_image: Dict[str, LightNovelImage] = {
+            image.download_url: image for image in light_novel_images
+        }
 
         async with aiohttp.ClientSession() as session:
-            requests = {asyncio.create_task(self._download_image(session, url), name=url) for url in urls}
-            pending: set = requests
+            tasks = {asyncio.create_task(self._download_image(session,
+                                                                 image.download_url,
+                                                                 image.local_relative_path),
+                                            name=image.download_url)
+                        for image in light_novel_images}
+            pending: set = tasks
             succeed_count = 0
 
             while pending:
@@ -150,27 +154,28 @@ class BaseNovelWebsiteSpider(ABC):
                         # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
                         self.logger.info(f'Exception: {type(exception)}')
                         self.logger.info(f'FAIL: {task_url}; should retry this url.')
-                        pending.add(asyncio.create_task(self._download_image(session, task_url), name=task_url))
+                        pending.add(asyncio.create_task(
+                            self._download_image(session, task_url,
+                                                 download_url_to_image[task_url].local_relative_path),
+                            name=task_url))
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
-    async def _download_image(self, session: ClientSession, url: str) -> None:
-        if not is_valid_image_url(url):
+    async def _download_image(self, session: ClientSession, download_url: str, local_relative_path: str) -> None:
+        if not is_valid_image_url(download_url):
             return
 
-        filename = self.get_image_filename(url)
-        save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
-        if not os.path.exists(os.path.dirname(save_path)):
-            os.makedirs(os.path.dirname(save_path))
+        save_path = f"{self.spider_settings['image_download_folder']}/{local_relative_path}"
+        create_folder_if_not_exists(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():
-            self.logger.info(f"The image to download is alreay downloaded at {filename_path}.skip.")
+            self.logger.info(f"The image to download is already downloaded at {filename_path}.skip.")
             return
 
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
-        async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
+        async with session.get(download_url, headers=self.request_headers(), timeout=timeout) as resp:
             if resp.status < 400:
                 image = await resp.read()
 
@@ -183,7 +188,7 @@ class BaseNovelWebsiteSpider(ABC):
                 # write file, maybe raise IO error
                 async with aiofiles.open(save_path, mode='wb') as afp:
                     await afp.write(image)
-                    self.logger.info(f'save image: {url} ok.')
+                    self.logger.info(f'image url {download_url} => local relative path {save_path} ok.')
             else:
                 # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
                 pass
@@ -210,15 +215,15 @@ class BaseNovelWebsiteSpider(ABC):
         self.logger.info(f"Image download strategy: {self.spider_settings['image_download_strategy']}")
 
         if self.spider_settings['has_illustration']:
-            image_set: set = novel.get_illustration_set()
-            image_set.add(novel.book_cover)
+            image_list: List = novel.get_illustrations()
+            image_list.append(novel.book_cover)
         else:
-            image_set: set = {novel.book_cover}
+            image_list: List = [novel.book_cover]
 
         if is_async(_download_image):
-            asyncio.run(_download_image(image_set))
+            asyncio.run(_download_image(image_list))
         else:
-            _download_image(image_set)
+            _download_image(image_list)
 
     def _save_novel_pickle(self, novel):
         with open(self.spider_settings['novel_pickle_path'], 'wb') as fp:

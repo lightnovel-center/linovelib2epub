@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 from dataclasses import dataclass
 from typing import Dict, Any, Union, List, Awaitable
@@ -39,8 +40,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             raise LinovelibException("masiro account not found.")
 
     def fetch(self) -> LightNovel:
-        res = asyncio.run(self._fetch())
-        return None
+        novel = asyncio.run(self._fetch())
+        # print(novel)
+        return novel
 
     async def _fetch(self) -> Any:
         jar = aiohttp.CookieJar(unsafe=True)
@@ -70,12 +72,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
 
             # 3. get basic info and catalog
-            book_basic_info = await self._crawl_book_basic_info_with_catalog(book_url, session)
-            if not book_basic_info:
-                raise LinovelibException(
-                    f'Fetch book_basic_info(+catalog) of {self.spider_settings["book_id"]} failed.')
+            novel = await self._crawl_book_basic_info_with_catalog(book_url, session)
 
-        return 123
+        return novel
 
     async def _crawl_book_basic_info_with_catalog(self,
                                                   url: str,
@@ -104,29 +103,46 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         brief_introduction = soup.find('div', {'class': 'brief'}).text
         cover_src = soup.find('img', {'class': 'img img-thumbnail'})['src'].split("?")[0]
 
+        new_novel = LightNovel()
+        new_novel.book_id = self.spider_settings['book_id']
+        new_novel.book_title = title
+        new_novel.author = author
+        new_novel.description = brief_introduction
+        new_novel.book_cover = urljoin(self.spider_settings["base_url"],cover_src)
+        new_novel.book_cover_local = self.get_image_filename(cover_src,
+                                                             middle_folder_name=str(self.spider_settings["book_id"]))
+        new_novel.mark_basic_info_ready()
+
         catalog_list = self._convert_to_catalog_list(html_text)
 
         # select_volume_mode
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
 
-        # todo pre-buy chapters before downloading
+        #  todo pre-buy chapters before downloading
 
         page_url_set = {chapter[1] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
         url_to_page = await self.download_page_urls(session, page_url_set)
-        print(url_to_page)
 
-        new_novel = LightNovel()
+        #  Main goals:
+        #  1. extract body and update dict
+        #  2. update image src to local file path in body content,
+        #  3. generate illustration_dict.
+
+        for url, page in url_to_page.items():
+            url_to_page[url] = self._extract_body_content(page)
+
         illustration_dict: Dict[Union[int, str], List[str]] = dict()
 
         volume_id = 0
         for volume_dict in catalog_list:
             volume_id += 1
+            middle_folder_name = f'{self.spider_settings["book_id"]}-{volume_id}'
 
-            new_volume = LightNovelVolume(vid=volume_id)
+            new_volume = LightNovelVolume(volume_id=volume_id)
             new_volume.title = volume_dict['volume_title']
 
-            # self.logger.info(f'volume: {volume_dict["volume_title"]}')
+            self.logger.info(f'volume: {volume_dict["volume_title"]}')
 
             illustration_dict.setdefault(volume_dict['vid'], [])
 
@@ -134,19 +150,89 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             chapter_list = []  # store chapter for removing duplicate images in the first chapter
             for chapter in volume_dict['chapters']:
                 chapter_id += 1
-                chapter_content = ''
                 chapter_title = chapter[0]
 
-                new_chapter = LightNovelChapter(cid=chapter_id)
+                new_chapter = LightNovelChapter(chapter_id=chapter_id)
                 new_chapter.title = chapter_title
                 # new_chapter.content = 'UNSOLVED'
+                self.logger.info(f'chapter : {chapter_title}')
 
-                # self.logger.info(f'chapter : {chapter_title}')
+                chapter_url = chapter[1]
+                chapter_body = url_to_page[chapter_url]
 
                 # one page per chapter
-                page_link = chapter_url = chapter[1]
+                images_soup = BeautifulSoup(chapter_body, 'lxml').find_all('img')
+                for _, image in enumerate(images_soup):
+                    # Images src analysis:
+                    # https://i.ibb.co/1fRfdhs/6f9fbd2762d0f7039cfafb8d0bfa513d2797c5a0.jpg
+                    # https://masiro.moe/data/attachment/forum/202103/07/173827oqkmqhcbylyytty9.jpg => 526 status code
+                    # https://www.masiro.me/images/encode/fy-221114012533-99Qz.jpg
+
+                    # 可能为站内链接，也可能是站外链接。因为url没有固定格式
+                    # 这里我们需要自定义一个中间的文件夹名称，用于分割不同的爬虫实例。
+                    # 为了让文件夹名称更加可读和具有语义，这里使用 bookid-volumeid 作为隔离。
+
+                    # 举例，例如 bookid为 875，volume_id 取本地自增id(例如3)，那么 875-3 就是结果。
+                    # 最后，将这个分隔符和图片原来的文件名拼接，得到 875-3/fy-221114012533-99Qz.jpg 这样格式的链接。
+                    # 更加具体地，为 XXXX/masiro.me/875-3/fy-221114012533-99Qz.jpg
+
+                    image_src = image.get("src")
+                    src_value = re.search('(?<= src=").*?(?=")', str(image))
+                    local_image_uri = self.get_image_filename(src_value.group(), middle_folder_name=middle_folder_name)
+
+                    # local_image_uri is "[volume_img_folder]/[filename]"
+                    # example: https://img.linovelib.com/0/682/117077/50675.jpg => [image_download_folder]/117077/50677.jpg
+                    # 117077 is [volume_img_folder]
+                    # 50677.jpg is the [filename]
+
+                    replace_value = f'{self.spider_settings["image_download_folder"]}/' + local_image_uri
+                    new_image = str(image).replace(str(src_value.group()), replace_value)
+
+                    # replace all remote images src to local file path
+                    chapter_body = chapter_body.replace(str(image), new_image)
+
+                    illustration_dict[volume_dict['vid']].append(image_src)
+
+                new_chapter.content = chapter_body
+                chapter_list.append(new_chapter)
+
+            for chapter in chapter_list:
+                new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content)
+
+            # store [volume_img_folders] and [volume_cover] in volume dict
+            if illustration_dict[volume_dict['vid']]:
+                volume_images = illustration_dict[volume_dict['vid']]
+                if volume_images:
+                    cover_image_url = volume_images[0]
+                    path = self.get_image_filename(cover_image_url, middle_folder_name)
+                    new_volume.volume_cover = path
+
+                new_volume.volume_img_folders = {middle_folder_name}
+
+            new_novel.add_volume(
+                vid=new_volume.volume_id,
+                title=new_volume.title,
+                chapters=new_volume.chapters,
+                volume_img_folders=new_volume.volume_img_folders,
+                volume_cover=new_volume.volume_cover
+            )
+
+        new_novel.set_illustration_dict(illustration_dict)
+        new_novel.mark_volumes_content_ready()
+
+        return new_novel
+
+    def _extract_body_content(self, page: str):
+        """
+        :param page:
+        :return:
+        """
+        html_content = BeautifulSoup(page, 'lxml')
+        body_content = html_content.find('div', {'class': 'nvl-content'}).text
+        return body_content
 
     async def download_page_urls(self, session, page_url_set: set):
+
         self.logger.info(f'page url set = {len(page_url_set)}')
 
         url_to_page = {url: 'NOT_DOWNLOAD_READY' for url in page_url_set}
@@ -181,21 +267,35 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
+        # make sure data is ok.
+        for page_content in url_to_page.values():
+            if page_content == "NOT_DOWNLOAD_READY":
+                raise LinovelibException('如果这个断言被触发，那么证明代码逻辑有问题。青春猪头少年不会梦到奇奇怪怪的BUG。')
+
         return url_to_page
 
     async def _download_page(self, session, url) -> str | None:
-        timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
-        async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
-            if resp.status == 200:
-                self.logger.info(f'fetch page: {url} ok.')
-                return await resp.text()
-            else:
-                # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
-                # 404 is considered as success => don't retry
-                # 429 too many requests => should retry
-                # 503 Service Unavailable => should retry
-                self.logger.error(f'what happen about: {url} ? http status: {resp.status}.')
-                pass
+        #  use semaphore to control concurrency
+        max_concurrency = 2
+        sem = asyncio.Semaphore(max_concurrency)
+
+        async with sem:
+            timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
+            async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
+                if resp.status == 200:
+                    self.logger.info(f'fetch page: {url} ok.')
+                    return await resp.text()
+                elif resp.status == 404:
+                    # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
+                    # 404 is considered as success => don't retry
+                    self.logger.error(f'{url} 404. skip it')
+                    pass
+                else:
+                    # 429 too many requests => should retry
+                    # 503 Service Unavailable => should retry
+                    # ...... => should retry
+                    self.logger.error(f'what happen about: {url} ? http status: {resp.status}.')
+                    raise LinovelibException(f'fetch page url {url} failed with error status {resp.status}.')
 
     def _convert_to_catalog_list(self, html_text) -> list:
         """
@@ -234,6 +334,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         :param catalog_html_lis:
         :return:
         """
+
         # return example:
         # [{vid:1,volume_title: "XX", chapters:[[chapter_title,chapter_url],[xx,yy],[...] ]},{},{}]
         catalog_list = []
@@ -340,9 +441,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         }
 
-    def get_image_filename(self, url: str) -> str:
-        # TODO design image path
-        return super().get_image_filename(url)
+    def get_image_filename(self, url: str, middle_folder_name: str | None = None) -> str:
+        return middle_folder_name + "/" + url.rsplit('/', 1)[1]
 
     async def _masiro_get_token(self, login_info: MasiroLoginInfo, session):
         res = await aiohttp_get_with_retry(session, login_info.login_url, self.request_headers(), logger=self.logger)

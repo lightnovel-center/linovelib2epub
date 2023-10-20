@@ -3,7 +3,7 @@
 DEFAULT_TARGET_SITE = 'LINOVELIB_MOBILE'
 
 # 主页URL
-BASE_URL = 'https://w.linovelib.com/novel'
+BASE_URL = 'https://w.linovelib.com'
 
 # 书籍ID: must be provided by user
 # BOOK_ID = 3211

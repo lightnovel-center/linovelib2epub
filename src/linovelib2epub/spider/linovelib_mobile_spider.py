@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from ..exceptions import LinovelibException
-from ..models import LightNovel, LightNovelChapter, LightNovelVolume
+from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
                      requests_get_with_retry)
 from . import BaseNovelWebsiteSpider
@@ -150,19 +150,19 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 catalog_list = self._handle_select_volume(catalog_list)
 
             new_novel = LightNovel()
-            illustration_dict: Dict[Union[int, str], List[str]] = dict()
+            # illustration_dict: Dict[Union[int, str], List[str]] = dict()
             url_next = ''
 
             volume_id = 0
             for volume_dict in catalog_list:
                 volume_id += 1
 
-                new_volume = LightNovelVolume(vid=volume_id)
+                new_volume = LightNovelVolume(volume_id=volume_id)
                 new_volume.title = volume_dict['volume_title']
 
                 self.logger.info(f'volume: {volume_dict["volume_title"]}')
 
-                illustration_dict.setdefault(volume_dict['vid'], [])
+                # illustration_dict.setdefault(volume_dict['vid'], [])
 
                 chapter_id = -1
                 chapter_list = []  # store chapter for removing duplicate images in the first chapter
@@ -171,9 +171,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     chapter_title = chapter[0]
                     chapter_id += 1
 
-                    new_chapter = LightNovelChapter(cid=chapter_id)
-                    new_chapter.title = chapter_title
-                    # new_chapter.content = 'UNSOLVED'
+                    light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
+                    light_novel_chapter.title = chapter_title
+                    # light_novel_chapter.content = 'UNSOLVED'
 
                     self.logger.info(f'chapter : {chapter_title}')
 
@@ -199,7 +199,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         # alternative: use split(':')[-1] to get read_params_text
                         read_params_text = first_script_text[len('var ReadParams='):]
                         read_params_json = demjson3.decode(read_params_text)
-                        url_next = urljoin(self.spider_settings["base_url"], read_params_json['url_next'])
+                        url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
 
                         if '_' in url_next:
                             chapter.append(url_next)
@@ -226,30 +226,26 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         for _, image in enumerate(images):
 
                             # images in the first chapter are lazyload, their urls are inside "data-src"
-                            # img tag format: <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
-                            image_src = image.get("data-src")
-                            if image_src:
-                                data_src_value = re.search('(?<= data-src=").*?(?=")', str(image))
-                                src_value = re.search('(?<= src=").*?(?=")', str(image))
-                                local_image_uri = self.get_image_filename(data_src_value.group())
+                            # img tag format:
+                            # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
                             # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
+                            html_image_src = re.search('(?<= src=").*?(?=")', str(image))
+                            image_lazyload_src = image.get("data-src")
+
+                            if image_lazyload_src:
+                                remote_src = re.search('(?<= data-src=").*?(?=")', str(image)).group()
                             else:
-                                image_src = image.get("src")
-                                src_value = re.search('(?<= src=").*?(?=")', str(image))
-                                local_image_uri = self.get_image_filename(src_value.group())
+                                remote_src = image.get("src")
 
-                            # local_image_uri is "[volume_img_folder]/[filename]"
-                            # example: https://img.linovelib.com/0/682/117077/50675.jpg => [image_download_folder]/117077/50677.jpg
-                            # 117077 is [volume_img_folder]
-                            # 50677.jpg is the [filename]
+                            light_novel_image = LightNovelImage(site_base_url=self.spider_settings["base_url"],
+                                                                related_page_url=page_link, remote_src=remote_src,
+                                                                chapter_id=chapter_id, volume_id=volume_id,
+                                                                book_id=self.spider_settings["book_id"])
 
-                            replace_value = f'{self.spider_settings["image_download_folder"]}/' + local_image_uri
-                            new_image = str(image).replace(str(src_value.group()), replace_value)
-
-                            # replace all remote images src to local file path
-                            article = article.replace(str(image), new_image)
-
-                            illustration_dict[volume_dict['vid']].append(image_src)
+                            image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
+                            local_image = str(image).replace(str(html_image_src.group()), image_local_src)
+                            article = article.replace(str(image), local_image)
+                            light_novel_chapter.add_illustration(light_novel_image)
 
                         article = _sanitize_html(article)
                         article = _anti_js_obfuscation(article)
@@ -258,8 +254,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         self.logger.info(f'Processing page... {page_link}')
 
                     # Here, current chapter's content has been solved
-                    new_chapter.content = chapter_content
-                    chapter_list.append(new_chapter)
+                    light_novel_chapter.content = chapter_content
+                    chapter_list.append(light_novel_chapter)
 
                 # removing duplicate images in the first chapter
                 def _filter_duplicate_images(match, img_src_list):
@@ -278,44 +274,16 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
                     )
                 # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
+                # todo fix why remove needed images?
                 chapter_list[0].content = re.sub('<img.*?/>',
                                                  lambda match: _filter_duplicate_images(match, img_src_list),
                                                  chapter_list[0].content)
 
                 for chapter in chapter_list:
-                    new_volume.add_chapter(
-                        cid=chapter.cid,
-                        title=chapter.title,
-                        content=chapter.content
-                    )
+                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content)
 
-                def _resolve_img_folders(img_list) -> set:
-                    unique_folders = set()
-                    for idx, image in enumerate(img_list):
-                        path = self.get_image_filename(image)
-                        folder, _ = path.split("/")
-                        unique_folders.add(folder)
-                    return unique_folders
+                new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 
-                # store [volume_img_folders] and [volume_cover] in volume dict
-                if illustration_dict[volume_dict['vid']]:
-                    volume_images = illustration_dict[volume_dict['vid']]
-
-                    cover_image_url = volume_images[0]
-                    path = self.get_image_filename(cover_image_url)
-                    new_volume.volume_cover = path
-
-                    new_volume.volume_img_folders = _resolve_img_folders(volume_images)
-
-                new_novel.add_volume(
-                    vid=new_volume.vid,
-                    title=new_volume.title,
-                    chapters=new_volume.chapters,
-                    volume_img_folders=new_volume.volume_img_folders,
-                    volume_cover=new_volume.volume_cover
-                )
-
-            new_novel.set_illustration_dict(illustration_dict)
             return new_novel
 
         else:
@@ -381,7 +349,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             # is normal chapter
             else:
                 href = catalog_li.find("a")["href"]
-                whole_url = urljoin(self.spider_settings['base_url'], href)
+                whole_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
                 current_volume.append([catalog_li_text, whole_url])
 
         return catalog_list
@@ -405,8 +373,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return image_url_list
 
     def _fetch(self):
-        book_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}.html'
-        book_catalog_url = f'{self.spider_settings["base_url"]}/{self.spider_settings["book_id"]}/catalog'
+        book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
+        book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
         create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
 
         book_basic_info = self._crawl_book_basic_info(book_url)
@@ -423,12 +391,15 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         novel_whole.mark_volumes_content_ready()
 
         # set book basic info
-        novel_whole.bid = self.spider_settings['book_id']
+        novel_whole.book_id = self.spider_settings['book_id']
         novel_whole.book_title = book_title
         novel_whole.author = author
         novel_whole.description = book_summary
-        novel_whole.book_cover = book_cover
-        novel_whole.book_cover_local = self.get_image_filename(book_cover)
+        novel_whole.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
+                                                 related_page_url=book_url,
+                                                 remote_src=book_cover,
+                                                 book_id=self.spider_settings["book_id"],
+                                                 is_book_cover=True)
         novel_whole.mark_basic_info_ready()
 
         return novel_whole
