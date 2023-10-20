@@ -46,12 +46,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         return novel_whole
 
-    def get_image_filename(self, url):
-        # example: https://img.linovelib.com/0/682/117077/50675.jpg => 117077/50677.jpg
-        # "117077" will be treated as a folder
-        # "50677.jpg" is the image filename
-        return '/'.join(url.split("/")[-2:])
-
     def _init_http_client(self):
         """
         Tunes http session as needed.

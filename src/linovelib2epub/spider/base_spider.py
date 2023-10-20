@@ -45,54 +45,41 @@ class BaseNovelWebsiteSpider(ABC):
         """
         return {}
 
-    # @suppress
-    def get_image_filename(self, url: str) -> str:
-        return url.rsplit('/', 1)[1]
+    def download_images_by_multiprocessing(self, light_novel_images: List[LightNovelImage]) -> None:
 
-    def download_images_by_multiprocessing(self, urls: Iterable[str] | None = None) -> None:
-        if urls is None:
-            urls = set()
-        else:
-            urls = set(urls)
+        self.logger.info(f'len of image set = {len(light_novel_images)}')
 
-        self.logger.info(f'len of image set = {len(urls)}')
+        download_url_to_image: Dict[str, LightNovelImage] = {
+            image.download_url: image for image in light_novel_images
+        }
+        params = [(image.download_url, image.local_relative_path) for image in light_novel_images]
 
         with Pool(processes=os.cpu_count() or 4) as process_pool:
-            error_links = process_pool.map(self._download_image_legacy, urls)
+            error_links = process_pool.starmap(self._download_image_legacy, params)
 
             while sorted_error_links := list(filter(None, error_links)):
                 self.logger.info('Some errors occurred when download images. Retry those links that failed to request.')
                 self.logger.info(f'Retry image links: {sorted_error_links}')
-                error_links = process_pool.map(self._download_image_legacy, sorted_error_links)
+                params = [(url, download_url_to_image[url].local_relative_path) for url in sorted_error_links]
+                error_links = process_pool.starmap(self._download_image_legacy, params)
 
-        # downloading image: https://img.linovelib.com/0/682/117082/50748.jpg to [image_download_folder]/[117082]/50748.jpg
         # re-check image download result:
         # - happy result: urls_set - self.image_download_folder == 0
         # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
         # - bad result: urls_set - self.image_download_folder > 0
 
-        download_image_miss_quota = len(urls) - sum(
-            [len(files) for root, dirs, files in os.walk(self.spider_settings['image_download_folder'])])
-        self.logger.info(f'download_image_miss_quota: {download_image_miss_quota}. Quota <=0 is ok.')
-        if download_image_miss_quota <= 0:
-            self.logger.info('The result of downloading pictures is perfect.')
-        else:
-            self.logger.warning('Some pictures to download are missing. Maybe this is a bug. You can Retry.')
-
-    def _download_image_legacy(self, url: str) -> Optional[str]:
+    def _download_image_legacy(self, download_url: str, local_relative_path: str) -> Optional[str]:
         """
         If a image url download failed, return its url(for retry). else return None.
 
-        :param url: single url string
+        :param download_url: single url string
         :return: original url if failed, or None if succeeded.
         """
-        if not is_valid_image_url(url):
+        if not is_valid_image_url(download_url):
             return None
 
-        filename = self.get_image_filename(url)
-        save_path = f"{self.spider_settings['image_download_folder']}/{filename}"
-        if not os.path.exists(os.path.dirname(save_path)):
-            os.makedirs(os.path.dirname(save_path))
+        save_path = f"{self.spider_settings['image_download_folder']}/{local_relative_path}"
+        create_folder_if_not_exists(os.path.dirname(save_path))
 
         filename_path = Path(save_path)
         if filename_path.exists():
@@ -100,14 +87,15 @@ class BaseNovelWebsiteSpider(ABC):
 
         # url is valid and never downloaded
         try:
-            resp = self.session.get(url, headers=self.request_headers(), timeout=self.spider_settings['http_timeout'])
+            resp = self.session.get(download_url, headers=self.request_headers(),
+                                    timeout=self.spider_settings['http_timeout'])
 
             expected_length = resp.headers and resp.headers.get('Content-Length')
             actual_length = resp.raw.tell()
             check_image_integrity(expected_length, actual_length)
         except (Exception, ProxyError,) as e:
             # SAD PATH
-            return url
+            return download_url
         else:
             try:
                 with open(save_path, "wb") as f:
@@ -116,7 +104,7 @@ class BaseNovelWebsiteSpider(ABC):
                 return None
             except (Exception,):
                 # SAD PATH
-                return url
+                return download_url
 
     async def download_images_by_asyncio(self, light_novel_images: List[LightNovelImage]) -> None:
         self.logger.info(f'len of light_novel_images= {len(light_novel_images)}')
@@ -127,10 +115,10 @@ class BaseNovelWebsiteSpider(ABC):
 
         async with aiohttp.ClientSession() as session:
             tasks = {asyncio.create_task(self._download_image(session,
-                                                                 image.download_url,
-                                                                 image.local_relative_path),
-                                            name=image.download_url)
-                        for image in light_novel_images}
+                                                              image.download_url,
+                                                              image.local_relative_path),
+                                         name=image.download_url)
+                     for image in light_novel_images}
             pending: set = tasks
             succeed_count = 0
 
