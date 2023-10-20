@@ -74,7 +74,7 @@ class LightNovelImage:
     def download_url(self):
         # computed property from url_prefix and remote_src
         if self.remote_src.startswith("/"):
-            full_url = f'{self.site_base_url}/{self.remote_src}'
+            full_url = f'{self.site_base_url}{self.remote_src}'
         elif self.remote_src.startswith("//"):
             full_url = f'https:{self.remote_src}'
         else:

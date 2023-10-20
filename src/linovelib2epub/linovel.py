@@ -310,7 +310,6 @@ class Linovelib2Epub:
     def __init__(self,
                  book_id: Optional[Union[int, str]] = None,
                  target_site: TargetSite = TargetSite.LINOVELIB_MOBILE,
-                 base_url: str = settings.BASE_URL,
                  divide_volume: bool = settings.DIVIDE_VOLUME,
                  select_volume_mode: bool = settings.SELECT_VOLUME_MODE,
                  has_illustration: bool = settings.HAS_ILLUSTRATION,
@@ -328,17 +327,15 @@ class Linovelib2Epub:
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
-        if base_url is None:
-            raise LinovelibException('base_url parameter must be set.')
 
         self.target_site = target_site
 
         site_to_base_url = {
-            TargetSite.LINOVELIB_MOBILE: 'https://w.linovelib.com/novel',
+            TargetSite.LINOVELIB_MOBILE: 'https://w.linovelib.com',
             TargetSite.MASIRO: 'https://masiro.me',
         }
-        # user override base_url
-        base_url = base_url or site_to_base_url[self.target_site]
+        # user override base_url, or use fallback detection
+        base_url = site_to_base_url[self.target_site]
 
         u = urllib.parse.urlsplit(base_url)
 
@@ -403,6 +400,8 @@ class Linovelib2Epub:
                 novel = self._spider.fetch()
         else:
             novel = self._spider.fetch()
+
+        # print(novel.get_illustrations())
 
         if novel:
             # 2.solve images download and save novel pickle

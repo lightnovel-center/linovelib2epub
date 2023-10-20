@@ -47,7 +47,7 @@ class BaseNovelWebsiteSpider(ABC):
 
     def download_images_by_multiprocessing(self, light_novel_images: List[LightNovelImage]) -> None:
 
-        self.logger.info(f'len of image set = {len(light_novel_images)}')
+        self.logger.info(f'len of light_novel_images = {len(light_novel_images)}')
 
         download_url_to_image: Dict[str, LightNovelImage] = {
             image.download_url: image for image in light_novel_images
@@ -62,11 +62,6 @@ class BaseNovelWebsiteSpider(ABC):
                 self.logger.info(f'Retry image links: {sorted_error_links}')
                 params = [(url, download_url_to_image[url].local_relative_path) for url in sorted_error_links]
                 error_links = process_pool.starmap(self._download_image_legacy, params)
-
-        # re-check image download result:
-        # - happy result: urls_set - self.image_download_folder == 0
-        # - ? result: urls_set - self.image_download_folder < 0 , maybe you put some other images in this folder.
-        # - bad result: urls_set - self.image_download_folder > 0
 
     def _download_image_legacy(self, download_url: str, local_relative_path: str) -> Optional[str]:
         """
@@ -203,10 +198,12 @@ class BaseNovelWebsiteSpider(ABC):
         self.logger.info(f"Image download strategy: {self.spider_settings['image_download_strategy']}")
 
         if self.spider_settings['has_illustration']:
-            image_list: List = novel.get_illustrations()
+            image_list: List[LightNovelImage] = novel.get_illustrations()
             image_list.append(novel.book_cover)
         else:
-            image_list: List = [novel.book_cover]
+            image_list: List[LightNovelImage] = [novel.book_cover]
+
+        print(f'image list ={image_list[0].download_url}')
 
         if is_async(_download_image):
             asyncio.run(_download_image(image_list))

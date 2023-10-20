@@ -1,8 +1,7 @@
 import asyncio
-import json
 import re
 from dataclasses import dataclass
-from typing import Dict, Any, Union, List, Awaitable
+from typing import Dict, Any, List
 from urllib.parse import urljoin
 
 import aiohttp
@@ -11,7 +10,7 @@ from bs4 import BeautifulSoup
 from lxml import html
 
 from linovelib2epub.logger import Logger
-from linovelib2epub.models import LightNovel, LightNovelVolume, LightNovelChapter
+from linovelib2epub.models import LightNovel, LightNovelVolume, LightNovelChapter, LightNovelImage
 from linovelib2epub.spider import BaseNovelWebsiteSpider
 from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry
 from .config import env_settings
@@ -65,12 +64,10 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             result = await aiohttp_post_with_retry(session, login_info.login_url, params=login_param,
                                                    headers=login_headers)
 
-            # https://masiro.me/admin/novelView?novel_id=875
-            # => can get basic info and toc
-
-            book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
+            # now this session is already logged.
 
             # 3. get basic info and catalog
+            book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
             novel = await self._crawl_book_basic_info_with_catalog(book_url, session)
 
         return novel
@@ -107,9 +104,11 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         new_novel.book_title = title
         new_novel.author = author
         new_novel.description = brief_introduction
-        new_novel.book_cover = urljoin(self.spider_settings["base_url"],cover_src)
-        new_novel.book_cover_local = self.get_image_filename(cover_src,
-                                                             middle_folder_name=str(self.spider_settings["book_id"]))
+        new_novel.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
+                                               related_page_url=url,
+                                               remote_src=cover_src,
+                                               book_id=self.spider_settings['book_id'],
+                                               is_book_cover=True)
         new_novel.mark_basic_info_ready()
 
         catalog_list = self._convert_to_catalog_list(html_text)
@@ -118,9 +117,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
 
-        #  todo pre-buy chapters before downloading
+        #  todo pre-buy selected volume before downloading
 
-        page_url_set = {chapter[1] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
+        page_url_set = {chapter["chapter_url"] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
         url_to_page = await self.download_page_urls(session, page_url_set)
 
         #  Main goals:
@@ -131,32 +130,27 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         for url, page in url_to_page.items():
             url_to_page[url] = self._extract_body_content(page)
 
-        illustration_dict: Dict[Union[int, str], List[str]] = dict()
-
         volume_id = 0
         for volume_dict in catalog_list:
             volume_id += 1
-            middle_folder_name = f'{self.spider_settings["book_id"]}-{volume_id}'
-
             new_volume = LightNovelVolume(volume_id=volume_id)
             new_volume.title = volume_dict['volume_title']
 
             self.logger.info(f'volume: {volume_dict["volume_title"]}')
 
-            illustration_dict.setdefault(volume_dict['vid'], [])
-
             chapter_id = -1
-            chapter_list = []  # store chapter for removing duplicate images in the first chapter
+            chapter_list = []  # store chapters
             for chapter in volume_dict['chapters']:
                 chapter_id += 1
-                chapter_title = chapter[0]
+                chapter_title = chapter["chapter_title"]
 
-                new_chapter = LightNovelChapter(chapter_id=chapter_id)
-                new_chapter.title = chapter_title
-                # new_chapter.content = 'UNSOLVED'
+                light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
+                light_novel_chapter.title = chapter_title
+                chapter_illustrations: List[LightNovelImage] = []
+
                 self.logger.info(f'chapter : {chapter_title}')
 
-                chapter_url = chapter[1]
+                chapter_url = chapter['chapter_url']
                 chapter_body = url_to_page[chapter_url]
 
                 # one page per chapter
@@ -175,48 +169,31 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     # 最后，将这个分隔符和图片原来的文件名拼接，得到 875-3/fy-221114012533-99Qz.jpg 这样格式的链接。
                     # 更加具体地，为 XXXX/masiro.me/875-3/fy-221114012533-99Qz.jpg
 
-                    image_src = image.get("src")
+                    remote_src = image.get("src")
                     src_value = re.search('(?<= src=").*?(?=")', str(image))
-                    local_image_uri = self.get_image_filename(src_value.group(), middle_folder_name=middle_folder_name)
 
-                    # local_image_uri is "[volume_img_folder]/[filename]"
-                    # example: https://img.linovelib.com/0/682/117077/50675.jpg => [image_download_folder]/117077/50677.jpg
-                    # 117077 is [volume_img_folder]
-                    # 50677.jpg is the [filename]
+                    light_novel_image = LightNovelImage(site_base_url=self.spider_settings["base_url"],
+                                                        related_page_url=chapter_url,
+                                                        remote_src=remote_src,
+                                                        chapter_id=chapter_id,
+                                                        volume_id=volume_id,
+                                                        book_id=self.spider_settings['book_id'])
 
-                    replace_value = f'{self.spider_settings["image_download_folder"]}/' + local_image_uri
-                    new_image = str(image).replace(str(src_value.group()), replace_value)
-
-                    # replace all remote images src to local file path
+                    image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
+                    new_image = str(image).replace(str(src_value.group()), image_local_src)
                     chapter_body = chapter_body.replace(str(image), new_image)
+                    chapter_illustrations.append(light_novel_image)
 
-                    illustration_dict[volume_dict['vid']].append(image_src)
-
-                new_chapter.content = chapter_body
-                chapter_list.append(new_chapter)
+                light_novel_chapter.content = chapter_body
+                light_novel_chapter.illustrations = chapter_illustrations
+                chapter_list.append(light_novel_chapter)
 
             for chapter in chapter_list:
-                new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content)
+                new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
+                                       illustrations=chapter.illustrations)
 
-            # store [volume_img_folders] and [volume_cover] in volume dict
-            if illustration_dict[volume_dict['vid']]:
-                volume_images = illustration_dict[volume_dict['vid']]
-                if volume_images:
-                    cover_image_url = volume_images[0]
-                    path = self.get_image_filename(cover_image_url, middle_folder_name)
-                    new_volume.volume_cover = path
+            new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 
-                new_volume.volume_img_folders = {middle_folder_name}
-
-            new_novel.add_volume(
-                vid=new_volume.volume_id,
-                title=new_volume.title,
-                chapters=new_volume.chapters,
-                volume_img_folders=new_volume.volume_img_folders,
-                volume_cover=new_volume.volume_cover
-            )
-
-        new_novel.set_illustration_dict(illustration_dict)
         new_novel.mark_volumes_content_ready()
 
         return new_novel
@@ -275,28 +252,28 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     async def _download_page(self, session, url) -> str | None:
         #  use semaphore to control concurrency
-        max_concurrency = 2
+        max_concurrency = 4
         sem = asyncio.Semaphore(max_concurrency)
 
         async with sem:
             timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
             async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
                 if resp.status == 200:
-                    self.logger.info(f'fetch page: {url} ok.')
+                    self.logger.info(f'page {url} 200 => ok.')
                     return await resp.text()
                 elif resp.status == 404:
                     # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
                     # 404 is considered as success => don't retry
-                    self.logger.error(f'{url} 404. skip it')
+                    self.logger.error(f'page {url} 404 => skip it.')
                     pass
                 else:
                     # 429 too many requests => should retry
                     # 503 Service Unavailable => should retry
                     # ...... => should retry
-                    self.logger.error(f'what happen about: {url} ? http status: {resp.status}.')
+                    self.logger.error(f'page {url} {resp.status} => should retry.')
                     raise LinovelibException(f'fetch page url {url} failed with error status {resp.status}.')
 
-    def _convert_to_catalog_list(self, html_text) -> list:
+    def _convert_to_catalog_list(self, html_text) -> List:
         """
         input example:
 
@@ -334,8 +311,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         :return:
         """
 
-        # return example:
-        # [{vid:1,volume_title: "XX", chapters:[[chapter_title,chapter_url],[xx,yy],[...] ]},{},{}]
+        # [{vid:1,volume_title: "XX", chapters:[{dict},{dict},{...}]
         catalog_list = []
 
         soup = BeautifulSoup(html_text, 'html.parser')
@@ -366,12 +342,20 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         'chapters': _current_volume
                     })
                 else:
-                    # handle li
                     chapter_link_items = li.select('a.to-read')
 
                     for idx, chapter_a_item in enumerate(chapter_link_items):
+                        #  <a href="/admin/novelReading?cid=71343" data-id="71343"
+                        #     data-cost="0" data-payed="0" data-uid="61162" class="to-read">
+
+                        data_cost = chapter_a_item['data-cost']
+                        # 0 => unpayed; 1 => payed
+                        data_payed = chapter_a_item['data-payed']
+                        # remote server chapter_id
+                        data_id = chapter_a_item['data-id']
+
                         a_href = chapter_a_item['href']
-                        whole_url = urljoin('https://masiro.me', a_href)
+                        chapter_url = urljoin('https://masiro.me', a_href)
 
                         chapter_title = chapter_a_item.find('li').find('span').text
                         # remove `&nbsp;` and `\r\n`.
@@ -379,8 +363,13 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         # todo fix remove \xa0
                         chapter_title = re.sub(r'&nbsp;', '', chapter_title)
 
-                        # todo add chapter pricing field if exists
-                        _current_volume.append([chapter_title, whole_url])
+                        new_chapter = {
+                            'chapter_title': chapter_title,
+                            'chapter_url': chapter_url,
+                            'chapter_cost': data_cost,
+                            'chapter_payed': data_payed
+                        }
+                        _current_volume.append(new_chapter)
 
         return catalog_list
 
