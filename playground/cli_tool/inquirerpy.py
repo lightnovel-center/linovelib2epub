@@ -37,6 +37,7 @@ def main():
     ]
 
     result = prompt(questions)
+    print(result)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 import inquirer
 
-questions = [
-    inquirer.List('size',
-                  message="What size do you need?",
-                  choices=[('Jumbo',1), ('Large',2),],
-                  ),
-]
+# questions = [
+#     inquirer.List('size',
+#                   message="What size do you need?",
+#                   choices=[('Jumbo',1, "foo"), ('Large',2,"aaa"),],
+#                   ),
+# ]
 # answers = inquirer.prompt(questions)
 # print(answers)
 

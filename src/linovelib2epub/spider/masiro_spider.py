@@ -7,8 +7,10 @@ from urllib.parse import urljoin
 
 import aiohttp
 import inquirer
+import tabulate
 from bs4 import BeautifulSoup
 from lxml import html
+from rich.prompt import Confirm
 
 from linovelib2epub.logger import Logger
 from linovelib2epub.models import LightNovel, LightNovelVolume, LightNovelChapter, LightNovelImage
@@ -64,6 +66,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             # 2. do login
             result = await aiohttp_post_with_retry(session, login_info.login_url, params=login_param,
                                                    headers=login_headers)
+            # {"code":1,"msg":"\u767b\u5f55\u6210\u529f!","url":"https:\/\/masiro.me"}
 
             # now this session is already logged.
 
@@ -98,6 +101,13 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         soup = BeautifulSoup(html_text, 'lxml')
 
+        # get user point balance
+        # .user-header small text 金币:91 粉丝:
+        text = soup.find('li', {'class': 'user-header'}).find('small').text
+        match = re.match(r'金币:(\d+)\s*', text)
+        if match:
+            points_balance = match.group()
+
         title = soup.find('div', {'class': 'novel-title'}).text
         author = soup.find('div', {'class': 'author'}).find('a').text
         _tag_spans = soup.find('div', class_='tags').find_all('a')
@@ -119,12 +129,53 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         catalog_list = self._convert_to_catalog_list(html_text)
 
+        # compute cost
+        for volume in catalog_list:
+            volume_cost = sum([int(chapter["chapter_cost"]) for chapter in volume["chapters"]])
+            volume['volume_cost'] = volume_cost
+
         # select_volume_mode
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
+            quote = sum([volume["volume_cost"] for volume in catalog_list])
+            if quote > points_balance:
+                self.logger.warning("积分不足，无法下载")
+                sys.exit()
+            else:
+                # show quote and balance by confirmation dialog
+                if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
+                    # todo do buy
+                    await self._continue_fetch(session, catalog_list, new_novel)
+                else:
+                    sys.exit()
+        else:
+            # 计算全本书的积分价格
+            quote = sum([volume["volume_cost"] for volume in catalog_list])
+            # 如果本书所有章节都是不需要积分查看的 => 直接起飞
+            if quote == 0:
+                await self._continue_fetch(session, catalog_list, new_novel)
+            else:
+                # 部分章节需要积分，主动显示列表
+                table_header = [
+                    ['vid', 'volume title', 'volume cost']
+                ]
+                table_body = [[volume['vid'], volume["volume_title"], volume["volume_cost"]] for volume in catalog_list]
+                table = table_header + table_body
+                results = tabulate.tabulate(table)
 
-        #  todo pre-buy selected volume before downloading
+                if quote > points_balance:
+                    self.logger.warning("积分不足，无法下载")
+                    sys.exit()
+                else:
+                    if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
+                        # todo buy
+                        await self._continue_fetch(session, catalog_list, new_novel)
+                    else:
+                        sys.exit()
 
+        return new_novel
+
+    async def _continue_fetch(self, session, catalog_list, book):
         page_url_set = {chapter["chapter_url"] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
         url_to_page = await self.download_page_urls(session, page_url_set)
 
@@ -198,11 +249,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
                                        illustrations=chapter.illustrations)
 
-            new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
+            book.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 
-        new_novel.mark_volumes_content_ready()
-
-        return new_novel
+        book.mark_volumes_content_ready()
 
     def _extract_body_content(self, page: str):
         """
@@ -317,7 +366,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         :return:
         """
 
-        # [{vid:1,volume_title: "XX", chapters:[{dict},{dict},{...}]
+        # [{vid:1, volume_title: "XX", chapters:[{dict},{dict},{...}]
         catalog_list = []
 
         soup = BeautifulSoup(html_text, 'html.parser')
@@ -390,13 +439,18 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             :param catalog_list:
             :return:
             """
-            return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+            choice_view = []
+            for volume in catalog_list:
+                item_text = f"{volume['volume_title']} | chapter nums: {len(volume['chapters'])} " \
+                            f"| volume cost: {volume['volume_cost']}"
+                choice_view.append((item_text, volume['vid']))
+            return choice_view
 
         # step 1: need to show UI for user to select one or more volumes,
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
         question_name = 'Selecting volumes'
-        question_description = "Which volumes you want to download?(select one or multiple volumes)"
+        question_description = "Which volumes you want to download?(use SPACE to select one or multiple volumes)"
         # [(volume_title,vid),(volume_title,vid),...]
         volume_choices = _get_volume_choices(catalog_list)
         questions = [

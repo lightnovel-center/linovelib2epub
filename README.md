@@ -141,6 +141,7 @@ If it finished without errors, you can see the epub file is under the folder whe
 
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
+- [ ] masiro 繁体 <=> 简体
 
 ## Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
