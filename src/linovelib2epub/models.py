@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 class ImageDuplicateCheckingStrategy:
 
     def is_duplicate(self, url_1, url_2):
-        return False
+        return url_1 == url_2
 
 
 class LinovelibMobileImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
@@ -16,6 +16,7 @@ class LinovelibMobileImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrate
         # https://linovelib-img.zezefans.com/3/3843/206654/227245.jpg => /3/3843/206654/227245.jpg
         # https://img3.readpai.com/3/3843/206654/227245.jpg => /3/3843/206654/227245.jpg
         # linovelib 这种实际上应该也算重复，但是从地址来看，无法感知是否重复。
+        # 因此这里需要更加严格的重复判断
 
         path_1 = urlparse(url_1).path
         path_2 = urlparse(url_2).path
@@ -42,7 +43,7 @@ class ImageDuplicationChecker:
 
 @dataclass
 class LightNovelImage:
-    # example: http://example.com/path/to or http://example.com
+    # example: http://example.com no path, host only
     site_base_url: str = ''
 
     # 这个图片从属html页面的原始地址
@@ -87,7 +88,7 @@ class LightNovelImage:
 
     @property
     def local_relative_path(self):
-        # derived property from book_id, volume_id
+        # derived property from self
         if self.is_book_cover:
             local_relative_path = f'{self.hostname}/{self.book_id}/{self.filename}'
         else:

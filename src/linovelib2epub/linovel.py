@@ -4,14 +4,13 @@ import pickle
 import shutil
 import time
 import urllib.parse
-from enum import Enum, auto
+from enum import Enum
+from pathlib import Path
+from typing import Optional, Union, Dict, Any, List, cast
 
 import uuid
-from pathlib import Path
-from typing import Optional, Union, Dict, Any, List, cast, Set
-
-from ebooklib import epub
 from PIL import Image
+from ebooklib import epub
 from ebooklib.epub import EpubItem, EpubBook, EpubHtml
 from rich import print as rich_print
 from rich.prompt import Confirm
@@ -22,6 +21,7 @@ from .logger import Logger
 from .models import LightNovel, LightNovelVolume, LightNovelImage
 from .spider import ASYNCIO, LinovelibMobileSpider  # type: ignore[attr-defined]
 from .spider.masiro_spider import MasiroSpider
+from .spider.wenku8_spider import Wenku8Spider
 from .utils import (create_folder_if_not_exists, random_useragent,
                     read_pkg_resource, sanitize_pathname)
 
@@ -303,6 +303,7 @@ class TargetSite(Enum):
     LINOVELIB_MOBILE = 'linovelib_mobile'
     LINOVELIB_WEB = 'linovelib_web'
     MASIRO = 'masiro'
+    WENKU8 = 'wenku8'
 
 
 class Linovelib2Epub:
@@ -333,6 +334,7 @@ class Linovelib2Epub:
         site_to_base_url = {
             TargetSite.LINOVELIB_MOBILE: 'https://w.linovelib.com',
             TargetSite.MASIRO: 'https://masiro.me',
+            TargetSite.WENKU8: 'https://www.wenku8.net',
         }
         # user override base_url, or use fallback detection
         base_url = site_to_base_url[self.target_site]
@@ -369,6 +371,7 @@ class Linovelib2Epub:
         site_to_spider = {
             TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
             TargetSite.MASIRO: MasiroSpider,
+            TargetSite.WENKU8: Wenku8Spider,
         }
         self._spider = site_to_spider[self.target_site](spider_settings=self.spider_settings)
 

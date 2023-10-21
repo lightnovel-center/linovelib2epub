@@ -14,7 +14,7 @@ from lxml import html
 from rich.prompt import Confirm
 
 from linovelib2epub.logger import Logger
-from linovelib2epub.models import LightNovel, LightNovelVolume, LightNovelChapter, LightNovelImage
+from linovelib2epub.models import LightNovel, LightNovelImage
 from linovelib2epub.spider import BaseNovelWebsiteSpider
 from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry
 from .config import env_settings
@@ -153,7 +153,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         if quote == 0:
             # 1
             self.logger.info("当前所有卷都是免费积分或你已经购买，直接执行下载。")
-            await self._continue_fetch(session, final_catalog_list, new_novel)
+            await self.fetch_chapters(session, final_catalog_list, new_novel)
             return new_novel
         else:
             # 2
@@ -180,7 +180,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     # batch payments
                     await self._pay_chapters(session, login_info, chapter_to_pay)
 
-                    await self._continue_fetch(session, final_catalog_list, new_novel)
+                    await self.fetch_chapters(session, final_catalog_list, new_novel)
 
                     return new_novel
                 else:
@@ -255,159 +255,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     self.logger.info(f'pay for chapter {chapter_id} with cost {chapter_cost} succeeded.')
             except Exception as e:
                 raise e
-
-    async def _continue_fetch(self, session, catalog_list, book):
-        page_url_set = {chapter["chapter_url"] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
-        url_to_page = await self._download_page_urls(session, page_url_set)
-
-        #  Main goals:
-        #  1. extract body and update dict
-        #  2. update image src to local file path in body content,
-        #  3. generate illustration_dict.
-
-        for url, page in url_to_page.items():
-            url_to_page[url] = self._extract_body_content(page)
-
-        volume_id = 0
-        for volume_dict in catalog_list:
-            volume_id += 1
-            new_volume = LightNovelVolume(volume_id=volume_id)
-            new_volume.title = volume_dict['volume_title']
-
-            self.logger.info(f'volume: {volume_dict["volume_title"]}')
-
-            chapter_id = -1
-            chapter_list = []  # store chapters
-            for chapter in volume_dict['chapters']:
-                chapter_id += 1
-                chapter_title = chapter["chapter_title"]
-
-                light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
-                light_novel_chapter.title = chapter_title
-                chapter_illustrations: List[LightNovelImage] = []
-
-                self.logger.info(f'chapter : {chapter_title}')
-
-                chapter_url = chapter['chapter_url']
-                chapter_body = url_to_page[chapter_url]
-
-                # one page per chapter
-                images_soup = BeautifulSoup(chapter_body, 'lxml').find_all('img')
-                for _, image in enumerate(images_soup):
-                    # Images src analysis:
-                    # https://i.ibb.co/1fRfdhs/6f9fbd2762d0f7039cfafb8d0bfa513d2797c5a0.jpg
-                    # https://masiro.moe/data/attachment/forum/202103/07/173827oqkmqhcbylyytty9.jpg => 526 status code
-                    # https://www.masiro.me/images/encode/fy-221114012533-99Qz.jpg
-
-                    # 可能为站内链接，也可能是站外链接。因为url没有固定格式
-                    # 这里我们需要自定义一个中间的文件夹名称，用于分割不同的爬虫实例。
-                    # 为了让文件夹名称更加可读和具有语义，这里使用 bookid-volumeid 作为隔离。
-
-                    # 举例，例如 bookid为 875，volume_id 取本地自增id(例如3)，那么 875-3 就是结果。
-                    # 最后，将这个分隔符和图片原来的文件名拼接，得到 875-3/fy-221114012533-99Qz.jpg 这样格式的链接。
-                    # 更加具体地，为 XXXX/masiro.me/875-3/fy-221114012533-99Qz.jpg
-
-                    remote_src = image.get("src")
-                    src_value = re.search('(?<= src=").*?(?=")', str(image))
-
-                    light_novel_image = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                                        related_page_url=chapter_url,
-                                                        remote_src=remote_src,
-                                                        chapter_id=chapter_id,
-                                                        volume_id=volume_id,
-                                                        book_id=self.spider_settings['book_id'])
-
-                    image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
-                    new_image = str(image).replace(str(src_value.group()), image_local_src)
-                    chapter_body = chapter_body.replace(str(image), new_image)
-                    chapter_illustrations.append(light_novel_image)
-
-                light_novel_chapter.content = chapter_body
-                light_novel_chapter.illustrations = chapter_illustrations
-                chapter_list.append(light_novel_chapter)
-
-            for chapter in chapter_list:
-                new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
-                                       illustrations=chapter.illustrations)
-
-            book.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
-
-        book.mark_volumes_content_ready()
-
-    def _extract_body_content(self, page: str):
-        """
-        :param page:
-        :return:
-        """
-        html_content = BeautifulSoup(page, 'lxml')
-        body_content = html_content.find('div', {'class': 'nvl-content'}).prettify()
-        return body_content
-
-    async def _download_page_urls(self, session, page_url_set: set):
-
-        self.logger.info(f'page url set = {len(page_url_set)}')
-
-        url_to_page = {url: 'NOT_DOWNLOAD_READY' for url in page_url_set}
-
-        async with session:
-            tasks = {asyncio.create_task(self._download_page(session, url), name=url) for url in page_url_set}
-            pending: set = tasks
-            succeed_count = 0
-
-            while pending:
-                done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
-                # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
-                # are returned in the second set
-
-                # 1. succeed => normal result in done(# HAPPY CASE)
-                # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
-                # 3  Other Exception before timeout => (SAD CASE(need retry)
-
-                for done_task in done:
-                    exception = done_task.exception()
-                    task_url = done_task.get_name()
-
-                    if exception is None:
-                        url_to_page[task_url] = done_task.result()
-                        succeed_count += 1
-                    else:
-                        # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
-                        self.logger.info(f'Exception: {type(exception)}')
-                        self.logger.info(f'FAIL: {task_url}; should retry this url.')
-                        pending.add(asyncio.create_task(self._download_page(session, task_url), name=task_url))
-
-                self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
-                self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
-
-        # ASSERTION: make sure data is ok.
-        for page_content in url_to_page.values():
-            if page_content == "NOT_DOWNLOAD_READY":
-                raise LinovelibException('如果这个断言被触发，那么证明代码逻辑有问题。青春猪头少年不会梦到奇奇怪怪的BUG。')
-
-        return url_to_page
-
-    async def _download_page(self, session, url) -> str | None:
-        #  use semaphore to control concurrency
-        max_concurrency = 2
-        sem = asyncio.Semaphore(max_concurrency)
-
-        async with sem:
-            timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
-            async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
-                if resp.status == 200:
-                    self.logger.info(f'page {url} 200 => ok.')
-                    return await resp.text()
-                elif resp.status == 404:
-                    # maybe 404 etc. Now ignore it, don't raise error to avoid retry dead loop
-                    # 404 is considered as success => don't retry
-                    self.logger.error(f'page {url} 404 => skip it.')
-                    pass
-                else:
-                    # 429 too many requests => should retry
-                    # 503 Service Unavailable => should retry
-                    # ...... => should retry
-                    self.logger.error(f'page {url} {resp.status} => should retry.')
-                    raise LinovelibException(f'fetch page url {url} failed with error status {resp.status}.')
 
     def _convert_to_catalog_list(self, html_text) -> List:
         """
@@ -579,3 +426,12 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         self.logger.debug(f'token: {token}')
 
         login_info.token = token
+
+    def extract_body_content(self, page: str):
+        """
+        :param page:
+        :return:
+        """
+        html_content = BeautifulSoup(page, 'lxml')
+        body_content = html_content.find('div', {'class': 'nvl-content'}).prettify()
+        return body_content
