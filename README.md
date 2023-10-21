@@ -38,7 +38,7 @@ Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) an
 | 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简/繁 | 中😰  | 🚫                                  | 资源同Mobile，没必要。         | N/A                            |
 | 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简/繁 | 高🤣  | 🚫                                  | `需要登录`                 | `轻币门槛` `导航混乱`                  |
 | 4   | [无限轻小说](https://www.8novel.com/)             | 繁   | 中😰  | ？                                   | `不用登录` `一章多页`          ||
-| 5   | [轻小说文库](https://www.wenku8.net/)             | 简/繁 | 中😰  | ？                                   | `不用登录` `一章一页`          ||
+| 5   | [轻小说文库](https://www.wenku8.net/)             | 简/繁 | 中😰  | WIP                                 | `不用登录` `一章一页`          ||
 | 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简/繁 | 低😆  | ？                                   | `不用登录` `一章一页` `插图清晰度低` | N/A                            |
 | 7   | [真白萌](https://masiro.me/admin/novels )       | 简/繁 | 中😰  | <img src="./merrli.png" width="36"> | `一章一页`                 | `需要登录` `积分购买` `等级限制`           |
 
@@ -165,29 +165,30 @@ MASIRO_LOGIN_PASSWORD = '<your-masiro-password>'
 > Masiro 某些小说的章节需要积分购买才能查看，程序会如何处理？
 
 登陆后，程序会记住你的当前积分余额：
+
 - 如果当前挑选的所有章节都是免费积分，或者你之前已经全部购买过，那么程序会直接往下执行。
 - 如果当前挑选的所有章节存在需要积分购买的情况，程序会再次提示，要求做出选择，此时可以选择退出或者选择继续。
 
 ## Options
 
-| Parameters              | type    | required | default                       | description                                                 |
-|-------------------------|---------|----------|-------------------------------|-------------------------------------------------------------|
-| book_id                 | number  | YES      | None                          | 书籍ID。                                                       |
-| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 参阅 TargetSite python 枚举类。当前可用值: TargetSite.LINOVELIB_MOBILE |
-| divide_volume           | boolean | NO       | False                         | 是否分卷                                                        |
-| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为True时 divide_volume 强制为True。                        |
-| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                      |
-| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../开头。                                   |
-| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle临时数据保存的文件夹。                                           |
-| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据/工件，指的是pickle和下载的图片文件。                              |
-| http_timeout            | number  | NO       | 10                            | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。                  |
-| http_retries            | number  | NO       | 5                             | 当一个HTTP请求失败后，重试的最大次数。                                       |
-| http_cookie             | string  | NO       | ''                            | 自定义HTTP cookie。                                             |
-| custom_style_cover      | string  | NO       | ''                            | 自定义cover.xhtml的样式                                           |
-| custom_style_nav        | string  | NO       | ''                            | 自定义nav.xhtml的样式                                             |
-| custom_style_chapter    | string  | NO       | ''                            | 自定义每章(?.xhtml)的样式                                           |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                            |
-| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）       |
+| Parameters              | type    | required | default                       | description                                                                   |
+|-------------------------|---------|----------|-------------------------------|-------------------------------------------------------------------------------|
+| book_id                 | number  | YES      | None                          | 书籍ID。                                                                         |
+| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 参阅 TargetSite python 枚举类。当前可用值: TargetSite.LINOVELIB_MOBILE、TargetSite.MASIRO |
+| divide_volume           | boolean | NO       | False                         | 是否分卷                                                                          |
+| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为True时 divide_volume 强制为True。                                          |
+| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                                        |
+| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../开头。                                                     |
+| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle临时数据保存的文件夹。                                                             |
+| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据/工件，指的是pickle和下载的图片文件。                                                |
+| http_timeout            | number  | NO       | 10                            | 一个HTTP请求的超时等待时间(秒)。代表connect和read timeout。                                    |
+| http_retries            | number  | NO       | 5                             | 当一个HTTP请求失败后，重试的最大次数。                                                         |
+| http_cookie             | string  | NO       | ''                            | 自定义HTTP cookie。                                                               |
+| custom_style_cover      | string  | NO       | ''                            | 自定义cover.xhtml的样式                                                             |
+| custom_style_nav        | string  | NO       | ''                            | 自定义nav.xhtml的样式                                                               |
+| custom_style_chapter    | string  | NO       | ''                            | 自定义每章(?.xhtml)的样式                                                             |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                                              |
+| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）                         |
 
 ## Todo
 
