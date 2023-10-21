@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -39,7 +40,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         self._masiro_username = env_settings.get("MASIRO_LOGIN_USERNAME")
         self._masiro_password = env_settings.get("MASIRO_LOGIN_PASSWORD")
         if (not self._masiro_username) or (not self._masiro_password):
-            raise LinovelibException("masiro account not found.")
+            raise LinovelibException("Masiro account is not found. About configuration, check the documentation.")
 
     def fetch(self) -> LightNovel:
         novel = asyncio.run(self._fetch())
@@ -72,13 +73,14 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
             # 3. get basic info and catalog
             book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
-            novel = await self._crawl_book_basic_info_with_catalog(book_url, session)
+            novel = await self._crawl_book_basic_info_with_catalog(book_url, session, login_info)
 
         return novel
 
     async def _crawl_book_basic_info_with_catalog(self,
                                                   url: str,
-                                                  session: aiohttp.ClientSession):
+                                                  session: aiohttp.ClientSession,
+                                                  login_info):
 
         html_text = await aiohttp_get_with_retry(session, url, self.request_headers())
 
@@ -106,7 +108,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         text = soup.find('li', {'class': 'user-header'}).find('small').text
         match = re.match(r'金币:(\d+)\s*', text)
         if match:
-            points_balance = match.group()
+            points_balance = int(match.group(1))
+            self.logger.info(f'User points balance is {points_balance}.')
 
         title = soup.find('div', {'class': 'novel-title'}).text
         author = soup.find('div', {'class': 'author'}).find('a').text
@@ -131,53 +134,131 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         # compute cost
         for volume in catalog_list:
-            volume_cost = sum([int(chapter["chapter_cost"]) for chapter in volume["chapters"]])
+            volume_cost = sum([int(chapter["chapter_cost"]) for chapter in volume["chapters"]
+                               if int(chapter["chapter_payed"]) == 0 and int(chapter["chapter_cost"]) > 0])
             volume['volume_cost'] = volume_cost
 
         # select_volume_mode
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
-            quote = sum([volume["volume_cost"] for volume in catalog_list])
+
+        # resolve final catalog
+        final_catalog_list = catalog_list
+        chapter_to_pay = self._get_unpayed_chapter(final_catalog_list)
+
+        # 计算所需的积分价格，必须排除用户已经购买过的章节
+        quote = sum([volume["volume_cost"] for volume in final_catalog_list])
+
+        # 如果本书所有章节都是不需要积分查看的 => 直接起飞
+        if quote == 0:
+            # 1
+            self.logger.info("当前所有卷都是免费积分或你已经购买，直接执行下载。")
+            await self._continue_fetch(session, final_catalog_list, new_novel)
+            return new_novel
+        else:
+            # 2
+            # [可选]显示当前挑选卷的积分消耗预计值和用户当前积分余额
+            table_header = [
+                ['vid', 'volume title', 'volume cost(G)']
+            ]
+            table_body = [[volume['vid'], volume["volume_title"], volume["volume_cost"]] for volume in
+                          final_catalog_list]
+            table_data = table_header + table_body
+            table_view = tabulate.tabulate(table_data)
+            self.logger.info(table_view)
+
             if quote > points_balance:
-                self.logger.warning("积分不足，无法下载")
+                # 2.1
+                self.logger.warning(f"Need {quote} and your balance is {points_balance}, exit.")
                 sys.exit()
             else:
-                # show quote and balance by confirmation dialog
+                # 2.2
                 if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
-                    # todo do buy
-                    await self._continue_fetch(session, catalog_list, new_novel)
-                else:
-                    sys.exit()
-        else:
-            # 计算全本书的积分价格
-            quote = sum([volume["volume_cost"] for volume in catalog_list])
-            # 如果本书所有章节都是不需要积分查看的 => 直接起飞
-            if quote == 0:
-                await self._continue_fetch(session, catalog_list, new_novel)
-            else:
-                # 部分章节需要积分，主动显示列表
-                table_header = [
-                    ['vid', 'volume title', 'volume cost']
-                ]
-                table_body = [[volume['vid'], volume["volume_title"], volume["volume_cost"]] for volume in catalog_list]
-                table = table_header + table_body
-                results = tabulate.tabulate(table)
+                    # 2.2.1
+                    self.logger.info("用户积分余额足够，决定购买。")
 
-                if quote > points_balance:
-                    self.logger.warning("积分不足，无法下载")
-                    sys.exit()
+                    # batch payments
+                    await self._pay_chapters(session, login_info, chapter_to_pay)
+
+                    await self._continue_fetch(session, final_catalog_list, new_novel)
+
+                    return new_novel
                 else:
-                    if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
-                        # todo buy
-                        await self._continue_fetch(session, catalog_list, new_novel)
+                    # 2.2.2
+                    self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
+                    sys.exit()
+
+    def _get_unpayed_chapter(self, catalog_list) -> Dict:
+        unpayed_chapter_dict = {}
+
+        for volume in catalog_list:
+            volume_unpayed_chapter_dict = {
+                chapter["chapter_id"]: int(chapter["chapter_cost"])
+                for chapter in volume["chapters"]
+                if int(chapter["chapter_payed"]) == 0 and int(chapter["chapter_cost"]) > 0
+            }
+            unpayed_chapter_dict.update(volume_unpayed_chapter_dict)
+
+        return unpayed_chapter_dict
+
+    async def _pay_chapters(self, session, login_info, chapter_to_pay):
+        self.logger.info(f'len of chapter_to_pay = {len(chapter_to_pay)}')
+
+        async with session:
+            tasks = {asyncio.create_task(self._pay_chapter(session, login_info, chapter_id, chapter_cost),
+                                         name=chapter_id)
+                     for chapter_id, chapter_cost in chapter_to_pay.items()}
+            pending: set = tasks
+            succeed_count = 0
+
+            while pending:
+                done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+                # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
+                # are returned in the second set
+
+                # 1. succeed => normal result in done(# HAPPY CASE)
+                # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
+                # 3  Other Exception before timeout => (SAD CASE(need retry)
+
+                for done_task in done:
+                    exception = done_task.exception()
+                    chapter_id = done_task.get_name()
+
+                    if exception is None:
+                        # done_task.result()
+                        succeed_count += 1
                     else:
-                        sys.exit()
+                        # [TEST]make connect=.1 to reach this branch, should retry all the tasks that entered this case
+                        self.logger.info(f'Exception: {type(exception)}')
+                        self.logger.info(f'FAIL: {chapter_id}; should retry paying this chapter_id.')
+                        pending.add(
+                            asyncio.create_task(
+                                self._pay_chapter(session, login_info, chapter_id, chapter_to_pay["chapter_id"]),
+                                name=chapter_id)
+                        )
 
-        return new_novel
+                self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
+                self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+
+    async def _pay_chapter(self, session, login_info, chapter_id, chapter_cost):
+        # masiro 服务器一般，顶不住太大压力，设置为较大值也是徒劳 429/403
+        max_concurrency = 2
+        sem = asyncio.Semaphore(max_concurrency)
+
+        async with sem:
+            pay_url = 'https://masiro.me/admin/pay'
+            pay_params = {'type': '2', 'object_id': chapter_id, 'cost': chapter_cost}
+            pay_headers = self._build_login_headers(login_info=login_info)
+            try:
+                resp = await aiohttp_post_with_retry(session, url=pay_url, params=pay_params, headers=pay_headers)
+                if resp and json.loads(resp)['code'] == 1:
+                    self.logger.info(f'pay for chapter {chapter_id} with cost {chapter_cost} succeeded.')
+            except Exception as e:
+                raise e
 
     async def _continue_fetch(self, session, catalog_list, book):
         page_url_set = {chapter["chapter_url"] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
-        url_to_page = await self.download_page_urls(session, page_url_set)
+        url_to_page = await self._download_page_urls(session, page_url_set)
 
         #  Main goals:
         #  1. extract body and update dict
@@ -262,7 +343,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         body_content = html_content.find('div', {'class': 'nvl-content'}).prettify()
         return body_content
 
-    async def download_page_urls(self, session, page_url_set: set):
+    async def _download_page_urls(self, session, page_url_set: set):
 
         self.logger.info(f'page url set = {len(page_url_set)}')
 
@@ -298,7 +379,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
-        # make sure data is ok.
+        # ASSERTION: make sure data is ok.
         for page_content in url_to_page.values():
             if page_content == "NOT_DOWNLOAD_READY":
                 raise LinovelibException('如果这个断言被触发，那么证明代码逻辑有问题。青春猪头少年不会梦到奇奇怪怪的BUG。')
@@ -307,7 +388,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     async def _download_page(self, session, url) -> str | None:
         #  use semaphore to control concurrency
-        max_concurrency = 4
+        max_concurrency = 2
         sem = asyncio.Semaphore(max_concurrency)
 
         async with sem:
@@ -407,7 +488,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         # 0 => unpayed; 1 => payed
                         data_payed = chapter_a_item['data-payed']
                         # remote server chapter_id
-                        data_id = chapter_a_item['data-id']
+                        chapter_id = chapter_a_item['data-id']
 
                         a_href = chapter_a_item['href']
                         chapter_url = urljoin('https://masiro.me', a_href)
@@ -422,7 +503,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                             'chapter_title': chapter_title,
                             'chapter_url': chapter_url,
                             'chapter_cost': data_cost,
-                            'chapter_payed': data_payed
+                            'chapter_payed': data_payed,
+                            'chapter_id': chapter_id,
                         }
                         _current_volume.append(new_chapter)
 
@@ -489,14 +571,11 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         }
 
-    def get_image_filename(self, url: str, middle_folder_name: str | None = None) -> str:
-        return middle_folder_name + "/" + url.rsplit('/', 1)[1]
-
     async def _masiro_get_token(self, login_info: MasiroLoginInfo, session):
         res = await aiohttp_get_with_retry(session, login_info.login_url, self.request_headers(), logger=self.logger)
 
         page_body = html.fromstring(res)
         token = str(page_body.xpath('//input[@class=\'csrf\']/@value')[0])
-        self.logger.info(f'token: {token}')
+        self.logger.debug(f'token: {token}')
 
         login_info.token = token
