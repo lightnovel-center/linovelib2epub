@@ -40,7 +40,7 @@ class BaseNovelWebsiteSpider(ABC):
 
     def request_headers(self) -> Dict[str, Any]:
         """
-        Act as a common headers
+        Act as a common headers, 这个方法的父类设计似乎作用有限，是不是可以去掉？
         :return:
         """
         return {}
@@ -203,7 +203,7 @@ class BaseNovelWebsiteSpider(ABC):
         else:
             image_list: List[LightNovelImage] = [novel.book_cover]
 
-        print(f'image list ={image_list[0].download_url}')
+        self.logger.info(f"len of image list: {len(image_list)}")
 
         if is_async(_download_image):
             asyncio.run(_download_image(image_list))

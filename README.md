@@ -119,8 +119,9 @@ If it finished without errors, you can see the epub file is under the folder whe
 ## Options
 
 | Parameters            | type    | required | default                         | description                                           |
-| --------------------- |---------| -------- |---------------------------------|-------------------------------------------------------|
+| --------------------- |---------|----------|---------------------------------|-------------------------------------------------------|
 | book_id               | number  | YES      | None                            | 书籍ID。                                                 |
+| target_site              | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE`   | 参阅 TargetSite python 枚举类。当前可用值: TargetSite.LINOVELIB_MOBILE                      |
 | divide_volume         | boolean | NO       | False                           | 是否分卷                                                  |
 | select_volume_mode     | boolean | NO       | False                           | 选择卷模式，它为True时 divide_volume 强制为True。                  |
 | has_illustration      | boolean | NO       | True                            | 是否下载插图                                                |
@@ -133,8 +134,8 @@ If it finished without errors, you can see the epub file is under the folder whe
 | custom_style_cover    | string  | NO       | ''                              | 自定义cover.xhtml的样式                                     |
 | custom_style_nav      | string  | NO       | ''                              | 自定义nav.xhtml的样式                                       |
 | custom_style_chapter  | string  | NO       | ''                              | 自定义每章(?.xhtml)的样式                                     |
-|disable_proxy | boolean |NO| True                            | 是否禁用所在的代理环境，默认禁用                                      |
-|image_download_strategy | string  |NO| 'ASYNCIO'                       | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
+|disable_proxy | boolean | NO       | True                            | 是否禁用所在的代理环境，默认禁用                                      |
+|image_download_strategy | string  | NO       | 'ASYNCIO'                       | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
 
 
 ## Todo

@@ -1,11 +1,10 @@
 import asyncio
-import logging
 import os
 import re
 import time
 from functools import wraps
 from http.cookies import SimpleCookie
-from typing import Any, Callable, Dict, Union, NoReturn, Optional
+from typing import Any, Callable, Dict, NoReturn
 
 import aiohttp
 import pkg_resources
@@ -59,7 +58,7 @@ def requests_get_with_retry(client: Any,
 
         current_num_of_request += 1
         if logger:
-            logger.warning('current_num_of_request: ', current_num_of_request)
+            logger.warning(f'current_num_of_request: {current_num_of_request}')
 
     return None
 
@@ -91,7 +90,7 @@ async def aiohttp_get_with_retry(client: aiohttp.ClientSession,
 
         current_num_of_request += 1
         if logger:
-            logger.warning('current_num_of_request: ', current_num_of_request)
+            logger.warning(f'current_num_of_request: {current_num_of_request}')
 
     return None
 
@@ -125,7 +124,7 @@ async def aiohttp_post_with_retry(client: aiohttp.ClientSession,
 
         current_num_of_request += 1
         if logger:
-            logger.warning('current_num_of_request: ', current_num_of_request)
+            logger.warning(f'current_num_of_request: {current_num_of_request}')
 
     return None
 

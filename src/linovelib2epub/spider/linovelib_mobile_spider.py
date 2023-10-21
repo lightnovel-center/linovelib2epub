@@ -31,11 +31,14 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self.logger.info(self.spider_settings)
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
-        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         default_referer = 'https://w.linovelib.com'
         headers = {
-            'referer': referer if referer else default_referer,
-            'user-agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+            'Referer': referer if referer else default_referer,
+            'User-Agent': self.spider_settings['random_useragent'] if random_ua else default_ua
         }
         return headers
 
