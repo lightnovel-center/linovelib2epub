@@ -1,3 +1,7 @@
+```diff
++ 🚀 真白萌小说站 https://masiro.me 已经得到支持 🚀
+```
+
 # linovelib2epub
 
 Crawl light novel from [哔哩轻小说(linovelib)](https://w.linovelib.com/) and convert to epub.
