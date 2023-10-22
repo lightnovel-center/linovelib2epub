@@ -33,6 +33,12 @@ class MasiroImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
         return url_1 == url_2
 
 
+class Wenku8ImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
+
+    def is_duplicate(self, url_1, url_2):
+        return super().is_duplicate(url_1, url_2)
+
+
 class ImageDuplicationChecker:
     def __init__(self, duplicate_checking_strategy):
         self.duplicate_checking_strategy: ImageDuplicateCheckingStrategy = duplicate_checking_strategy
@@ -42,22 +48,67 @@ class ImageDuplicationChecker:
 
 
 @dataclass
-class CatalogChapter:
+class CatalogBaseChapter:
+    """
+    不同网站的章节含有不同的属性，但是有些属性字段是通用的，例如 chapter_title 和 chapter_url。
+
+    因此这里是一个基类，不同网站的子类来继承此类并添加特有的字段，例如masiro就应该添加关于积分值等字段。
+    """
+    chapter_title: str = ''
+    chapter_url: str = ''
+
+
+@dataclass
+class CatalogWenku8Chapter(CatalogBaseChapter):
     pass
 
 
 @dataclass
-class CatalogVolume:
+class CatalogLinovelibMobileChapter(CatalogBaseChapter):
+    pass
+
+
+@dataclass
+class CatalogMasiroChapter(CatalogBaseChapter):
+    # cid, not need it
+
+    chapter_cost: int = 0
+
+    # '0' unpayed , or '1' payed
+    chapter_payed: str = '0'
+
+    remote_chapter_id: str = ''
+
+
+@dataclass
+class CatalogBaseVolume:
+    # local volume id, 这里这个字段只为本地遍历查找使用
     vid: int
-    title: str = ""
-    chapters: List[CatalogChapter] = field(default_factory=list)
+    volume_title: str = ""
+    chapters: List[CatalogBaseChapter] = field(default_factory=list)
+
+    # 这里暂时不设计这个远程服务器的卷 id 字段，因为某些网站根本没有做这个数据概念抽象
+    # remote_volume_id
+
+
+@dataclass()
+class CatalogMasiroVolume(CatalogBaseVolume):
+    chapters: List[CatalogMasiroChapter] = field(default_factory=list)
+
+    @property
+    def volume_cost(self) -> int:
+        # todo 一次计算，缓存，不要重复计算
+        volume_cost = sum([int(chapter.chapter_cost) for chapter in self.chapters
+                           if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0])
+        return volume_cost
+
 
 @dataclass
 class LightNovelImage:
     # example: http://example.com no path, host only
     site_base_url: str = ''
 
-    # 这个图片从属html页面的原始地址
+    # 这个图片从属 html 页面的原始地址
     # 这个字段用于处理 src 为相对路径的情况，目前还没有使用。
     related_page_url: str = ""
 
@@ -134,7 +185,8 @@ class LightNovelVolume:
             hostname = image_sample.hostname
             hostname_to_strategy = {
                 'w.linovelib.com': LinovelibMobileImageDuplicateCheckingStrategy,
-                'masiro.me': MasiroImageDuplicateCheckingStrategy
+                'masiro.me': MasiroImageDuplicateCheckingStrategy,
+                'wenku8.net': Wenku8ImageDuplicateCheckingStrategy
             }
             return hostname_to_strategy.get(hostname, ImageDuplicateCheckingStrategy)
 
@@ -143,7 +195,7 @@ class LightNovelVolume:
     def get_illustrations(self) -> List:
         """
         # 注意，不同章节的 image remote src 之间可能会存在重复。为了加速图片下载，这里需要去重。
-        由于LightNovelImage 是一个复杂对象，因此需要自定义逻辑去重，而不能依赖简单的set() 来去重。
+        由于 LightNovelImage 是一个复杂对象，因此需要自定义逻辑去重，而不能依赖简单的 set() 来去重。
 
         :return: unique image list
         """
@@ -201,7 +253,7 @@ class LightNovel:
 
     def get_illustrations(self) -> List:
         """
-        这里不需要设计为去重，去重逻辑放在volume的粒度范围
+        这里不需要设计为去重，去重逻辑放在 volume 的粒度范围
         :return:
         """
         illustrations = []

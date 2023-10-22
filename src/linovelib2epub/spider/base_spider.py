@@ -17,7 +17,8 @@ from requests.exceptions import ProxyError
 
 from ..exceptions import LinovelibException
 from ..logger import Logger
-from ..models import LightNovel, LightNovelImage, LightNovelVolume, LightNovelChapter
+from ..models import LightNovel, LightNovelImage, LightNovelVolume, LightNovelChapter, CatalogMasiroVolume, \
+    CatalogBaseVolume
 from ..utils import (check_image_integrity, create_folder_if_not_exists,
                      is_async, is_valid_image_url)
 
@@ -284,7 +285,7 @@ class BaseNovelWebsiteSpider(ABC):
                     self.logger.error(f'page {url} {resp.status} => should retry.')
                     raise LinovelibException(f'fetch page url {url} failed with error status {resp.status}.')
 
-    async def fetch_chapters(self, session, catalog_list, book):
+    async def fetch_chapters(self, session, catalog_list: List[CatalogBaseVolume], book):
         """
         A basic implementation for crawling chapters.
         Please consider overriding `extract_body_content()` and `download_pages` in subclass instance.
@@ -293,7 +294,7 @@ class BaseNovelWebsiteSpider(ABC):
         :param book:
         :return:
         """
-        page_url_set = {chapter["chapter_url"] for volume_dict in catalog_list for chapter in volume_dict['chapters']}
+        page_url_set = {chapter.chapter_url for volume in catalog_list for chapter in volume.chapters}
         url_to_page = await self.download_pages(session, page_url_set)
 
         #  Main goals:
@@ -305,26 +306,26 @@ class BaseNovelWebsiteSpider(ABC):
             url_to_page[url] = self.extract_body_content(page)
 
         volume_id = 0
-        for volume_dict in catalog_list:
+        for catalog_volume in catalog_list:
             volume_id += 1
             new_volume = LightNovelVolume(volume_id=volume_id)
-            new_volume.title = volume_dict['volume_title']
+            new_volume.title = catalog_volume.volume_title
 
-            self.logger.info(f'volume: {volume_dict["volume_title"]}')
+            self.logger.info(f'volume: {catalog_volume.volume_title}')
 
             chapter_id = -1
-            chapter_list = []  # store chapters
-            for chapter in volume_dict['chapters']:
+            chapter_list: List[LightNovelChapter] = []  # store chapters
+            for catalog_chapter in catalog_volume.chapters:
                 chapter_id += 1
-                chapter_title = chapter["chapter_title"]
+                chapter_title = catalog_chapter.chapter_title
 
-                light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
-                light_novel_chapter.title = chapter_title
+                linovel_chapter = LightNovelChapter(chapter_id=chapter_id)
+                linovel_chapter.title = chapter_title
                 chapter_illustrations: List[LightNovelImage] = []
 
                 self.logger.info(f'chapter : {chapter_title}')
 
-                chapter_url = chapter['chapter_url']
+                chapter_url = catalog_chapter.chapter_url
                 chapter_body = url_to_page[chapter_url]
 
                 # one page per chapter
@@ -358,13 +359,13 @@ class BaseNovelWebsiteSpider(ABC):
                     chapter_body = chapter_body.replace(str(image), new_image)
                     chapter_illustrations.append(light_novel_image)
 
-                light_novel_chapter.content = chapter_body
-                light_novel_chapter.illustrations = chapter_illustrations
-                chapter_list.append(light_novel_chapter)
+                linovel_chapter.content = chapter_body
+                linovel_chapter.illustrations = chapter_illustrations
+                chapter_list.append(linovel_chapter)
 
-            for chapter in chapter_list:
-                new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
-                                       illustrations=chapter.illustrations)
+            for linovel_chapter in chapter_list:
+                new_volume.add_chapter(cid=linovel_chapter.chapter_id, title=linovel_chapter.title,
+                                       content=linovel_chapter.content, illustrations=linovel_chapter.illustrations)
 
             book.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 

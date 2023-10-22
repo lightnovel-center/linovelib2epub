@@ -22,7 +22,7 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 
 ![preview](./preview.gif)
 
-> This demo use [this screen recorder tool](https://github.com/faressoft/terminalizer) to record.
+> This demo uses [this screen recorder tool](https://github.com/faressoft/terminalizer) to record.
 
 ## Features
 
@@ -37,26 +37,22 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 
 ## Supported  Websites (plan)
 
-| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                | 备注                           | 技术难点                                        |
-|-----|----------------------------------------------|-------|------|-------------------------------------|------------------------------|---------------------------------------------|
-| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | `JS 加密` `JS文件随机` ` 章节链接破损 ` `Cloudflare 保护 ` |
-| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | 🚫                                  | 资源同 Mobile，没必要。              | N/A                                         |
-| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | 🚫                                  | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                           |
-| 4   | [无限轻小说](https://www.8novel.com/)             | 繁     | 中😰  | ？                                   | ` 不用登录 ` ` 一章多页 `            ||
+| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                | 备注                           | 技术难点                                         |
+|-----|----------------------------------------------|-------|------|-------------------------------------|------------------------------|----------------------------------------------|
+| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
+| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | 🚫                                  | 资源同 Mobile，没必要。              | N/A                                          |
+| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | 🚫                                  | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                            |
+| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | 🚫                                   | ` 不用登录 ` ` 一章多页 `            ||
 | 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 不用登录 ` ` 一章一页 `            ||
-| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | 🚫                                  | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                         |
-| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                  |
+| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | 🚫                                  | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                          |
+| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                   |
 
 爬虫友好度有两个重要指标：
+
 1. 访问门槛。是否需要登陆以及积分。
 2. 页面结构。一个章节多页渲染的视为中等难度。
 
 优质的轻小说目标源标准：资源丰富，更新迅速，插图清晰，爬虫门槛合理。可以在 issue 发起补充。
-
-其他代码参考：
-
-- 真白萌 / 轻之国度 / 百合会旧站参考：https://github.com/ilusrdbb/lightnovel-pydownloader
-- bilinovel/wenku8 参考：https://github.com/Montaro2017/bili_novel_packer
 
 ## Installation
 
@@ -214,6 +210,7 @@ Don't need login, no threshold.
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
+- [ ] to fix masiro batch payments exception
 
 ## Contributors
 
@@ -252,4 +249,6 @@ Don't need login, no threshold.
 
 ## Acknowledgements
 
-- [biliNovel2Epub](https://github.com/fangxx3863/biliNovel2Epub)
+- [biliNovel2Epub](https://github.com/fangxx3863/biliNovel2Epub) => 哔哩轻小说参考。
+- [lightnovel-pydownloader](https://github.com/ilusrdbb/lightnovel-pydownloader) => 真白萌 / 轻之国度 / 百合会旧站参考。
+- [bili_novel_packer](https://github.com/Montaro2017/bili_novel_packer) => 哔哩轻小说 /wenku8 参考。

@@ -2,8 +2,8 @@ import asyncio
 import json
 import re
 import sys
-from dataclasses import dataclass
-from typing import Dict, Any, List
+from dataclasses import dataclass, field
+from typing import Dict, Any, List, Tuple
 from urllib.parse import urljoin
 
 import aiohttp
@@ -14,7 +14,7 @@ from lxml import html
 from rich.prompt import Confirm
 
 from linovelib2epub.logger import Logger
-from linovelib2epub.models import LightNovel, LightNovelImage
+from linovelib2epub.models import LightNovel, LightNovelImage, CatalogMasiroChapter, CatalogMasiroVolume
 from linovelib2epub.spider import BaseNovelWebsiteSpider
 from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry
 from .config import env_settings
@@ -24,8 +24,9 @@ from ..exceptions import LinovelibException
 @dataclass
 class MasiroLoginInfo:
     login_url: str = 'https://masiro.me/admin/auth/login'
-    username: str = ''
-    password: str = ''
+    # don't print secrets
+    username: str = field(default="", repr=False)
+    password: str = field(default="", repr=False)
     token: str = ''
 
 
@@ -84,70 +85,24 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         html_text = await aiohttp_get_with_retry(session, url, self.request_headers())
 
-        # title √
-        # author √
-        # cover √
-        # translator
-        # status
-        # tags √
-        # recent_update
-        # popularity
-        # word_count_text
-        # original
-        # brief_introduction √
-
         index = html_text.find("小孩子不能看")
         if index != -1:
             self.logger.error(f"[等级限制]: 你在真白萌的用户等级不足以查看链接: {url}")
             sys.exit()
 
-        soup = BeautifulSoup(html_text, 'lxml')
-
-        # get user point balance
-        # .user-header small text 金币:91 粉丝:
-        text = soup.find('li', {'class': 'user-header'}).find('small').text
-        match = re.match(r'金币:(\d+)\s*', text)
-        if match:
-            points_balance = int(match.group(1))
-            self.logger.info(f'User points balance is {points_balance}.')
-
-        title = soup.find('div', {'class': 'novel-title'}).text
-        author = soup.find('div', {'class': 'author'}).find('a').text
-        _tag_spans = soup.find('div', class_='tags').find_all('a')
-        tags = [tag.find('span').text for tag in _tag_spans]
-        brief_introduction = soup.find('div', {'class': 'brief'}).text
-        cover_src = soup.find('img', {'class': 'img img-thumbnail'})['src'].split("?")[0]
-
-        new_novel = LightNovel()
-        new_novel.book_id = self.spider_settings['book_id']
-        new_novel.book_title = title
-        new_novel.author = author
-        new_novel.description = brief_introduction
-        new_novel.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                               related_page_url=url,
-                                               remote_src=cover_src,
-                                               book_id=self.spider_settings['book_id'],
-                                               is_book_cover=True)
-        new_novel.mark_basic_info_ready()
-
-        catalog_list = self._convert_to_catalog_list(html_text)
-
-        # compute cost
-        for volume in catalog_list:
-            volume_cost = sum([int(chapter["chapter_cost"]) for chapter in volume["chapters"]
-                               if int(chapter["chapter_payed"]) == 0 and int(chapter["chapter_cost"]) > 0])
-            volume['volume_cost'] = volume_cost
+        new_novel, points_balance = await self._crawl_basic_info(html_text, url)
+        catalog_list: List[CatalogMasiroVolume] = self._convert_to_catalog_list(html_text)
 
         # select_volume_mode
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
 
         # resolve final catalog
-        final_catalog_list = catalog_list
+        final_catalog_list: List[CatalogMasiroVolume] = catalog_list
         chapter_to_pay = self._get_unpayed_chapter(final_catalog_list)
 
         # 计算所需的积分价格，必须排除用户已经购买过的章节
-        quote = sum([volume["volume_cost"] for volume in final_catalog_list])
+        quote = sum([volume.volume_cost for volume in final_catalog_list])
 
         # 如果本书所有章节都是不需要积分查看的 => 直接起飞
         if quote == 0:
@@ -161,7 +116,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             table_header = [
                 ['vid', 'volume title', 'volume cost(G)']
             ]
-            table_body = [[volume['vid'], volume["volume_title"], volume["volume_cost"]] for volume in
+            table_body = [[volume.vid, volume.volume_title, volume.volume_cost] for volume in
                           final_catalog_list]
             table_data = table_header + table_body
             table_view = tabulate.tabulate(table_data)
@@ -188,14 +143,56 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
                     sys.exit()
 
-    def _get_unpayed_chapter(self, catalog_list) -> Dict:
+    async def _crawl_basic_info(self, html_text, url):
+        soup = BeautifulSoup(html_text, 'lxml')
+
+        # title √
+        # author √
+        # cover √
+        # translator
+        # status
+        # tags √
+        # recent_update
+        # popularity
+        # word_count_text
+        # original
+        # brief_introduction √
+
+        # get user point balance
+        # .user-header small text 金币:91 粉丝:
+        text = soup.find('li', {'class': 'user-header'}).find('small').text
+        match = re.match(r'金币:(\d+)\s*', text)
+        if match:
+            points_balance = int(match.group(1))
+            self.logger.info(f'User points balance is {points_balance}.')
+
+        title = soup.find('div', {'class': 'novel-title'}).text
+        author = soup.find('div', {'class': 'author'}).find('a').text
+        _tag_spans = soup.find('div', class_='tags').find_all('a')
+        tags = [tag.find('span').text for tag in _tag_spans]
+        brief_introduction = soup.find('div', {'class': 'brief'}).text
+        cover_src = soup.find('img', {'class': 'img img-thumbnail'})['src'].split("?")[0]
+        new_novel = LightNovel()
+        new_novel.book_id = self.spider_settings['book_id']
+        new_novel.book_title = title
+        new_novel.author = author
+        new_novel.description = brief_introduction
+        new_novel.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
+                                               related_page_url=url,
+                                               remote_src=cover_src,
+                                               book_id=self.spider_settings['book_id'],
+                                               is_book_cover=True)
+        new_novel.mark_basic_info_ready()
+        return new_novel, points_balance
+
+    def _get_unpayed_chapter(self, catalog_list: List[CatalogMasiroVolume]) -> Dict:
         unpayed_chapter_dict = {}
 
         for volume in catalog_list:
             volume_unpayed_chapter_dict = {
-                chapter["chapter_id"]: int(chapter["chapter_cost"])
-                for chapter in volume["chapters"]
-                if int(chapter["chapter_payed"]) == 0 and int(chapter["chapter_cost"]) > 0
+                chapter.remote_chapter_id: int(chapter.chapter_cost)
+                for chapter in volume.chapters
+                if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0
             }
             unpayed_chapter_dict.update(volume_unpayed_chapter_dict)
 
@@ -256,7 +253,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             except Exception as e:
                 raise e
 
-    def _convert_to_catalog_list(self, html_text) -> List:
+    def _convert_to_catalog_list(self, html_text) -> List[CatalogMasiroVolume]:
         """
         input example:
 
@@ -295,7 +292,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         """
 
         # [{vid:1, volume_title: "XX", chapters:[{dict},{dict},{...}]
-        catalog_list = []
+        catalog_list: List[CatalogMasiroVolume] = []
 
         soup = BeautifulSoup(html_text, 'html.parser')
         ul_element = soup.find('ul', {'class': 'chapter-ul'})
@@ -304,7 +301,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             # 使用.find_all()方法并传递recursive=False参数，获取<ul>元素的直接子代<li>
             li_elements = ul_element.find_all('li', recursive=False)
 
-            _current_volume = []
+            _current_chapters: List[CatalogMasiroChapter] = []
             _current_volume_text = ''
             _volume_index = 0
 
@@ -317,13 +314,14 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     _volume_index += 1
                     # reset current_* variables
                     _current_volume_text = volume_name
-                    _current_volume = []
+                    _current_chapters: List[CatalogMasiroChapter] = []
 
-                    catalog_list.append({
-                        'vid': _volume_index,
-                        'volume_title': _current_volume_text,
-                        'chapters': _current_volume
-                    })
+                    new_volume = CatalogMasiroVolume(
+                        vid=_volume_index,
+                        volume_title=_current_volume_text,
+                        chapters=_current_chapters
+                    )
+                    catalog_list.append(new_volume)
                 else:
                     chapter_link_items = li.select('a.to-read')
 
@@ -335,7 +333,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         # 0 => unpayed; 1 => payed
                         data_payed = chapter_a_item['data-payed']
                         # remote server chapter_id
-                        chapter_id = chapter_a_item['data-id']
+                        remote_chapter_id = chapter_a_item['data-id']
 
                         a_href = chapter_a_item['href']
                         chapter_url = urljoin('https://masiro.me', a_href)
@@ -346,33 +344,28 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         # todo fix remove \xa0
                         chapter_title = re.sub(r'&nbsp;', '', chapter_title)
 
-                        new_chapter = {
-                            'chapter_title': chapter_title,
-                            'chapter_url': chapter_url,
-                            'chapter_cost': data_cost,
-                            'chapter_payed': data_payed,
-                            'chapter_id': chapter_id,
-                        }
-                        _current_volume.append(new_chapter)
+                        new_chapter: CatalogMasiroChapter = CatalogMasiroChapter(
+                            chapter_title=chapter_title,
+                            chapter_url=chapter_url,
+                            chapter_cost=data_cost,
+                            chapter_payed=data_payed,
+                            remote_chapter_id=remote_chapter_id,
+                        )
+                        _current_chapters.append(new_chapter)
 
         return catalog_list
 
-    def _handle_select_volume(self, catalog_list):
-        def _reduce_catalog_by_selection(catalog_list, selection_array):
-            return [volume for volume in catalog_list if volume['vid'] in selection_array]
+    @staticmethod
+    def _handle_select_volume(catalog_list: List[CatalogMasiroVolume]):
+        def _reduce_catalog_by_selection(catalog_list: List[CatalogMasiroVolume], selection_array):
+            return [volume for volume in catalog_list if volume.vid in selection_array]
 
-        def _get_volume_choices(catalog_list):
-            """
-            [(volume_title,vid),(volume_title,vid),...]
-
-            :param catalog_list:
-            :return:
-            """
+        def _get_volume_choices(catalog_list: List[CatalogMasiroVolume]) -> List[Tuple[str, int]]:
             choice_view = []
             for volume in catalog_list:
-                item_text = f"{volume['volume_title']} | chapter nums: {len(volume['chapters'])} " \
-                            f"| volume cost: {volume['volume_cost']}"
-                choice_view.append((item_text, volume['vid']))
+                item_text = f"{volume.volume_title} | chapter nums: {len(volume.chapters)} " \
+                            f"| volume cost: {volume.volume_cost}"
+                choice_view.append((item_text, volume.vid))
             return choice_view
 
         # step 1: need to show UI for user to select one or more volumes,
@@ -380,7 +373,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         # UI show
         question_name = 'Selecting volumes'
         question_description = "Which volumes you want to download?(use SPACE to select one or multiple volumes)"
-        # [(volume_title,vid),(volume_title,vid),...]
         volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,

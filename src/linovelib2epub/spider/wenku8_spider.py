@@ -7,7 +7,7 @@ import inquirer
 from bs4 import BeautifulSoup
 
 from linovelib2epub.logger import Logger
-from linovelib2epub.models import LightNovel, LightNovelImage
+from linovelib2epub.models import LightNovel, LightNovelImage, CatalogBaseVolume, CatalogBaseChapter
 from linovelib2epub.spider import BaseNovelWebsiteSpider
 from linovelib2epub.utils import aiohttp_get_with_retry
 
@@ -83,16 +83,13 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         catalog_url = self._catalog_url
         catalog_html = await aiohttp_get_with_retry(session, catalog_url, self.request_headers())
 
-        catalog_list = self._convert_to_catalog_list(catalog_html)
+        catalog_list: List[CatalogBaseVolume] = self._convert_to_catalog_list(catalog_html)
         if self.spider_settings['select_volume_mode']:
             catalog_list = self._handle_select_volume(catalog_list)
 
         await self.fetch_chapters(session, catalog_list, novel)
 
-    def _convert_to_catalog_list(self, catalog_html) -> List:
-        # goal =>
-        # [{vid:1,volume_title: "XX", chapters:[{dict},{dict},...]
-
+    def _convert_to_catalog_list(self, catalog_html) -> List[CatalogBaseVolume]:
         # => volume title
         # <td class="vcss" colspan="4" vid="119695">第一卷</td>
 
@@ -109,10 +106,11 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         soup = BeautifulSoup(catalog_html, 'lxml')
         catalog_items = soup.find('table').find_all('td')
 
-        catalog_list = []
-        current_volume = []
-        current_volume_title = ""
-        volume_index = 0
+        catalog_list: List[CatalogBaseVolume] = []
+
+        _current_chapters: List[CatalogBaseChapter] = []
+        _current_volume_title = ""
+        _volume_index = 0
 
         for idx, catalog_item in enumerate(catalog_items):
             catalog_item_text = catalog_item.text
@@ -120,55 +118,52 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
 
             # is volume title
             if 'vcss' in item_css_class:
-                volume_index += 1
+                _volume_index += 1
 
                 # reset current_* variables
-                current_volume_title = catalog_item_text
-                current_volume = []
+                _current_volume_title = catalog_item_text
+                _current_chapters: List[CatalogBaseChapter] = []
 
-                catalog_list.append({
-                    'vid': volume_index,
-                    'volume_title': current_volume_title,
-                    'chapters': current_volume
-                })
+                new_volume = CatalogBaseVolume(
+                    vid=_volume_index,
+                    volume_title=_current_volume_title,
+                    chapters=_current_chapters
+                )
+
+                catalog_list.append(new_volume)
             # is chapter
             elif 'ccss' in item_css_class:
                 href = catalog_item.find("a")["href"]
                 # https://www.wenku8.net/novel/2/2961/index.htm + 146006.htm => https://www.wenku8.net/novel/2/2961/146006.htm
                 chapter_url = f'{self._catalog_url.rsplit("/", 1)[0]}/{href}'
 
-                new_chapter = {
-                    'chapter_url': chapter_url,
-                    'chapter_title': catalog_item_text
-                }
+                new_chapter: CatalogBaseChapter = CatalogBaseChapter(
+                    chapter_title=catalog_item_text,
+                    chapter_url=chapter_url
+                )
+
                 if catalog_item_text == '插图':
-                    current_volume.insert(0, new_chapter)
+                    _current_chapters.insert(0, new_chapter)
                 else:
-                    current_volume.append(new_chapter)
+                    _current_chapters.append(new_chapter)
             else:
                 pass
 
         return catalog_list
 
-    def _handle_select_volume(self, catalog_list):
-        def _reduce_catalog_by_selection(catalog_list, selection_array):
-            return [volume for volume in catalog_list if volume['vid'] in selection_array]
+    @staticmethod
+    def _handle_select_volume(catalog_list: List[CatalogBaseVolume]):
+        def _reduce_catalog_by_selection(catalog_list: List[CatalogBaseVolume], selection_array):
+            return [volume for volume in catalog_list if volume.vid in selection_array]
 
-        def _get_volume_choices(catalog_list):
-            """
-            [(volume_title,vid),(volume_title,vid),...]
-
-            :param catalog_list:
-            :return:
-            """
-            return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+        def _get_volume_choices(catalog_list: List[CatalogBaseVolume]):
+            return [(volume.volume_title, volume.vid) for volume in catalog_list]
 
         # step 1: need to show UI for user to select one or more volumes,
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
         question_name = 'Selecting volumes'
         question_description = "Which volumes you want to download?(select one or multiple volumes)"
-        # [(volume_title,vid),(volume_title,vid),...]
         volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,
@@ -177,7 +172,7 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         ]
         # user input
         # answers: {'Selecting volumes': [3, 6]}
-        answers = inquirer.prompt(questions)
+        answers: Dict[str, List[int]] = inquirer.prompt(questions)
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
 
@@ -202,4 +197,3 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         # maybe we should remove nbsp and br, re-wrap it with a `p` container
 
         return content_body.prettify()
-
