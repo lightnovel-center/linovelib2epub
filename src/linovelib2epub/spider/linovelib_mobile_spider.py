@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
 import demjson3
@@ -8,12 +8,13 @@ import inquirer
 import requests
 from bs4 import BeautifulSoup
 
-from ..exceptions import LinovelibException
-from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage
-from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
-                     requests_get_with_retry)
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rules import generate_mapping_result
+from ..exceptions import LinovelibException
+from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibMobileChapter, \
+    CatalogLinovelibMobileVolume
+from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
+                     requests_get_with_retry)
 
 
 class LinovelibMobileSpider(BaseNovelWebsiteSpider):
@@ -125,7 +126,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
             catalog_html = book_catalog_rs.text
-            catalog_list = self._convert_to_catalog_list(catalog_html)
+            catalog_list: List[CatalogLinovelibMobileVolume] = self._convert_to_catalog_list(catalog_html)
             if self.spider_settings['select_volume_mode']:
                 catalog_list = self._handle_select_volume(catalog_list)
 
@@ -133,31 +134,30 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             url_next = ''
 
             volume_id = 0
-            for volume_dict in catalog_list:
+            for catalog_volume in catalog_list:
                 volume_id += 1
 
                 new_volume = LightNovelVolume(volume_id=volume_id)
-                new_volume.title = volume_dict['volume_title']
-                self.logger.info(f'volume: {volume_dict["volume_title"]}')
+                new_volume.title = catalog_volume.volume_title
+                self.logger.info(f'volume: {catalog_volume.volume_title}')
 
                 chapter_id = -1
-                chapter_list = []  # store all chapters of one volume
-                for chapter in volume_dict['chapters']:
+                chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
+                for catalog_chapter in catalog_volume.chapters:
                     chapter_content = ''
-                    chapter_title = chapter[0]
+                    chapter_title = catalog_chapter.chapter_title
                     chapter_id += 1
 
                     light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
                     light_novel_chapter.title = chapter_title
                     chapter_illustrations: List[LightNovelImage] = []
-
                     self.logger.info(f'chapter : {chapter_title}')
 
                     # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败
-                    url_next = self._expand_paginated_chapter_links(chapter, url_next)
+                    url_next = self._expand_paginated_chapter_links(catalog_chapter, url_next)
 
-                    # handle page content(text and img)
-                    for page_link in chapter[1:]:
+                    # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
+                    for page_link in catalog_chapter.chapter_urls:
                         page_resp = requests_get_with_retry(self.session, page_link,
                                                             retry_max=self.spider_settings['http_retries'],
                                                             timeout=self.spider_settings["http_timeout"],
@@ -196,7 +196,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                         self.logger.info(f'Processing page... {page_link}')
 
-                    # Here, current chapter's content has been solved
                     light_novel_chapter.content = chapter_content
                     light_novel_chapter.illustrations = chapter_illustrations
                     chapter_list.append(light_novel_chapter)
@@ -216,15 +215,15 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         return None
 
-    def _expand_paginated_chapter_links(self, chapter, url_next):
+    def _expand_paginated_chapter_links(self, chapter: CatalogLinovelibMobileChapter, url_next):
         # fix broken links in place(catalog_lis) if exits
         # - if chapter[1] is valid link, assign it to url_next
         # - if chapter[1] is not a valid link,e.g. "javascript:cid(0)" etc. use url_next
-        if not self._is_valid_chapter_link(chapter[1]):
+        if not self._is_valid_chapter_link(chapter.chapter_url):
             # now the url_next value is the correct link of of chapter[1].
-            chapter[1] = url_next
+            chapter.chapter_url = url_next
         else:
-            url_next = chapter[1]
+            url_next = chapter.chapter_url
 
         # goal: solve all page links of a certain chapter
         while True:
@@ -242,7 +241,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
 
             if '_' in url_next:
-                chapter.append(url_next)
+                chapter.add_expand_paginated_chapter_url(url_next)
             else:
                 break
 
@@ -274,25 +273,19 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                                          lambda match: _filter_duplicate_images(match, img_src_list),
                                          chapter_list[0].content)
 
-    def _handle_select_volume(self, catalog_list):
-        def _reduce_catalog_by_selection(catalog_list, selection_array):
-            return [volume for volume in catalog_list if volume['vid'] in selection_array]
+    @staticmethod
+    def _handle_select_volume(catalog_list: List[CatalogLinovelibMobileVolume]):
+        def _reduce_catalog_by_selection(catalog_list: List[CatalogLinovelibMobileVolume], selection_array):
+            return [volume for volume in catalog_list if volume.vid in selection_array]
 
-        def _get_volume_choices(catalog_list):
-            """
-            [(volume_title,vid),(volume_title,vid),...]
-
-            :param catalog_list:
-            :return:
-            """
-            return [(volume['volume_title'], volume['vid']) for volume in catalog_list]
+        def _get_volume_choices(catalog_list: List[CatalogLinovelibMobileVolume]):
+            return [(volume.volume_title, volume.vid) for volume in catalog_list]
 
         # step 1: need to show UI for user to select one or more volumes,
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
         question_name = 'Selecting volumes'
         question_description = "Which volumes you want to download?(select one or multiple volumes)"
-        # [(volume_title,vid),(volume_title,vid),...]
         volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,
@@ -305,7 +298,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
 
-    def _convert_to_catalog_list(self, catalog_html) -> list:
+    def _convert_to_catalog_list(self, catalog_html) -> List[CatalogLinovelibMobileVolume]:
 
         soup_catalog = BeautifulSoup(catalog_html, 'lxml')
         # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
@@ -318,39 +311,41 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
         # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
 
-        # return example:
-        # [{vid:1,volume_title: "XX", chapters:[[xxx,u1,u2,u3],[xx,u1,u2],[...] ]},{},{}]
+        catalog_list: List[CatalogLinovelibMobileVolume] = []
 
-        catalog_list = []
-        current_volume = []
-        current_volume_text = catalog_html_lis[0].text
-        volume_index = 0
+        _current_chapters: List[CatalogLinovelibMobileChapter] = []
+        _current_volume_title = ""
+        _volume_index = 0
 
         for index, catalog_li in enumerate(catalog_html_lis):
             catalog_li_text = catalog_li.text
 
             # is volume name
             if 'chapter-bar' in catalog_li['class']:
-                volume_index += 1
+                _volume_index += 1
                 # reset current_* variables
-                current_volume_text = catalog_li_text
-                current_volume = []
-
-                catalog_list.append({
-                    'vid': volume_index,
-                    'volume_title': current_volume_text,
-                    'chapters': current_volume
-                })
+                _current_volume_title = catalog_li_text
+                _current_chapters: List[CatalogLinovelibMobileChapter] = []
+                new_volume = CatalogLinovelibMobileVolume(
+                    vid=_volume_index,
+                    volume_title=_current_volume_title,
+                    chapters=_current_chapters
+                )
+                catalog_list.append(new_volume)
             # is normal chapter
             else:
                 href = catalog_li.find("a")["href"]
-                whole_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
-                current_volume.append([catalog_li_text, whole_url])
+                chapter_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
+                new_chapter: CatalogLinovelibMobileChapter = CatalogLinovelibMobileChapter(
+                    chapter_title=catalog_li_text,
+                    chapter_url=chapter_url
+                )
+                _current_chapters.append(new_chapter)
 
         # sanitize catalog_list => remove volume that has empty chapters
         # https://w.linovelib.com/novel/3847/catalog
         # {'vid': 3, 'volume_title': '第四卷', 'chapters': []}
-        catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume['chapters']]
+        catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume.chapters]
         return catalog_list
 
     @staticmethod

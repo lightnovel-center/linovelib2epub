@@ -65,7 +65,18 @@ class CatalogWenku8Chapter(CatalogBaseChapter):
 
 @dataclass
 class CatalogLinovelibMobileChapter(CatalogBaseChapter):
-    pass
+    # 一章多页。
+    other_paginated_chapter_urls: List[str] = field(default_factory=list)
+
+    def add_expand_paginated_chapter_url(self, url: str):
+        self.other_paginated_chapter_urls.append(url)
+
+    @property
+    def chapter_urls(self):
+        urls = [self.chapter_url]
+        if self.other_paginated_chapter_urls:
+            urls.extend(self.other_paginated_chapter_urls)
+        return urls
 
 
 @dataclass
@@ -101,6 +112,10 @@ class CatalogMasiroVolume(CatalogBaseVolume):
         volume_cost = sum([int(chapter.chapter_cost) for chapter in self.chapters
                            if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0])
         return volume_cost
+
+
+class CatalogLinovelibMobileVolume(CatalogBaseVolume):
+    chapters: List[CatalogLinovelibMobileChapter] = field(default_factory=list)
 
 
 @dataclass
