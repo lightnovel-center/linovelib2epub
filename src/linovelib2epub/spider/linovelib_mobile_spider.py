@@ -270,7 +270,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             img_src_list.extend(
                 [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
             )
-        # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
         chapter_list[0].content = re.sub('<img.*?/>',
                                          lambda match: _filter_duplicate_images(match, img_src_list),
                                          chapter_list[0].content)
@@ -348,6 +347,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 whole_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
                 current_volume.append([catalog_li_text, whole_url])
 
+        # sanitize catalog_list => remove volume that has empty chapters
+        # https://w.linovelib.com/novel/3847/catalog
+        # {'vid': 3, 'volume_title': '第四卷', 'chapters': []}
+        catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume['chapters']]
         return catalog_list
 
     @staticmethod
