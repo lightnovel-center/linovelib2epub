@@ -79,6 +79,8 @@ async def aiohttp_get_with_retry(client: aiohttp.ClientSession,
             async with client.get(url, headers=headers, timeout=timeout) as response:
                 if response.status == 200:
                     return await response.text()
+                elif response.status == 404:
+                    return None
                 else:
                     if logger:
                         logger.warning(f'Request {url} succeed but status code is {response.status}.')
@@ -129,10 +131,6 @@ async def aiohttp_post_with_retry(client: aiohttp.ClientSession,
     return None
 
 
-#             response = await session.post(url=url, headers=headers, proxy=proxy,
-#                                           data=param, timeout=config.read('time_out'))
-
-
 def is_valid_image_url(url: str) -> bool:
     """
     Example image link: https://img.linovelib.com/3/3211/163938/193293.jpg
@@ -166,7 +164,7 @@ def check_image_integrity(expected_length: str | int, actual_length: str | int) 
 # Replace invalid character for file/folder name
 def sanitize_pathname(pathname: str) -> str:
     # '/ \ : * ? " < > |'
-    return re.sub(r"[\/\\\:\*\?\"\<\>\|]", "_", pathname)
+    return re.sub(r"[/\\:*?\"<>|]", "_", pathname)
 
 
 def read_pkg_resource(file_path: str) -> bytes:

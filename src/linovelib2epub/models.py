@@ -42,6 +42,17 @@ class ImageDuplicationChecker:
 
 
 @dataclass
+class CatalogChapter:
+    pass
+
+
+@dataclass
+class CatalogVolume:
+    vid: int
+    title: str = ""
+    chapters: List[CatalogChapter] = field(default_factory=list)
+
+@dataclass
 class LightNovelImage:
     # example: http://example.com no path, host only
     site_base_url: str = ''

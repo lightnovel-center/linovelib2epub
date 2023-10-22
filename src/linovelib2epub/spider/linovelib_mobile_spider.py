@@ -27,9 +27,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self._html_content_id = self._mapping_result.content_id
         self._mapping_dict = self._mapping_result.mapping_dict
 
-    def dump_settings(self):
-        self.logger.info(self.spider_settings)
-
     def request_headers(self, referer: str = '', random_ua: bool = True):
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         default_referer = 'https://w.linovelib.com'
@@ -76,9 +73,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         if result and result.status_code == 200:
             self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
-
-            # pass html text to beautiful soup parser
             soup = BeautifulSoup(result.text, 'lxml')
+
             try:
                 book_title = soup.find('h2', {'class': 'book-title'}).text
                 author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
@@ -86,7 +82,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 # see issue #10, strip invalid suffix characters after ? from cover url
                 book_cover_url = soup.find('img', {'class': 'book-cover'})['src'].split("?")[0]
                 return book_title, author, book_summary, book_cover_url
-
             except (Exception,):
                 self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
 
@@ -100,8 +95,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             :param html:
             :return: html after anti-js obfuscation
             """
-            mapping_dict = self._mapping_dict
-            table = str.maketrans(mapping_dict)
+            table = str.maketrans(self._mapping_dict)
             res = html.translate(table)
             return res
 
@@ -130,24 +124,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         if book_catalog_rs and book_catalog_rs.status_code == 200:
             self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
-            # parse catalog data
-            soup_catalog = BeautifulSoup(book_catalog_rs.text, 'lxml')
-            # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
-            catalog_wrapper = soup_catalog.find('ol', {'id': 'volumes'})
-            catalog_lis = catalog_wrapper.find_all('li')
-
-            # catalog_lis is an array: [li, li, li, ...]
-            # example format:
-            # <li class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑</li>
-            # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
-            # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
-
-            catalog_list = self._convert_to_catalog_list(catalog_lis)
+            catalog_html = book_catalog_rs.text
+            catalog_list = self._convert_to_catalog_list(catalog_html)
             if self.spider_settings['select_volume_mode']:
                 catalog_list = self._handle_select_volume(catalog_list)
 
             new_novel = LightNovel()
-            # illustration_dict: Dict[Union[int, str], List[str]] = dict()
             url_next = ''
 
             volume_id = 0
@@ -156,13 +138,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                 new_volume = LightNovelVolume(volume_id=volume_id)
                 new_volume.title = volume_dict['volume_title']
-
                 self.logger.info(f'volume: {volume_dict["volume_title"]}')
 
-                # illustration_dict.setdefault(volume_dict['vid'], [])
-
                 chapter_id = -1
-                chapter_list = []  # store chapter for removing duplicate images in the first chapter
+                chapter_list = []  # store all chapters of one volume
                 for chapter in volume_dict['chapters']:
                     chapter_content = ''
                     chapter_title = chapter[0]
@@ -174,37 +153,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     self.logger.info(f'chapter : {chapter_title}')
 
-                    # fix broken links in place(catalog_lis) if exits
-                    # - if chapter[1] is valid link, assign it to url_next
-                    # - if chapter[1] is not a valid link,e.g. "javascript:cid(0)" etc. use url_next
-                    if not self._is_valid_chapter_link(chapter[1]):
-                        # now the url_next value is the correct link of of chapter[1].
-                        chapter[1] = url_next
-                    else:
-                        url_next = chapter[1]
-
-                    # goal: solve all page links of a certain chapter
-                    while True:
-                        resp = requests_get_with_retry(self.session, url_next, logger=None)
-                        if resp:
-                            soup = BeautifulSoup(resp.text, 'lxml')
-                        else:
-                            raise Exception(f'[ERROR]: request {url_next} failed.')
-
-                        first_script = soup.find("body", {"id": "aread"}).find("script")
-                        first_script_text = first_script.text
-                        # alternative: use split(':')[-1] to get read_params_text
-                        read_params_text = first_script_text[len('var ReadParams='):]
-                        read_params_json = demjson3.decode(read_params_text)
-                        url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
-
-                        if '_' in url_next:
-                            chapter.append(url_next)
-                        else:
-                            break
-
-                    # THINK: after solving all page links of catalog. It's possible to utilize multi-thread tech
-                    # to fetch page content?
+                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败
+                    url_next = self._expand_paginated_chapter_links(chapter, url_next)
 
                     # handle page content(text and img)
                     for page_link in chapter[1:]:
@@ -218,12 +168,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             raise Exception(f'[ERROR]: request {page_link} failed.')
 
                         images = soup.find_all('img')
-                        # don't hardcode content div selector id, get from parsed_result
                         article = str(soup.find(id=self._html_content_id))
                         for _, image in enumerate(images):
-
-                            # images in the first chapter are lazyload, their urls are inside "data-src"
-                            # img tag format:
                             # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
                             # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
                             html_image_src = re.search('(?<= src=").*?(?=")', str(image))
@@ -243,7 +189,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             local_image = str(image).replace(str(html_image_src.group()), image_local_src)
                             article = article.replace(str(image), local_image)
                             chapter_illustrations.append(light_novel_image)
-                            # light_novel_chapter.add_illustration(light_novel_image)
 
                         article = _sanitize_html(article)
                         article = _anti_js_obfuscation(article)
@@ -256,33 +201,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     light_novel_chapter.illustrations = chapter_illustrations
                     chapter_list.append(light_novel_chapter)
 
-                #  todo refactor this dedupe logic to other functions
-
-                # removing duplicate images in the first chapter
-                def _filter_duplicate_images(match, img_src_list):
-                    img = match.group()
-                    img_src = re.search('(?<= src=").*?(?=")', match.group()).group()
-                    if img_src in img_src_list:
-                        self.logger.info(f'Remove duplicate image in the first chapter... {img_src}')
-                        return ""
-                    else:
-                        return img
-
-                img_src_list = []
-                # chapter_list[0] 表示这一卷的第1个章节，在bilinovel中是插图页，这个页面部分插图会重复，会出现在这一卷的后续章节中。
-                # chapter_list[1:] 表示这一卷的第2个章节开始的所有章节，也就是正文章节。
-                for chapter in chapter_list[1:]:
-                    img_src_list.extend(
-                        [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
-                    )
-                # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
-                chapter_list[0].content = re.sub('<img.*?/>',
-                                                 lambda match: _filter_duplicate_images(match, img_src_list),
-                                                 chapter_list[0].content)
+                self._remove_duplicate_images_in_html(chapter_list)
 
                 for chapter in chapter_list:
                     new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
-                                           illustrations = chapter.illustrations)
+                                           illustrations=chapter.illustrations)
 
                 new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
 
@@ -292,6 +215,65 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
         return None
+
+    def _expand_paginated_chapter_links(self, chapter, url_next):
+        # fix broken links in place(catalog_lis) if exits
+        # - if chapter[1] is valid link, assign it to url_next
+        # - if chapter[1] is not a valid link,e.g. "javascript:cid(0)" etc. use url_next
+        if not self._is_valid_chapter_link(chapter[1]):
+            # now the url_next value is the correct link of of chapter[1].
+            chapter[1] = url_next
+        else:
+            url_next = chapter[1]
+
+        # goal: solve all page links of a certain chapter
+        while True:
+            resp = requests_get_with_retry(self.session, url_next, logger=None)
+            if resp:
+                soup = BeautifulSoup(resp.text, 'lxml')
+            else:
+                raise Exception(f'[ERROR]: request {url_next} failed.')
+
+            first_script = soup.find("body", {"id": "aread"}).find("script")
+            first_script_text = first_script.text
+            # alternative: use split(':')[-1] to get read_params_text
+            read_params_text = first_script_text[len('var ReadParams='):]
+            read_params_json = demjson3.decode(read_params_text)
+            url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
+
+            if '_' in url_next:
+                chapter.append(url_next)
+            else:
+                break
+
+        return url_next
+
+    def _remove_duplicate_images_in_html(self, chapter_list):
+        # removing duplicate images in the first chapter
+        # chapter_list[0] 表示这一卷的第1个章节，在bilinovel中是插图页，这个页面部分插图会重复，会出现在这一卷的后续章节中。
+        # chapter_list[1:] 表示这一卷的第2个章节开始的所有章节，也就是正文章节。
+
+        # 这个函数的作用就是将某一卷的第1个章节（插图章节）HTML的所有重复图片img元素，全部去掉。
+
+        def _filter_duplicate_images(match, img_src_list):
+            img = match.group()
+            img_src = re.search('(?<= src=").*?(?=")', img).group()
+            if img_src in img_src_list:
+                self.logger.info(f'Remove duplicate image in the first chapter... {img_src}')
+                return ""
+            else:
+                return img
+
+        img_src_list = []
+
+        for chapter in chapter_list[1:]:
+            img_src_list.extend(
+                [re.search('(?<= src=").*?(?=")', i).group() for i in re.findall('<img.*?/>', chapter.content)]
+            )
+        # todo fix bug: https://w.linovelib.com/novel/3847.html IndexError: list index out of range
+        chapter_list[0].content = re.sub('<img.*?/>',
+                                         lambda match: _filter_duplicate_images(match, img_src_list),
+                                         chapter_list[0].content)
 
     def _handle_select_volume(self, catalog_list):
         def _reduce_catalog_by_selection(catalog_list, selection_array):
@@ -324,7 +306,19 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
 
-    def _convert_to_catalog_list(self, catalog_html_lis) -> list:
+    def _convert_to_catalog_list(self, catalog_html) -> list:
+
+        soup_catalog = BeautifulSoup(catalog_html, 'lxml')
+        # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
+        catalog_wrapper = soup_catalog.find('ol', {'id': 'volumes'})
+        catalog_html_lis = catalog_wrapper.find_all('li')
+
+        # catalog_html_lis is an array: [li, li, li, ...]
+        # example format:
+        # <li class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑</li>
+        # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
+        # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
+
         # return example:
         # [{vid:1,volume_title: "XX", chapters:[[xxx,u1,u2,u3],[xx,u1,u2],[...] ]},{},{}]
 

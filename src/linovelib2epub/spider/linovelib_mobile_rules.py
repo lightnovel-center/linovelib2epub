@@ -1,10 +1,12 @@
+import asyncio
+import json
 import re
+import sys
 from typing import Dict
 
-import requests
-import json
+import aiohttp
 
-from linovelib2epub.utils import requests_get_with_retry
+from linovelib2epub.utils import aiohttp_get_with_retry
 
 
 class ParsedRuleResult:
@@ -96,9 +98,28 @@ def write_rules(rules):
         json.dump(escaped_rules, json_file, ensure_ascii=False, indent=2)
 
 
+async def _probe_js_encrypted_file():
+    # 候选的url请求数组进行竞速，取第一个成功返回的js，天天都在改改改，猜测是随机变更。
+    # better implementation: extract candidate urls from chapter sample page
+    # https://w.linovelib.com/novel/2883/141634.html
+
+    url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
+    url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
+    urls = [url1, url2]
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [asyncio.create_task(aiohttp_get_with_retry(session, url)) for url in urls]
+        completed, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+
+        # 获取第一个成功返回的任务结果
+        for task in completed:
+            text = task.result()
+            if text:
+                return text
+
+    return None
+
+
 def _fetch_js_text():
-    url = "https://w.linovelib.com/themes/zhmb/js/hm.js"
-    # should handle network retry
-    session = requests.session()
-    resp = requests_get_with_retry(session, url)
-    return resp.text
+    js_file_text = asyncio.run(_probe_js_encrypted_file())
+    return js_file_text
