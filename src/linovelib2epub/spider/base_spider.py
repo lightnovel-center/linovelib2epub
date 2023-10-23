@@ -139,8 +139,7 @@ class BaseNovelWebsiteSpider(ABC):
                         succeed_count += 1
                     else:
                         # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
-                        self.logger.info(f'Exception: {type(exception)}')
-                        self.logger.info(f'FAIL: {task_url}; should retry this url.')
+                        self.logger.error(f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
                         pending.add(asyncio.create_task(
                             self._download_image(session, task_url,
                                                  download_url_to_image[task_url].local_relative_path),
@@ -247,8 +246,7 @@ class BaseNovelWebsiteSpider(ABC):
                         succeed_count += 1
                     else:
                         # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
-                        self.logger.info(f'Exception: {type(exception)}')
-                        self.logger.info(f'FAIL: {task_url}; should retry this url.')
+                        self.logger.error(f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
                         pending.add(asyncio.create_task(self._download_page(session, task_url), name=task_url))
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')

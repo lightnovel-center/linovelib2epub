@@ -48,49 +48,74 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         return novel
 
     async def _fetch(self) -> Any:
-        jar = aiohttp.CookieJar(unsafe=True)
-        conn = aiohttp.TCPConnector(ssl=False)
+        # can share
         trust_env = False if self.spider_settings["disable_proxy"] else True
         timeout = aiohttp.ClientTimeout(total=30, connect=15)
 
+        # don't share tcp connection and cookie objects
+        jar = aiohttp.CookieJar(unsafe=True)
+        conn = aiohttp.TCPConnector(ssl=False)
+
+        continue_flag = None
+        partial_novel = None
+        final_catalog_list = None
+
         async with aiohttp.ClientSession(connector=conn, trust_env=trust_env, cookie_jar=jar,
                                          timeout=timeout) as session:
-            login_info = MasiroLoginInfo()
-            login_info.username = self._masiro_username
-            login_info.password = self._masiro_password
+            login_info = await self._login(session)
 
-            # 1. get csrf token
-            await self._masiro_get_token(login_info, session)
-
-            login_param = self._build_login_param(login_info)
-            login_headers = self._build_login_headers(login_info)
-
-            # 2. do login
-            result = await aiohttp_post_with_retry(session, login_info.login_url, params=login_param,
-                                                   headers=login_headers)
-            # {"code":1,"msg":"\u767b\u5f55\u6210\u529f!","url":"https:\/\/masiro.me"}
-
-            # now this session is already logged.
-
-            # 3. get basic info and catalog
+            # get basic info and catalog
             book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
-            novel = await self._crawl_book_basic_info_with_catalog(book_url, session, login_info)
+            new_novel, final_catalog_list, flag = await self._crawl_book_basic_info_and_catalog(book_url, session,
+                                                                                                login_info)
+            if flag == 'NOT_NEED_RESET_SESSION':
+                await self.fetch_chapters(session, final_catalog_list, new_novel)
+                return new_novel
+            else:
+                continue_flag = flag
+                partial_novel = new_novel
+                final_catalog_list = final_catalog_list
 
-        return novel
+        if continue_flag == 'NEED_RESET_SESSION':
+            self.logger.info('Recreate session and login, then continue crawling.')
+            # continue fetch_chapters by new session
+            jar2 = aiohttp.CookieJar(unsafe=True)
+            conn2 = aiohttp.TCPConnector(ssl=False)
+            async with aiohttp.ClientSession(connector=conn2, trust_env=trust_env, cookie_jar=jar2,
+                                             timeout=timeout) as session:
+                login_info = await self._login(session)
+                await self.fetch_chapters(session, final_catalog_list, partial_novel)
+                return partial_novel
 
-    async def _crawl_book_basic_info_with_catalog(self,
-                                                  url: str,
-                                                  session: aiohttp.ClientSession,
-                                                  login_info):
+    async def _login(self, session):
+        login_info = MasiroLoginInfo()
+        login_info.username = self._masiro_username
+        login_info.password = self._masiro_password
+
+        # 1. get csrf token
+        await self._masiro_get_token(login_info, session)
+        login_param = self._build_login_param(login_info)
+        login_headers = self._build_login_headers(login_info)
+
+        # 2. do login
+        result = await aiohttp_post_with_retry(session, login_info.login_url, params=login_param,
+                                               headers=login_headers)
+        # {"code":1,"msg":"\u767b\u5f55\u6210\u529f!","url":"https:\/\/masiro.me"}
+
+        # now this session is already logged.
+        return login_info
+
+    async def _crawl_book_basic_info_and_catalog(self,
+                                                 url: str,
+                                                 session: aiohttp.ClientSession,
+                                                 login_info):
 
         html_text = await aiohttp_get_with_retry(session, url, self.request_headers())
 
-        index = html_text.find("小孩子不能看")
-        if index != -1:
-            self.logger.error(f"[等级限制]: 你在真白萌的用户等级不足以查看链接: {url}")
-            sys.exit()
+        await self._check_user_level_limit(html_text, url)
 
         new_novel, points_balance = await self._crawl_basic_info(html_text, url)
+
         catalog_list: List[CatalogMasiroVolume] = self._convert_to_catalog_list(html_text)
 
         # select_volume_mode
@@ -99,7 +124,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         # resolve final catalog
         final_catalog_list: List[CatalogMasiroVolume] = catalog_list
-        chapter_to_pay = self._get_unpayed_chapter(final_catalog_list)
+        chapter_to_pay: Dict[str, int] = self._get_unpayed_chapter(final_catalog_list)
 
         # 计算所需的积分价格，必须排除用户已经购买过的章节
         quote = sum([volume.volume_cost for volume in final_catalog_list])
@@ -108,8 +133,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         if quote == 0:
             # 1
             self.logger.info("当前所有卷都是免费积分或你已经购买，直接执行下载。")
-            await self.fetch_chapters(session, final_catalog_list, new_novel)
-            return new_novel
+            return new_novel, final_catalog_list, 'NOT_NEED_RESET_SESSION'
         else:
             # 2
             # [可选]显示当前挑选卷的积分消耗预计值和用户当前积分余额
@@ -133,15 +157,23 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     self.logger.info("用户积分余额足够，决定购买。")
 
                     # batch payments
+                    # warning: session pollution: session will redirect to chapter detail pages.
                     await self._pay_chapters(session, login_info, chapter_to_pay)
 
-                    await self.fetch_chapters(session, final_catalog_list, new_novel)
+                    self.logger.info(f"MUST reset/recover session state.")
 
-                    return new_novel
+                    # FLAGS: MUST re-login to fetch chapter text content
+                    return new_novel, final_catalog_list, 'NEED_RESET_SESSION'
                 else:
                     # 2.2.2
                     self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
                     sys.exit()
+
+    async def _check_user_level_limit(self, html_text, url):
+        index = html_text.find("小孩子不能看")
+        if index != -1:
+            self.logger.error(f"[等级限制]: 你在真白萌的用户等级不足以查看链接: {url}")
+            sys.exit()
 
     async def _crawl_basic_info(self, html_text, url):
         soup = BeautifulSoup(html_text, 'lxml')
@@ -185,7 +217,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         new_novel.mark_basic_info_ready()
         return new_novel, points_balance
 
-    def _get_unpayed_chapter(self, catalog_list: List[CatalogMasiroVolume]) -> Dict:
+    def _get_unpayed_chapter(self, catalog_list: List[CatalogMasiroVolume]) -> Dict[str, int]:
         unpayed_chapter_dict = {}
 
         for volume in catalog_list:
@@ -198,7 +230,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         return unpayed_chapter_dict
 
-    async def _pay_chapters(self, session, login_info, chapter_to_pay):
+    async def _pay_chapters(self, session, login_info, chapter_to_pay: Dict[str, int]):
         self.logger.info(f'len of chapter_to_pay = {len(chapter_to_pay)}')
 
         async with session:
@@ -230,12 +262,14 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         self.logger.info(f'FAIL: {chapter_id}; should retry paying this chapter_id.')
                         pending.add(
                             asyncio.create_task(
-                                self._pay_chapter(session, login_info, chapter_id, chapter_to_pay["chapter_id"]),
+                                self._pay_chapter(session, login_info, chapter_id, chapter_to_pay[chapter_id]),
                                 name=chapter_id)
                         )
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+
+        self.logger.info(f'All payment of chapters were successful.')
 
     async def _pay_chapter(self, session, login_info, chapter_id, chapter_cost):
         # masiro 服务器一般，顶不住太大压力，设置为较大值也是徒劳 429/403
@@ -249,9 +283,13 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             try:
                 resp = await aiohttp_post_with_retry(session, url=pay_url, params=pay_params, headers=pay_headers)
                 if resp and json.loads(resp)['code'] == 1:
-                    self.logger.info(f'pay for chapter {chapter_id} with cost {chapter_cost} succeeded.')
+                    self.logger.info(f'[SUCCESS] pay for chapter {chapter_id} with cost {chapter_cost}.')
+                else:
+                    # resp None or
+                    # resp is not None but is not a json string
+                    raise LinovelibException(f"[FAIL] pay for chapter {chapter_id} with cost {chapter_cost}.")
             except Exception as e:
-                raise e
+                raise LinovelibException(f"[FAIL] pay for chapter {chapter_id} with cost {chapter_cost}.")
 
     def _convert_to_catalog_list(self, html_text) -> List[CatalogMasiroVolume]:
         """
@@ -286,9 +324,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
             ...
         <li>
-
-        :param catalog_html_lis:
-        :return:
         """
 
         # [{vid:1, volume_title: "XX", chapters:[{dict},{dict},{...}]
@@ -341,7 +376,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         chapter_title = chapter_a_item.find('li').find('span').text
                         # remove `&nbsp;` and `\r\n`.
                         chapter_title = chapter_title.strip()
-                        # todo fix remove \xa0
+                        # todo fix remove \xa0 and &zwj;
                         chapter_title = re.sub(r'&nbsp;', '', chapter_title)
 
                         new_chapter: CatalogMasiroChapter = CatalogMasiroChapter(

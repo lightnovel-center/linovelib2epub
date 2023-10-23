@@ -35,22 +35,35 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 - [x] use asyncio/multiprocessing to download images
 - [x] support adding custom css styles to epub
 
+## 使用注意事项
+
+在愉快的自动化爬虫之前，有必要进行声明。
+网页Web端总会存在请求错误，请求延迟，还需要不断手动来点击【下一页】按钮来浏览阅读，这无疑打断了正常的阅读[心流](https://zh.wikipedia.org/wiki/心流理論)。
+此项目的初衷正是为了**构造良好流畅、不间断的轻小说本地阅读体验**。
+
+但是，这不应该成为加重目标网站运行负载的理由。请正常使用本项目，请勿用于线性探测下载，或无限遍历下载。
+
+免责声明：此项目不能保证它不会遭到滥用，对于有可能引发的不良后果，本项目概不负责。
+
 ## Supported  Websites (plan)
 
-| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                | 备注                           | 技术难点                                         |
-|-----|----------------------------------------------|-------|------|-------------------------------------|------------------------------|----------------------------------------------|
-| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
-| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | 🚫                                  | 资源同 Mobile，没必要。              | N/A                                          |
-| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | 🚫                                  | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                            |
-| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | 🚫                                   | ` 不用登录 ` ` 一章多页 `            ||
-| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 不用登录 ` ` 一章一页 `            ||
-| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | 🚫                                  | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                          |
-| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36"> | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                   |
+| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                            |
+|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|-------------------------------------------------|
+| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
+| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                             |
+| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                               |
+| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            ||
+| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            ||
+| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                             |
+| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                      |
+| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | WIP                                          | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                        |
+
+> 
 
 爬虫友好度有两个重要指标：
 
-1. 访问门槛。是否需要登陆以及积分。
-2. 页面结构。一个章节多页渲染的视为中等难度。
+1. 访问门槛。是否需要登陆、积分/代币购买，等级限制。
+2. 页面结构。一章多页，或者一章一页。
 
 优质的轻小说目标源标准：资源丰富，更新迅速，插图清晰，爬虫门槛合理。可以在 issue 发起补充。
 
@@ -210,7 +223,6 @@ Don't need login, no threshold.
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
-- [ ] to fix masiro batch payments exception
 
 ## Contributors
 
