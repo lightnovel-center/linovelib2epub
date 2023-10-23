@@ -404,8 +404,6 @@ class Linovelib2Epub:
         else:
             novel = self._spider.fetch()
 
-        # print(novel.get_illustrations())
-
         if novel:
             # 2.solve images download and save novel pickle
             self.logger.info(f'The data of book(id={self.common_settings["book_id"]}) except image files is ready.')

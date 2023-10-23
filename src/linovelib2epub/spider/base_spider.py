@@ -139,7 +139,8 @@ class BaseNovelWebsiteSpider(ABC):
                         succeed_count += 1
                     else:
                         # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
-                        self.logger.error(f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
+                        self.logger.error(
+                            f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
                         pending.add(asyncio.create_task(
                             self._download_image(session, task_url,
                                                  download_url_to_image[task_url].local_relative_path),
@@ -214,7 +215,9 @@ class BaseNovelWebsiteSpider(ABC):
             _download_image(image_list)
 
     def _save_novel_pickle(self, novel):
-        with open(self.spider_settings['novel_pickle_path'], 'wb') as fp:
+        create_folder_if_not_exists(self.spider_settings["pickle_temp_folder"])
+        pickle_save_path = self.spider_settings['novel_pickle_path']
+        with open(pickle_save_path, 'wb') as fp:
             pickle.dump(novel, fp)
 
     async def download_pages(self, session, page_url_set: set):
@@ -223,8 +226,14 @@ class BaseNovelWebsiteSpider(ABC):
 
         url_to_page = {url: 'NOT_DOWNLOAD_READY' for url in page_url_set}
 
+        #  use semaphore to control concurrency
+        # todo add a setting property named FETCH_CHAPTER_CONCURRENCY_LEVEL
+        max_concurrency = 2
+        semaphore = asyncio.Semaphore(max_concurrency)
+
         async with session:
-            tasks = {asyncio.create_task(self._download_page(session, url), name=url) for url in page_url_set}
+            tasks = {asyncio.create_task(self._download_page(session, semaphore, url), name=url) for url in
+                     page_url_set}
             pending: set = tasks
             succeed_count = 0
 
@@ -246,8 +255,10 @@ class BaseNovelWebsiteSpider(ABC):
                         succeed_count += 1
                     else:
                         # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
-                        self.logger.error(f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
-                        pending.add(asyncio.create_task(self._download_page(session, task_url), name=task_url))
+                        self.logger.error(
+                            f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
+                        pending.add(
+                            asyncio.create_task(self._download_page(session, semaphore, task_url), name=task_url))
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
@@ -259,13 +270,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         return url_to_page
 
-    async def _download_page(self, session, url) -> str | None:
-        #  use semaphore to control concurrency
-        # todo add a setting property named FETCH_CHAPTER_CONCURRENCY_LEVEL
-        max_concurrency = 2
-        sem = asyncio.Semaphore(max_concurrency)
-
-        async with sem:
+    async def _download_page(self, session, semaphore, url) -> str | None:
+        async with semaphore:
             timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
             async with session.get(url, headers=self.request_headers(), timeout=timeout) as resp:
                 if resp.status == 200:
@@ -356,6 +362,8 @@ class BaseNovelWebsiteSpider(ABC):
                     new_image = str(image).replace(str(src_value.group()), image_local_src)
                     chapter_body = chapter_body.replace(str(image), new_image)
                     chapter_illustrations.append(light_novel_image)
+
+                    self.logger.info(f'Processing page... {chapter_url}')
 
                 linovel_chapter.content = chapter_body
                 linovel_chapter.illustrations = chapter_illustrations

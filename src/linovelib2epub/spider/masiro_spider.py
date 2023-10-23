@@ -233,8 +233,12 @@ class MasiroSpider(BaseNovelWebsiteSpider):
     async def _pay_chapters(self, session, login_info, chapter_to_pay: Dict[str, int]):
         self.logger.info(f'len of chapter_to_pay = {len(chapter_to_pay)}')
 
+        # payments concurrency level can be hardcoded
+        max_concurrency = 2
+        semaphore = asyncio.Semaphore(max_concurrency)
+
         async with session:
-            tasks = {asyncio.create_task(self._pay_chapter(session, login_info, chapter_id, chapter_cost),
+            tasks = {asyncio.create_task(self._pay_chapter(session, semaphore, login_info, chapter_id, chapter_cost),
                                          name=chapter_id)
                      for chapter_id, chapter_cost in chapter_to_pay.items()}
             pending: set = tasks
@@ -262,7 +266,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         self.logger.info(f'FAIL: {chapter_id}; should retry paying this chapter_id.')
                         pending.add(
                             asyncio.create_task(
-                                self._pay_chapter(session, login_info, chapter_id, chapter_to_pay[chapter_id]),
+                                self._pay_chapter(session, semaphore, login_info, chapter_id,
+                                                  chapter_to_pay[chapter_id]),
                                 name=chapter_id)
                         )
 
@@ -271,12 +276,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         self.logger.info(f'All payment of chapters were successful.')
 
-    async def _pay_chapter(self, session, login_info, chapter_id, chapter_cost):
-        # masiro 服务器一般，顶不住太大压力，设置为较大值也是徒劳 429/403
-        max_concurrency = 2
-        sem = asyncio.Semaphore(max_concurrency)
-
-        async with sem:
+    async def _pay_chapter(self, session, semaphore, login_info, chapter_id, chapter_cost):
+        async with semaphore:
             pay_url = 'https://masiro.me/admin/pay'
             pay_params = {'type': '2', 'object_id': chapter_id, 'cost': chapter_cost}
             pay_headers = self._build_login_headers(login_info=login_info)

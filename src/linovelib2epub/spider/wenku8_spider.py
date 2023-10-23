@@ -133,19 +133,21 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
                 catalog_list.append(new_volume)
             # is chapter
             elif 'ccss' in item_css_class:
-                href = catalog_item.find("a")["href"]
-                # https://www.wenku8.net/novel/2/2961/index.htm + 146006.htm => https://www.wenku8.net/novel/2/2961/146006.htm
-                chapter_url = f'{self._catalog_url.rsplit("/", 1)[0]}/{href}'
+                # bug case : https://www.wenku8.net/novel/3/3500/index.htm
+                if catalog_item.find("a") and catalog_item.find("a")['href']:
+                    href = catalog_item.find("a")["href"]
+                    # https://www.wenku8.net/novel/2/2961/index.htm + 146006.htm => https://www.wenku8.net/novel/2/2961/146006.htm
+                    chapter_url = f'{self._catalog_url.rsplit("/", 1)[0]}/{href}'
 
-                new_chapter: CatalogBaseChapter = CatalogBaseChapter(
-                    chapter_title=catalog_item_text,
-                    chapter_url=chapter_url
-                )
+                    new_chapter: CatalogBaseChapter = CatalogBaseChapter(
+                        chapter_title=catalog_item_text,
+                        chapter_url=chapter_url
+                    )
 
-                if catalog_item_text == '插图':
-                    _current_chapters.insert(0, new_chapter)
-                else:
-                    _current_chapters.append(new_chapter)
+                    if catalog_item_text == '插图':
+                        _current_chapters.insert(0, new_chapter)
+                    else:
+                        _current_chapters.append(new_chapter)
             else:
                 pass
 
