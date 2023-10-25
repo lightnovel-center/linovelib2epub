@@ -15,6 +15,8 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub)
 [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
+[![Maintainability](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/maintainability)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/test_coverage)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/test_coverage)
 
 ## preview
 
