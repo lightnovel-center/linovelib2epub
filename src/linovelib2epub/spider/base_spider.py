@@ -38,6 +38,8 @@ class BaseNovelWebsiteSpider(ABC):
         # in base class, http session is bare
         self.session = requests.session()
 
+        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 2
+
     @abstractmethod
     def fetch(self) -> LightNovel:
         raise NotImplementedError("Note: subclass must implement this method to do real fetch logic.")
@@ -226,13 +228,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         url_to_page = {url: 'NOT_DOWNLOAD_READY' for url in page_url_set}
 
-        #  use semaphore to control concurrency
-        # todo add a setting property named FETCH_CHAPTER_CONCURRENCY_LEVEL
-        # 8 is sweet point for masiro
-        # max_concurrency = 8
-
-        # 2 is ok for wenku8
-        max_concurrency = 2
+        # use semaphore to control concurrency
+        max_concurrency = self.FETCH_CHAPTER_CONCURRENCY_LEVEL
         semaphore = asyncio.Semaphore(max_concurrency)
 
         self.logger.info(f'DOWNLOAD_PAGES concurrency level: {max_concurrency}.')
@@ -272,7 +269,8 @@ class BaseNovelWebsiteSpider(ABC):
         # ASSERTION: make sure data is ok.
         for page_content in url_to_page.values():
             if page_content == "NOT_DOWNLOAD_READY":
-                raise LinovelibException('如果这个断言被触发，那么证明代码逻辑有问题。青春猪头少年不会梦到奇奇怪怪的BUG。')
+                raise LinovelibException(
+                    ' 如果这个断言被触发，那么证明代码逻辑有问题。青春猪头少年不会梦到奇奇怪怪的 BUG。')
 
         return url_to_page
 
@@ -291,7 +289,7 @@ class BaseNovelWebsiteSpider(ABC):
                 else:
                     # 429 too many requests => should retry
                     if resp.status == 429:
-                        # TODO y=2^x指数退化规避，目前的线性常数C退化效果很差
+                        # TODO y=2^x 指数退化规避，目前的线性常数 C 退化效果很差
                         await asyncio.sleep(1)
                     # 503 Service Unavailable => should retry
                     # ...... => should retry
@@ -349,11 +347,11 @@ class BaseNovelWebsiteSpider(ABC):
                     # https://masiro.moe/data/attachment/forum/202103/07/173827oqkmqhcbylyytty9.jpg => 526 status code
                     # https://www.masiro.me/images/encode/fy-221114012533-99Qz.jpg
 
-                    # 可能为站内链接，也可能是站外链接。因为url没有固定格式
+                    # 可能为站内链接，也可能是站外链接。因为 url 没有固定格式
                     # 这里我们需要自定义一个中间的文件夹名称，用于分割不同的爬虫实例。
                     # 为了让文件夹名称更加可读和具有语义，这里使用 bookid-volumeid 作为隔离。
 
-                    # 举例，例如 bookid为 875，volume_id 取本地自增id(例如3)，那么 875-3 就是结果。
+                    # 举例，例如 bookid 为 875，volume_id 取本地自增 id(例如 3)，那么 875-3 就是结果。
                     # 最后，将这个分隔符和图片原来的文件名拼接，得到 875-3/fy-221114012533-99Qz.jpg 这样格式的链接。
                     # 更加具体地，为 XXXX/masiro.me/875-3/fy-221114012533-99Qz.jpg
 

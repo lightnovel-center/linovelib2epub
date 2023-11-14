@@ -11,6 +11,8 @@ from linovelib2epub.models import LightNovel, LightNovelImage, CatalogBaseVolume
 from linovelib2epub.spider import BaseNovelWebsiteSpider
 from linovelib2epub.utils import aiohttp_get_with_retry
 
+WENKU8_SITE_BASE_URL = "https://www.wenku8.net"
+
 
 class Wenku8Spider(BaseNovelWebsiteSpider):
 
@@ -19,6 +21,8 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         self.logger = Logger(logger_name=type(self).__name__,
                              log_filename=self.spider_settings["log_filename"]).get_logger()
         self._catalog_url = ""
+
+        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 2
 
     def request_headers(self) -> Dict[str, Any]:
         return {
@@ -38,8 +42,8 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         trust_env = False if self.spider_settings["disable_proxy"] else True
         timeout = aiohttp.ClientTimeout(total=30, connect=15)
 
-        async with aiohttp.ClientSession(connector=conn, trust_env=trust_env, cookie_jar=jar,
-                                         timeout=timeout) as session:
+        async with aiohttp.ClientSession(trust_env=trust_env, timeout=timeout, connector=conn,
+                                         cookie_jar=jar) as session:
             novel, catalog_url = await self._fetch_basic_info(session)
             self._catalog_url = catalog_url
             await self._fetch_catalog_content(session, novel)
@@ -63,8 +67,8 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         # nth-of-type 不会选择内层的table，区别于nth-of-child()
         desc = soup.select("#content table:nth-of-type(2) td:nth-child(2) span")[-1].text
 
-        # catalog url example https://www.wenku8.net/novel/2/2961/index.htm
-        catalog_url = soup.select_one("legend + div > a")['href']
+        catalog_url_src = soup.select_one("legend + div > a")['href']
+        catalog_url = self._normalize_catalog_url(catalog_url_src)
 
         new_novel = LightNovel()
         new_novel.book_id = self.spider_settings["book_id"]
@@ -75,12 +79,15 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
                                                book_id=self.spider_settings["book_id"],
                                                is_book_cover=True)
         new_novel.description = desc
+
         new_novel.mark_basic_info_ready()
+        self.logger.info('Fetching basic info is done.')
 
         return new_novel, catalog_url
 
     async def _fetch_catalog_content(self, session, novel):
-        catalog_html = await aiohttp_get_with_retry(session, self._catalog_url, self.request_headers())
+        catalog_html = await aiohttp_get_with_retry(session, self._catalog_url, self.request_headers(),
+                                                    logger=self.logger)
 
         catalog_list: List[CatalogBaseVolume] = self._convert_to_catalog_list(catalog_html)
         if self.spider_settings['select_volume_mode']:
@@ -198,3 +205,15 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         # maybe we should remove nbsp and br, re-wrap it with a `p` container
 
         return content_body.prettify()
+
+    @staticmethod
+    def _normalize_catalog_url(catalog_url_src: str):
+        # catalog url possible cases:
+        # - https://www.wenku8.net/novel/2/2961/index.htm
+        # - /novel/2/2961/index.htm
+        if catalog_url_src.startswith("http"):
+            return catalog_url_src
+        elif catalog_url_src.startswith("/"):
+            return WENKU8_SITE_BASE_URL + catalog_url_src
+
+        return catalog_url_src

@@ -43,6 +43,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         if (not self._masiro_username) or (not self._masiro_password):
             raise LinovelibException("Masiro account is not found. About configuration, check the documentation.")
 
+        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 8
+
     def fetch(self) -> LightNovel:
         novel = asyncio.run(self._fetch())
         return novel

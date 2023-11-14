@@ -29,6 +29,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self._html_content_id = self._mapping_result.content_id
         self._mapping_dict = self._mapping_result.mapping_dict
 
+        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
+
     def request_headers(self, referer: str = '', random_ua: bool = True):
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         default_referer = 'https://w.linovelib.com'

@@ -16,9 +16,9 @@ book_index_url = f"https://www.wenku8.net/book/{book_id}.htm"
 async def main():
     jar = aiohttp.CookieJar(unsafe=True)
     conn = aiohttp.TCPConnector(ssl=False)
-    trust_env = False
+    trust_env = True
     timeout = aiohttp.ClientTimeout(total=30, connect=15)
-    async with aiohttp.ClientSession(trust_env=True,timeout=timeout,connector=conn,cookie_jar=jar) as session:
+    async with aiohttp.ClientSession(trust_env=trust_env,timeout=timeout,connector=conn,cookie_jar=jar) as session:
         async with session.get(book_index_url, headers=headers) as response:
             print(response.status)
             text_ = await response.text()
