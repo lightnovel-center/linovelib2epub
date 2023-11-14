@@ -228,8 +228,14 @@ class BaseNovelWebsiteSpider(ABC):
 
         #  use semaphore to control concurrency
         # todo add a setting property named FETCH_CHAPTER_CONCURRENCY_LEVEL
+        # 8 is sweet point for masiro
+        # max_concurrency = 8
+
+        # 2 is ok for wenku8
         max_concurrency = 2
         semaphore = asyncio.Semaphore(max_concurrency)
+
+        self.logger.info(f'DOWNLOAD_PAGES concurrency level: {max_concurrency}.')
 
         async with session:
             tasks = {asyncio.create_task(self._download_page(session, semaphore, url), name=url) for url in
@@ -284,6 +290,9 @@ class BaseNovelWebsiteSpider(ABC):
                     pass
                 else:
                     # 429 too many requests => should retry
+                    if resp.status == 429:
+                        # TODO y=2^x指数退化规避，目前的线性常数C退化效果很差
+                        await asyncio.sleep(1)
                     # 503 Service Unavailable => should retry
                     # ...... => should retry
                     self.logger.error(f'page {url} {resp.status} => should retry.')
@@ -351,8 +360,7 @@ class BaseNovelWebsiteSpider(ABC):
                     remote_src = image.get("src")
                     src_value = re.search('(?<= src=").*?(?=")', str(image))
 
-                    light_novel_image = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                                        related_page_url=chapter_url,
+                    light_novel_image = LightNovelImage(related_page_url=chapter_url,
                                                         remote_src=remote_src,
                                                         chapter_id=chapter_id,
                                                         volume_id=volume_id,

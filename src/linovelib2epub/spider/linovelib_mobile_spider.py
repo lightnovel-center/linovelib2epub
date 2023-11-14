@@ -1,4 +1,5 @@
 import re
+import re
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
@@ -100,16 +101,24 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             res = html.translate(table)
             return res
 
-        def _sanitize_html(html):
+        def _sanitize_html(html: BeautifulSoup) -> str:
             """
-            strip useless script on body tag by reg or soup library method.
-
+            Strip useless script on body tag by reg or soup library method.
             e.g. <script>zation();</script>
+
+            And remove all the content not needed.
 
             :param html:
             :return:
             """
-            return re.sub(r'<script.+?</script>', '', html, flags=re.DOTALL)
+            html_copy = BeautifulSoup(str(html), 'lxml')
+
+            # remove <p class="ca1"> 去掉一些公告声明
+            anouncements = html_copy.select(".ca1")
+            for anouncement in anouncements:
+                anouncement.decompose()
+
+            return re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
 
         book_catalog_rs = None
         try:
@@ -133,7 +142,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             new_novel = LightNovel()
             url_next = ''
 
-            volume_id = 0
+            volume_id = -1
             for catalog_volume in catalog_list:
                 volume_id += 1
 
@@ -168,7 +177,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             raise Exception(f'[ERROR]: request {page_link} failed.')
 
                         images = soup.find_all('img')
-                        article = str(soup.find(id=self._html_content_id))
+                        article_soup = soup.find(id=self._html_content_id)
+                        article = _sanitize_html(article_soup)
                         for _, image in enumerate(images):
                             # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
                             # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
@@ -180,8 +190,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             else:
                                 remote_src = image.get("src")
 
-                            light_novel_image = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                                                related_page_url=page_link, remote_src=remote_src,
+                            light_novel_image = LightNovelImage(related_page_url=page_link, remote_src=remote_src,
                                                                 chapter_id=chapter_id, volume_id=volume_id,
                                                                 book_id=self.spider_settings["book_id"])
 
@@ -190,7 +199,6 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             article = article.replace(str(image), local_image)
                             chapter_illustrations.append(light_novel_image)
 
-                        article = _sanitize_html(article)
                         article = _anti_js_obfuscation(article)
                         chapter_content += article
 
@@ -389,8 +397,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         novel_whole.book_title = book_title
         novel_whole.author = author
         novel_whole.description = book_summary
-        novel_whole.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                                 related_page_url=book_url,
+        novel_whole.book_cover = LightNovelImage(related_page_url=book_url,
                                                  remote_src=book_cover,
                                                  book_id=self.spider_settings["book_id"],
                                                  is_book_cover=True)

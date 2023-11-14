@@ -41,3 +41,4 @@ pickle
 
 # demo py
 *demo.py
+**/.mypy_cache/

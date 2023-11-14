@@ -17,7 +17,7 @@ async def fetch(url):
 
 
 async def main():
-    # todo parse urls from chapter sample page
+    # parse urls from chapter sample page
     url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
     url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
     urls = [url1, url2]

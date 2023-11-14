@@ -209,8 +209,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         new_novel.book_title = title
         new_novel.author = author
         new_novel.description = brief_introduction
-        new_novel.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                               related_page_url=url,
+        new_novel.book_cover = LightNovelImage(related_page_url=url,
                                                remote_src=cover_src,
                                                book_id=self.spider_settings['book_id'],
                                                is_book_cover=True)

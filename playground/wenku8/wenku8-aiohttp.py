@@ -18,10 +18,11 @@ async def main():
     conn = aiohttp.TCPConnector(ssl=False)
     trust_env = False
     timeout = aiohttp.ClientTimeout(total=30, connect=15)
-    async with aiohttp.ClientSession(trust_env=True, timeout=timeout, connector=conn, cookie_jar=jar) as session:
+    async with aiohttp.ClientSession(trust_env=True,timeout=timeout,connector=conn,cookie_jar=jar) as session:
         async with session.get(book_index_url, headers=headers) as response:
             print(response.status)
-            print(await response.text())
+            text_ = await response.text()
+            print(text_[:300])
 
 
 asyncio.run(main())

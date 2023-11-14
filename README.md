@@ -49,16 +49,16 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 
 ## Supported  Websites (plan)
 
-| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                            |
-|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|-------------------------------------------------|
-| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
-| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                             |
-| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                               |
-| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            ||
-| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            ||
-| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                             |
-| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                      |
-| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | WIP                                          | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                        |
+| 序号 | 网站名称                                            | 语言    | 爬虫难度 | 支持进度                                     | 备注                                       | 技术难点                                                     |
+| ---- | --------------------------------------------------- | ------- | -------- | -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| 1    | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰      | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `                  | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
+| 2    | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰      | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。                    | N/A                                                          |
+| 3    | ~~[轻之国度](https://www.lightnovel.us/)~~          | 简 / 繁 | 高🤣      | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                               | ` 轻币门槛 ` ` 导航混乱 `                                    |
+| 4    | ~~[无限轻小说](https://www.8novel.com/)~~           | 繁      | 中😰      | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `                  | N/A                                                          |
+| 5    | [轻小说文库](https://www.wenku8.net/)               | 简 / 繁 | 低😆      | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `                  | 无                                                           |
+| 6    | ~~[轻小说百科](https://lnovel.org/)~~               | 简 / 繁 | 低😆      | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                                          |
+| 7    | [真白萌](https://masiro.me/admin/novels)            | 简 / 繁 | 中😰      | <img src="./merrli.png" width="36">          | ` 一章一页 `                               | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                       |
+| 8    | [百合会新站](https://www.yamibo.com/site/novel)     | 简 / 繁 | 中😰      | WIP                                          | `可选[登录]` ` 一章一页 `                  | ` 付费章节需要登录 ` ` coin 购买 `                           |
 
 > 
 

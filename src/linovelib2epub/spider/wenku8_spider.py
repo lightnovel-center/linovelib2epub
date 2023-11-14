@@ -40,16 +40,18 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
 
         async with aiohttp.ClientSession(connector=conn, trust_env=trust_env, cookie_jar=jar,
                                          timeout=timeout) as session:
-            novel = await self._fetch_basic_info(session)
+            novel, catalog_url = await self._fetch_basic_info(session)
+            self._catalog_url = catalog_url
             await self._fetch_catalog_content(session, novel)
             return novel
 
-    async def _fetch_basic_info(self, session) -> LightNovel:
+    async def _fetch_basic_info(self, session) -> tuple[LightNovel, str]:
         # index url
         # https://www.wenku8.net/book/2961.htm
         book_id = self.spider_settings["book_id"]
         book_index_url = f"https://www.wenku8.net/book/{book_id}.htm"
-        page_text = await aiohttp_get_with_retry(session, book_index_url, headers=self.request_headers())
+        page_text = await aiohttp_get_with_retry(session, book_index_url, headers=self.request_headers(),
+                                                 logger=self.logger)
 
         soup = BeautifulSoup(page_text, 'lxml')
         title = soup.select_one("#content table:nth-child(1) span b").text
@@ -63,25 +65,22 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
 
         # catalog url example https://www.wenku8.net/novel/2/2961/index.htm
         catalog_url = soup.select_one("legend + div > a")['href']
-        self._catalog_url = catalog_url
 
         new_novel = LightNovel()
         new_novel.book_id = self.spider_settings["book_id"]
         new_novel.author = author
         new_novel.book_title = title
-        new_novel.book_cover = LightNovelImage(site_base_url=self.spider_settings["base_url"],
-                                               related_page_url=book_index_url,
+        new_novel.book_cover = LightNovelImage(related_page_url=book_index_url,
                                                remote_src=cover_src,
                                                book_id=self.spider_settings["book_id"],
                                                is_book_cover=True)
         new_novel.description = desc
         new_novel.mark_basic_info_ready()
 
-        return new_novel
+        return new_novel, catalog_url
 
     async def _fetch_catalog_content(self, session, novel):
-        catalog_url = self._catalog_url
-        catalog_html = await aiohttp_get_with_retry(session, catalog_url, self.request_headers())
+        catalog_html = await aiohttp_get_with_retry(session, self._catalog_url, self.request_headers())
 
         catalog_list: List[CatalogBaseVolume] = self._convert_to_catalog_list(catalog_html)
         if self.spider_settings['select_volume_mode']:
