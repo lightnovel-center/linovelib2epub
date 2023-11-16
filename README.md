@@ -225,6 +225,7 @@ Don't need login, no threshold.
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
+- [ ] change installtion from pypi to from git protocal
 
 ## Contributors
 
