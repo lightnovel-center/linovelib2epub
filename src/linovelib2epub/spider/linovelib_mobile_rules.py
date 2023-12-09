@@ -24,9 +24,20 @@ def generate_mapping_result():
     return result_set
 
 
-def _parse_mapping_rules_legacy(js_text) -> dict:
+def _parse_mapping(js_text) -> ParsedRuleResult:
+    content_id, replace_rules = _parse_mapping_v2(js_text)
+    parsed_rule_result = ParsedRuleResult(mapping_dict=replace_rules, content_id=content_id)
+    return parsed_rule_result
+
+
+def _parse_mapping_v1(js_text) -> tuple:
+    # 第一代：在js中使用硬编码的RegExp进行text替换，很好解析，一切明文。这里留一个空实现，仅为记录历史。
+    pass
+
+
+def _parse_mapping_v2(js_text) -> tuple:
     """
-    Don't use this method anymore.
+    第二代：使用A110B90V45这种长字符串，将字符串按字母切割得到ascii codes，拼接对应字符得到js明文。
 
     :param js_text:
     :return:
@@ -40,6 +51,15 @@ def _parse_mapping_rules_legacy(js_text) -> dict:
     code_tokens = re.split(r'[a-zA-Z]+', long_string)
     js_code = ''.join(chr(int(token)) for token in code_tokens)
 
+    # resolve content_id
+    # GOAL: document.getElementById('acontentz').innerHTML => acontentz
+    pattern_content_id = r"document.getElementById\(\'(.+?)\'\).innerHTML"
+    match = re.search(pattern_content_id, js_code)
+    content_id = ""
+    if match:
+        content_id = match[1]
+    assert content_id, "[_parse_mapping_v2]: content_id can't be empty string, please submit this bug to github issue."
+
     # find mapping
     pattern = r"RegExp\([\"|\']([^\"]+?)[\"|\'],\s*\"gi\"\),\s*\"([^\"]+?)\"\)"
     matches = re.findall(pattern, js_code)
@@ -52,31 +72,27 @@ def _parse_mapping_rules_legacy(js_text) -> dict:
         value = match[1]
         replace_rules[key] = value
 
-    return replace_rules
+    return content_id, replace_rules
 
 
-def _parse_mapping(js_text) -> ParsedRuleResult:
+def _parse_mapping_v3(js_text) -> tuple:
+    # 第三代: 对js明文进行一次unicode解码，然后类似v2，只不过正则表达式有所区别，必须调整。
     decoded_s = js_text.encode('utf-8').decode('unicode_escape')
 
     # resolve content_id
     pattern_content_id = r"window\[\"document\"\]\[\'getElementById']\(\'(.+?)\'\)"
     match = re.search(pattern_content_id, decoded_s)
-
     content_id = ""
     if match:
         content_id = match[1]
-
-    assert content_id, "content_id can't be empty string, please submit this bug to github issue."
+    assert content_id, "[_parse_mapping_v3]: content_id can't be empty string, please submit this bug to github issue."
 
     # resolve mapping rule
     pattern = r"\"RegExp\"]\([\'|\"]([^\"]+?)[\"|\'],\s*[\'|\"]gi[\'|\"]\),\s*[\'|\"]([^\"]+?)[\"|\']"
     matches = re.findall(pattern, decoded_s)
     replace_rules = {match[0]: match[1] for match in matches}
 
-    # merge result
-    parsed_rule_result = ParsedRuleResult(mapping_dict=replace_rules, content_id=content_id)
-
-    return parsed_rule_result
+    return content_id, replace_rules
 
 
 def write_rules(rules):
@@ -100,7 +116,7 @@ def write_rules(rules):
 
 async def _probe_js_encrypted_file():
     # 候选的url请求数组进行竞速，取第一个成功返回的js，天天都在改改改，猜测是随机变更。
-    # better implementation: extract candidate urls from chapter sample page
+    # better implementation: extract candidate urls from current chapter page
     # https://w.linovelib.com/novel/2883/141634.html
 
     url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
