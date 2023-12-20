@@ -1,5 +1,4 @@
 import re
-import re
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
@@ -7,7 +6,7 @@ from urllib.parse import urljoin
 import demjson3
 import inquirer
 import requests
-from bs4 import BeautifulSoup
+from bs4 import (BeautifulSoup, Tag)
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rules import generate_mapping_result
@@ -33,7 +32,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
-        default_referer = 'https://w.linovelib.com'
+        default_referer = 'https://www.bilinovel.com'
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -309,15 +308,14 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return catalog_list
 
     def _convert_to_catalog_list(self, catalog_html) -> List[CatalogLinovelibMobileVolume]:
-
         soup_catalog = BeautifulSoup(catalog_html, 'lxml')
         # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
         catalog_wrapper = soup_catalog.find('ol', {'id': 'volumes'})
-        catalog_html_lis = catalog_wrapper.find_all('li')
+        catalog_html_items = catalog_wrapper.children  # Use children to get both <h3> and <li> elements
 
         # catalog_html_lis is an array: [li, li, li, ...]
         # example format:
-        # <li class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑</li>
+        # <h3 class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑<div class="volume-cover">...</div></h3>
         # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
         # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
 
@@ -327,14 +325,15 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         _current_volume_title = ""
         _volume_index = 0
 
-        for index, catalog_li in enumerate(catalog_html_lis):
-            catalog_li_text = catalog_li.text
+        for item in catalog_html_items:
+            # Check if the item is a BeautifulSoup Tag object
+            if not isinstance(item, Tag):
+                continue
 
             # is volume name
-            if 'chapter-bar' in catalog_li['class']:
+            if item.name == 'h3' and 'chapter-bar' in item['class']:
                 _volume_index += 1
-                # reset current_* variables
-                _current_volume_title = catalog_li_text
+                _current_volume_title = item.get_text()
                 _current_chapters: List[CatalogLinovelibMobileChapter] = []
                 new_volume = CatalogLinovelibMobileVolume(
                     vid=_volume_index,
@@ -343,11 +342,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 )
                 catalog_list.append(new_volume)
             # is normal chapter
-            else:
-                href = catalog_li.find("a")["href"]
+            elif item.name == 'li' and 'jsChapter' in item['class']:
+                href = item.find("a")["href"]
                 chapter_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
                 new_chapter: CatalogLinovelibMobileChapter = CatalogLinovelibMobileChapter(
-                    chapter_title=catalog_li_text,
+                    chapter_title=item.get_text(),
                     chapter_url=chapter_url
                 )
                 _current_chapters.append(new_chapter)

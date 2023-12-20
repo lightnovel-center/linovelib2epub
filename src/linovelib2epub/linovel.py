@@ -332,7 +332,7 @@ class Linovelib2Epub:
         self.target_site = target_site
 
         site_to_base_url = {
-            TargetSite.LINOVELIB_MOBILE: 'https://w.linovelib.com',
+            TargetSite.LINOVELIB_MOBILE: 'https://www.bilinovel.com',
             TargetSite.MASIRO: 'https://masiro.me',
             TargetSite.WENKU8: 'https://www.wenku8.net',
         }
