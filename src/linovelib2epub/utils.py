@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 import re
 import time
 from functools import wraps
@@ -50,15 +51,33 @@ def requests_get_with_retry(client: Any,
             else:
                 if logger:
                     logger.warning(f'Request {url} succeed but data is empty.')
-                time.sleep(1)
         except (Exception,) as e:
             if logger:
                 logger.error(f'Request {url} failed.', e)
-            time.sleep(1)
 
         current_num_of_request += 1
+        # 指数退避参考 https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn#example_algorithm
+        # 具体逻辑：
+        # 1.向服务器特定API发出请求。
+        # 2.如果请求失败，请等待 1 + random_number_milliseconds 秒后再重试请求。
+        # 3.如果请求失败，请等待 2 + random_number_milliseconds 秒后再重试请求。
+        # 4.如果请求失败，请等待 4 + random_number_milliseconds 秒后再重试请求。
+        # 5.依此类推，等待时间上限为 maximum_backoff。
+        # 等待时间达到上限后，您可以继续等待并重试，直到达到重试次数上限（但接下来的重试操作不会增加各次重试之间的等待时间）。
+
+        # 等待时间为 min(((2^n)+random_number_seconds), maximum_backoff)，其中，n 会在每次迭代（请求）后增加 1。
+        # 其中：
+        # - random_number_seconds 是小于1的秒数（随机值）。
+        # - maximum_backoff 设置为一个较大的容忍值，这里设置为10s。这是基于经验的估计。
+        n = current_num_of_request
+        random_number_seconds = round(random.uniform(0, 1), 2) # 0.01-0.99s
+        maximum_backoff = 10
+        retry_interval = min(((2 ^ (n - 1)) + random_number_seconds), maximum_backoff)
+
         if logger:
-            logger.warning(f'current_num_of_request: {current_num_of_request}')
+            logger.warning(f'current_num_of_request: {current_num_of_request}; retry_interval: {retry_interval}(s)')
+
+        time.sleep(retry_interval)
 
     return None
 
