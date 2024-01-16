@@ -79,7 +79,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             soup = BeautifulSoup(result.text, 'lxml')
 
             try:
-                book_title = soup.find('h2', {'class': 'book-title'}).text
+                book_title = soup.find('h1', {'class': 'book-title'}).text
                 author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
                 book_summary = soup.find('section', id="bookSummary").text
                 # see issue #10, strip invalid suffix characters after ? from cover url
@@ -331,7 +331,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 continue
 
             # is volume name
-            if item.name == 'h3' and 'chapter-bar' in item['class']:
+            if item.name == 'li' and 'chapter-bar' in item['class']:
                 _volume_index += 1
                 _current_volume_title = item.get_text()
                 _current_chapters: List[CatalogLinovelibMobileChapter] = []
