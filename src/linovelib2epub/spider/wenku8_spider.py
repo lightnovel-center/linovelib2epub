@@ -171,7 +171,7 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
         question_name = 'Selecting volumes'
-        question_description = "Which volumes you want to download?(select one or multiple volumes)"
+        question_description = "Which volumes you want to download?(use SPACE to select one or multiple volumes)"
         volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,
