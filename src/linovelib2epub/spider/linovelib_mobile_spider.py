@@ -176,7 +176,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             soup = BeautifulSoup(page_resp.text, 'lxml')
                         else:
                             raise Exception(f'[ERROR]: request {page_link} failed.')
-
+                        new_title = soup.find(id='atitle')
+                        if not new_title.text.startswith(light_novel_chapter.title):
+                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title 带有分页信息，所以不能==
+                            self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title.text}]')
+                            light_novel_chapter.title = new_title.text
                         images = soup.find_all('img')
                         article_soup = soup.find(id=self._html_content_id)
                         article = _sanitize_html(article_soup)
