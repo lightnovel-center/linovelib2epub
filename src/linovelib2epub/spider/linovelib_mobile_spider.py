@@ -177,6 +177,15 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         else:
                             raise Exception(f'[ERROR]: request {page_link} failed.')
 
+                        new_title = soup.find(id='atitle')
+                        # 分页判断过滤
+                        if not new_title.text.startswith(light_novel_chapter.title):
+                            # 目录：第二章 可爱如花的N孩
+                            # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
+                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于new_title可能带有分页信息，所以不能==
+                            self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title.text}]')
+                            light_novel_chapter.title = new_title.text
+
                         images = soup.find_all('img')
                         article_soup = soup.find(id=self._html_content_id)
                         article = _sanitize_html(article_soup)
@@ -294,7 +303,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         # step 2: then reduce the whole catalog_list to a reduced_catalog_list based on user selection
         # UI show
         question_name = 'Selecting volumes'
-        question_description = "Which volumes you want to download?(select one or multiple volumes)"
+        question_description = "Which volumes you want to download?(use SPACE to select one or multiple volumes)"
         volume_choices = _get_volume_choices(catalog_list)
         questions = [
             inquirer.Checkbox(question_name,
