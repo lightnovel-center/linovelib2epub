@@ -1,8 +1,7 @@
 import asyncio
 import json
 import re
-import sys
-from typing import Dict
+from typing import Dict, Any
 
 import aiohttp
 
@@ -11,7 +10,7 @@ from linovelib2epub.utils import aiohttp_get_with_retry
 
 class ParsedRuleResult:
     def __init__(self,
-                 mapping_dict: Dict,
+                 mapping_dict: Dict[str, Any],
                  content_id: str,
                  ):
         self.mapping_dict = mapping_dict

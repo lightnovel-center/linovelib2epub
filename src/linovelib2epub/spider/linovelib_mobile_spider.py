@@ -31,14 +31,16 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
-        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
+        default_mobile_ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/120.0.0.0'
         default_referer = 'https://www.bilinovel.com'
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
             'Referer': referer if referer else default_referer,
-            'User-Agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+            # use random mobile phone header later
+            # 'User-Agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+            'User-Agent': default_mobile_ua
         }
         return headers
 
@@ -169,6 +171,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
                     for page_link in catalog_chapter.chapter_urls:
                         page_resp = requests_get_with_retry(self.session, page_link,
+                                                            headers=self.request_headers(),
                                                             retry_max=self.spider_settings['http_retries'],
                                                             timeout=self.spider_settings["http_timeout"],
                                                             logger=self.logger)
