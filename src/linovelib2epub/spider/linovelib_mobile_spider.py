@@ -34,11 +34,19 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46'
         default_referer = 'https://www.bilinovel.com'
         headers = {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-            'Referer': referer if referer else default_referer,
-            'User-Agent': self.spider_settings['random_useragent'] if random_ua else default_ua
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SAMSUNG-SM-T377A Build/NMF26X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.216/217 Mobile Safari/537.36'
+            ,'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
+            ,'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2'
+            ,'Accept-Encoding': 'gzip, deflate, br'
+            ,'DNT': '1'
+            ,'Referer': default_referer
+            ,'Cookie': 'night=0; cf_clearance=.V7au2_KmpRi2CskNew1Wb_5VSZu2mpn8kvca1qBPPo-1705986833-1-AXoxfY/qsKNcvQGUYx3giddyfFLHFJHpdCrDo4CwpDq15h0ec82E8HuPxiXbUfniiWo0LVUtcf/UdGgTsAH47lo=; jieqiRecentRead=2356.83534.0.5.1705986832.0'
+            ,'Upgrade-Insecure-Requests': '1'
+            ,'Sec-Fetch-Dest': 'document'
+            ,'Sec-Fetch-Mode': 'navigate'
+            ,'Sec-Fetch-Site': 'same-origin'
+            ,'Sec-Fetch-User': '?1'
+            ,'TE': 'trailers'
         }
         return headers
 
@@ -169,6 +177,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
                     for page_link in catalog_chapter.chapter_urls:
                         page_resp = requests_get_with_retry(self.session, page_link,
+                                                            headers=self.request_headers(),
                                                             retry_max=self.spider_settings['http_retries'],
                                                             timeout=self.spider_settings["http_timeout"],
                                                             logger=self.logger)
