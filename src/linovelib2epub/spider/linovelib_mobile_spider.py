@@ -322,14 +322,17 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
     def _convert_to_catalog_list(self, catalog_html) -> List[CatalogLinovelibMobileVolume]:
         soup_catalog = BeautifulSoup(catalog_html, 'lxml')
         # chapter_count = soup_catalog.find('h4', {'class': 'chapter-sub-title'}).find('output').text
-        catalog_wrapper = soup_catalog.find('ol', {'id': 'volumes'})
-        catalog_html_items = catalog_wrapper.children  # Use children to get both <h3> and <li> elements
+        catalog_wrapper = soup_catalog.find('div', {'id': 'volumes'})
+        catalog_volumes = catalog_wrapper.find_all('div', {'class': 'catalog-volume'})
 
-        # catalog_html_lis is an array: [li, li, li, ...]
-        # example format:
-        # <h3 class="chapter-bar chapter-li">第一卷 夏娃在黎明时微笑<div class="volume-cover">...</div></h3>
-        # <li class="chapter-li jsChapter"><a href="/novel/682/117077.html" class="chapter-li-a "><span class="chapter-index ">插图</span></a></li>
-        # <li class="chapter-li jsChapter"><a href="/novel/682/32683.html" class="chapter-li-a "><span class="chapter-index ">「彩虹与夜色的交会──远在起始之前──」</span></a></li>
+        # catalog html structure:
+        #     <div class="catalog-volume">
+        #         <ul class="volume-chapters">
+        #             <li class="chapter-bar chapter-li"><h3>第一章『卡利娅·巴德尼克篇』</h3></li>
+        #             <li class="volume-cover chapter-li">...</li>
+        #             <li class="chapter-li jsChapter">
+        #               <a href="/novel/3087/153701.html" class="chapter-li-a "><span class="chapter-index ">作品相关</span></a>
+        #             </li>
 
         catalog_list: List[CatalogLinovelibMobileVolume] = []
 
@@ -337,31 +340,31 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         _current_volume_title = ""
         _volume_index = 0
 
-        for item in catalog_html_items:
-            # Check if the item is a BeautifulSoup Tag object
-            if not isinstance(item, Tag):
-                continue
+        for catalog_volume in catalog_volumes:
+            volume_chapters = catalog_volume.find("ul", {'class': 'volume-chapters'})
+            volume_chapter_items = volume_chapters.find_all('li')
 
-            # is volume name
-            if item.name == 'li' and 'chapter-bar' in item['class']:
-                _volume_index += 1
-                _current_volume_title = item.get_text()
-                _current_chapters: List[CatalogLinovelibMobileChapter] = []
-                new_volume = CatalogLinovelibMobileVolume(
-                    vid=_volume_index,
-                    volume_title=_current_volume_title,
-                    chapters=_current_chapters
-                )
-                catalog_list.append(new_volume)
-            # is normal chapter
-            elif item.name == 'li' and 'jsChapter' in item['class']:
-                href = item.find("a")["href"]
-                chapter_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
-                new_chapter: CatalogLinovelibMobileChapter = CatalogLinovelibMobileChapter(
-                    chapter_title=item.get_text(),
-                    chapter_url=chapter_url
-                )
-                _current_chapters.append(new_chapter)
+            for volume_chapter_item in volume_chapter_items:
+                # is volume name
+                if volume_chapter_item.name == 'li' and 'chapter-bar' in volume_chapter_item['class']:
+                    _volume_index += 1
+                    _current_volume_title = volume_chapter_item.get_text()
+                    _current_chapters: List[CatalogLinovelibMobileChapter] = []
+                    new_volume = CatalogLinovelibMobileVolume(
+                        vid=_volume_index,
+                        volume_title=_current_volume_title,
+                        chapters=_current_chapters
+                    )
+                    catalog_list.append(new_volume)
+                # is normal chapter
+                elif volume_chapter_item.name == 'li' and 'jsChapter' in volume_chapter_item['class']:
+                    href = volume_chapter_item.find("a")["href"]
+                    chapter_url = urljoin(f'{self.spider_settings["base_url"]}/novel', href)
+                    new_chapter: CatalogLinovelibMobileChapter = CatalogLinovelibMobileChapter(
+                        chapter_title=volume_chapter_item.get_text(),
+                        chapter_url=chapter_url
+                    )
+                    _current_chapters.append(new_chapter)
 
         # sanitize catalog_list => remove volume that has empty chapters
         # https://w.linovelib.com/novel/3847/catalog
