@@ -33,6 +33,7 @@ class BaseNovelWebsiteSpider(ABC):
     def __init__(self, spider_settings: Dict[str, Any]) -> None:
         self.spider_settings = spider_settings
         self.logger = Logger(logger_name=type(self).__name__,
+                             logger_level=self.spider_settings["log_level"],
                              log_filename=self.spider_settings["log_filename"]).get_logger()
 
         # in base class, http session is bare
@@ -46,7 +47,7 @@ class BaseNovelWebsiteSpider(ABC):
 
     def request_headers(self) -> Dict[str, Any]:
         """
-        Act as a common headers, 这个方法的父类设计似乎作用有限，是不是可以去掉？
+        Act as a common headers, 这个方法目前在base class中的用例为：下载图片时的默认请求头。
         :return:
         """
         return {}
@@ -222,7 +223,7 @@ class BaseNovelWebsiteSpider(ABC):
         with open(pickle_save_path, 'wb') as fp:
             pickle.dump(novel, fp)
 
-    async def download_pages(self, session, page_url_set: set):
+    async def download_pages(self, session: Any, page_url_set: set) -> Dict[str, str]:
 
         self.logger.info(f'page url set = {len(page_url_set)}')
 
@@ -289,14 +290,14 @@ class BaseNovelWebsiteSpider(ABC):
                 else:
                     # 429 too many requests => should retry
                     if resp.status == 429:
-                        # TODO y=2^x 指数退化规避，目前的线性常数 C 退化效果很差
+                        # 更好的做法：y=2^x 指数退化规避，目前的线性常数 C 退化效果很差
                         await asyncio.sleep(1)
                     # 503 Service Unavailable => should retry
                     # ...... => should retry
                     self.logger.error(f'page {url} {resp.status} => should retry.')
                     raise LinovelibException(f'fetch page url {url} failed with error status {resp.status}.')
 
-    async def fetch_chapters(self, session, catalog_list: List[CatalogBaseVolume], book):
+    async def fetch_chapters(self, session: Any, catalog_list: List[CatalogBaseVolume], book):
         """
         A basic implementation for crawling chapters.
         Please consider overriding `extract_body_content()` and `download_pages` in subclass instance.
@@ -307,6 +308,8 @@ class BaseNovelWebsiteSpider(ABC):
         """
         page_url_set = {chapter.chapter_url for volume in catalog_list for chapter in volume.chapters}
         url_to_page = await self.download_pages(session, page_url_set)
+
+        # TODO 下面这部分代码提取到父类进行重用，不涉及网络请求，只是HTML解构解析
 
         #  Main goals:
         #  1. extract body and update dict

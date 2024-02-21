@@ -5,6 +5,7 @@
 ```
 csrf token -> token -> get page
 ```
+- 挑战：bypass cloudflare turnstile
 
 ## 等级限制
 

@@ -18,10 +18,7 @@ class Wenku8Spider(BaseNovelWebsiteSpider):
 
     def __init__(self, spider_settings: Dict[str, Any]):
         super().__init__(spider_settings)
-        self.logger = Logger(logger_name=type(self).__name__,
-                             log_filename=self.spider_settings["log_filename"]).get_logger()
         self._catalog_url = ""
-
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 2
 
     def request_headers(self) -> Dict[str, Any]:

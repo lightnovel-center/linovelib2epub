@@ -29,7 +29,7 @@ PICKLE_TEMP_FOLDER = 'pickle'
 HTTP_TIMEOUT = 10
 
 # 当一个HTTP请求失败后，重试的最大次数。
-HTTP_RETRIES = 5
+HTTP_RETRIES = 10
 
 # 自定义HTTP cookie
 HTTP_COOKIE = ''

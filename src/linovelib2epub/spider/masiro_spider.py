@@ -2,6 +2,7 @@ import asyncio
 import json
 import re
 import sys
+import time
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Tuple
 from urllib.parse import urljoin
@@ -9,6 +10,7 @@ from urllib.parse import urljoin
 import aiohttp
 import inquirer
 import tabulate
+from DrissionPage import ChromiumPage, ChromiumOptions, WebPage
 from bs4 import BeautifulSoup
 from lxml import html
 from rich.prompt import Confirm
@@ -34,8 +36,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     def __init__(self, spider_settings: Dict[str, Any]):
         super().__init__(spider_settings)
-        self.logger = Logger(logger_name=type(self).__name__,
-                             log_filename=self.spider_settings["log_filename"]).get_logger()
 
         # read user secrets
         self._masiro_username = env_settings.get("MASIRO_LOGIN_USERNAME")
@@ -43,13 +43,248 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         if (not self._masiro_username) or (not self._masiro_password):
             raise LinovelibException("Masiro account is not found. About configuration, check the documentation.")
 
-        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 8
+        self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
 
     def fetch(self) -> LightNovel:
         novel = asyncio.run(self._fetch())
         return novel
 
-    async def _fetch(self) -> Any:
+    async def _fetch(self) -> LightNovel:
+        page: WebPage = self._login_by_browser()
+
+        page.cookies_to_session(copy_user_agent=True)
+        # rprint(page.session.cookies)
+
+        # change to data packet mode
+        # page.change_mode('s')
+        # print(page.title)
+
+        book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
+        novel = await self._crawl_book_by_browser(book_url, page)
+        return novel
+
+    async def _crawl_book_by_browser(self, url: str, session: WebPage):
+
+        resp = session.get(url, show_errmsg=True, retry=5, interval=2, timeout=10)
+        session.wait.doc_loaded()
+        html_text = session.html
+
+        self._check_user_level_limit(html_text, url)
+
+        new_novel, points_balance = self._extract_basic_info(html_text, url)
+        self.logger.debug(f'{new_novel=}; {points_balance=}')
+
+        catalog_list: List[CatalogMasiroVolume] = self._convert_to_catalog_list(html_text)
+
+        # select_volume_mode
+        if self.spider_settings['select_volume_mode']:
+            catalog_list = self._handle_select_volume(catalog_list)
+
+        # resolve final catalog
+        final_catalog_list: List[CatalogMasiroVolume] = catalog_list
+        chapter_to_pay: Dict[str, int] = self._get_unpayed_chapter(final_catalog_list)
+        self.logger.debug(f'{final_catalog_list=}')
+
+        # 计算所需的积分价格，必须排除用户已经购买过的章节
+        quote = sum([volume.volume_cost for volume in final_catalog_list])
+
+        # 如果本书所有章节都是不需要积分查看的 => 直接起飞
+        if quote == 0:
+            # 1
+            self.logger.info("当前所有卷都是免费积分或你已经购买，直接执行下载。")
+            await self.fetch_chapters(session, final_catalog_list, new_novel)
+            return new_novel
+        else:
+            # 2
+            # [可选]显示当前挑选卷的积分消耗预计值和用户当前积分余额
+            table_header = [
+                ['vid', 'volume title', 'volume cost(G)']
+            ]
+            table_body = [[volume.vid, volume.volume_title, volume.volume_cost] for volume in
+                          final_catalog_list]
+            table_data = table_header + table_body
+            table_view = tabulate.tabulate(table_data)
+            self.logger.info(table_view)
+
+            if quote > points_balance:
+                # 2.1
+                self.logger.warning(f"Need {quote} and your balance is {points_balance}, exit.")
+                sys.exit()
+            else:
+                # 2.2
+                if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
+                    # 2.2.1
+                    self.logger.info("用户积分余额足够，决定购买。")
+                    # todo refactor do payment code
+                    # todo fetch chapters
+                    return None
+                else:
+                    # 2.2.2
+                    self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
+                    sys.exit()
+
+    async def download_pages(self, session: WebPage, page_url_set: set) -> Dict[str, str]:
+        self.logger.info(f'page url set = {len(page_url_set)}')
+
+        url_to_page = {url: 'NOT_DOWNLOAD_READY' for url in page_url_set}
+
+        # use semaphore to control concurrency
+        max_concurrency = self.FETCH_CHAPTER_CONCURRENCY_LEVEL
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        self.logger.info(f'DOWNLOAD_PAGES concurrency level: {max_concurrency}.')
+
+        tasks = {asyncio.create_task(self._download_page(session, semaphore, url), name=url)
+                 for url in page_url_set}
+        pending: set = tasks
+        succeed_count = 0
+
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+            # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
+            # are returned in the second set
+
+            # 1. succeed => normal result in done(# HAPPY CASE)
+            # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
+            # 3  Other Exception before timeout => (SAD CASE(need retry)
+
+            for done_task in done:
+                exception = done_task.exception()
+                task_url = done_task.get_name()
+
+                if exception is None:
+                    url_to_page[task_url] = done_task.result()
+                    succeed_count += 1
+                else:
+                    # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
+                    self.logger.error(
+                        f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
+                    pending.add(
+                        asyncio.create_task(self._download_page(session, semaphore, task_url), name=task_url))
+
+            self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
+            self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+
+        # ASSERTION: make sure data is ok.
+        for page_content in url_to_page.values():
+            if page_content == "NOT_DOWNLOAD_READY":
+                raise LinovelibException('天啊，发生什么事了。如果这个断言被触发，那么证明代码逻辑有问题。')
+
+        return url_to_page
+
+    async def _download_page(self, session: WebPage, semaphore, url) -> str | None:
+        async with semaphore:
+            is_url_available = session.get(url, headers=self.request_headers())
+            self.logger.info(f'正在等待页面 {url} 加载>>>>>>')
+            loaded = session.wait.doc_loaded()
+            self.logger.info(f'{url} loaded state is {loaded=}')
+            # self.logger.info(f'{session.html=}')
+
+            # 多等待，少被ban
+            await asyncio.sleep(2)
+
+            if loaded and session.html:
+                self.logger.info(f'page {url} => ok.')
+                return session.html
+            else:
+                # ...... => should retry
+                self.logger.error(f'page {url} => should retry.')
+                raise LinovelibException(f'fetch page url {url} failed with error status ?.')
+
+    def _login_by_browser(self) -> WebPage:
+        # see https://g1879.gitee.io/drissionpagedocs/get_start/before_start
+        # Chromium Browser Path
+        browser_path = "/usr/bin/google-chrome"
+        co = ChromiumOptions()
+        # co.set_paths(browser_path=browser_path)
+        arguments = [
+            "-no-first-run",
+            "-force-color-profile=srgb",
+            "-metrics-recording-only",
+            # "-password-store=basic",
+            "-use-mock-keychain",
+            "-export-tagged-pdf",
+            "-no-default-browser-check",
+            "-disable-background-mode",
+            "-enable-features=NetworkService,NetworkServiceInProcess,LoadCryptoTokenExtension,PermuteTLSExtensions",
+            "-disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
+            "-deny-permission-prompts",
+            "-disable-gpu"
+            # "-headless=new"
+            # "-incognito"
+        ]
+        for argument in arguments:
+            co.set_argument(argument)
+
+        page = WebPage(chromium_options=co)
+        login_url = 'https://masiro.me/admin/auth/login'
+        page.get(login_url)
+
+        # 定义下面几种状态，使用有限状态机理论进行分析。
+        # A.遇到已登录后的页面。发生可能的理由：由于上一次cookie没有过期，而且之前选择了记住登录。
+        # B1.遇到 cloudflare turnstile。发生的理由：触发 cloudflare turnstile风控，要求挑战。
+        # B2.遇到登录表单界面。发生可能的理由：没有记住登录，或者cookie已经过期。
+
+        # 列举状态迁移图：
+        #  -> A
+        #  -> B1 -> A。触发风控，上次登录没有过期。
+        #  -> B1 -> B2 -> A。触发风控，上次登录过期或者没有记住登录。=> 需要重新登录
+        #  -> B2 -> A。没有触发风控，上次登录过期或者没有记住登录。=> 需要重新登录
+
+        # //li[@class='user-footer']//a[contains(text(), '登出')]
+        already_logged_in_xpath = 't:a@tx():登出'
+
+        logout_flag = page(already_logged_in_xpath)
+        if logout_flag:
+            print('-> 已登录')
+        else:
+            print('未登录，正在尝试挑战或登录……')
+            while True:
+                # 这个方法有点耗时，可能需要留意
+                self._pass_cycle(page)
+                logout_flag = page(already_logged_in_xpath)
+                if logout_flag:
+                    print('-> 挑战 -> 已登录')
+                    # now can jump to next task
+                    break
+                else:
+                    print('-> 挑战 -> 未登录')
+                    try:
+                        # what is s_ele? https://g1879.gitee.io/drissionpagedocs/get_start/concept#-sessionelement
+                        ele = page.s_ele('xpath://form[@id="loginForm"]/h1')
+                        if ele and ele.text == "登录":
+                            # 使用【浏览器模式】填表登录。
+                            # refer https://g1879.gitee.io/drissionpagedocs/get_start/examples/control_browser
+                            page.ele('#username').input(self._masiro_username)
+                            page.ele('#password').input(self._masiro_password)
+                            # page.ele('#remember').input(True)
+
+                            page.ele('#login-btn').click()
+                            page.wait.load_start()
+                            print('-> 挑战 -> 未登录 -> 登录成功')
+
+                            # now can jump to next task
+                            break
+
+                        print('-> 挑战 -> 未登录：等待下一次重试')
+                    except:
+                        time.sleep(.2)
+        return page
+
+    @staticmethod
+    def _pass_cycle(_driver: ChromiumPage):
+        # cycle to bypass cloudflare turnstile
+        try:
+            # css selector: label.ctp-checkbox-label
+            if _driver('xpath://div/iframe').s_ele(".ctp-checkbox-label") is not None:
+                # timeout: 查找元素超时时间（秒），默认与元素所在页面等待时间一致
+                btn = _driver('xpath://div/iframe').ele(".ctp-checkbox-label", timeout=0.2)
+                # 注意：这里可能需要等几秒。参阅：https://www.youtube.com/watch?v=TCRcRXszhhU
+                btn.click()
+        except:
+            pass
+
+    async def _fetch_legacy(self) -> LightNovel:
         # can share
         trust_env = False if self.spider_settings["disable_proxy"] else True
         timeout = aiohttp.ClientTimeout(total=30, connect=15)
@@ -64,12 +299,13 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         async with aiohttp.ClientSession(connector=conn, trust_env=trust_env, cookie_jar=jar,
                                          timeout=timeout) as session:
-            login_info = await self._login(session)
+            login_info = await self._login_by_api(session)
 
             # get basic info and catalog
             book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
-            new_novel, final_catalog_list, flag = await self._crawl_book_basic_info_and_catalog(book_url, session,
-                                                                                                login_info)
+            new_novel, final_catalog_list, flag = await self._crawl_book_basic_info_and_catalog_by_api(book_url,
+                                                                                                       session,
+                                                                                                       login_info)
             if flag == 'NOT_NEED_RESET_SESSION':
                 await self.fetch_chapters(session, final_catalog_list, new_novel)
                 return new_novel
@@ -85,21 +321,21 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             conn2 = aiohttp.TCPConnector(ssl=False)
             async with aiohttp.ClientSession(connector=conn2, trust_env=trust_env, cookie_jar=jar2,
                                              timeout=timeout) as session:
-                login_info = await self._login(session)
+                login_info = await self._login_by_api(session)
                 await self.fetch_chapters(session, final_catalog_list, partial_novel)
                 return partial_novel
 
-    async def _login(self, session):
+    async def _login_by_api(self, session):
         login_info = MasiroLoginInfo()
         login_info.username = self._masiro_username
         login_info.password = self._masiro_password
 
-        # 1. get csrf token
+        # 1. get csrf token (HTTP GET)
         await self._masiro_get_token(login_info, session)
         login_param = self._build_login_param(login_info)
         login_headers = self._build_login_headers(login_info)
 
-        # 2. do login
+        # 2. do login (HTTP POST)
         result = await aiohttp_post_with_retry(session, login_info.login_url, params=login_param,
                                                headers=login_headers)
         # {"code":1,"msg":"\u767b\u5f55\u6210\u529f!","url":"https:\/\/masiro.me"}
@@ -107,16 +343,16 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         # now this session is already logged.
         return login_info
 
-    async def _crawl_book_basic_info_and_catalog(self,
-                                                 url: str,
-                                                 session: aiohttp.ClientSession,
-                                                 login_info):
+    async def _crawl_book_basic_info_and_catalog_by_api(self,
+                                                        url: str,
+                                                        session: aiohttp.ClientSession,
+                                                        login_info):
 
         html_text = await aiohttp_get_with_retry(session, url, self.request_headers())
 
-        await self._check_user_level_limit(html_text, url)
+        self._check_user_level_limit(html_text, url)
 
-        new_novel, points_balance = await self._crawl_basic_info(html_text, url)
+        new_novel, points_balance = self._extract_basic_info(html_text, url)
 
         catalog_list: List[CatalogMasiroVolume] = self._convert_to_catalog_list(html_text)
 
@@ -164,20 +400,20 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
                     self.logger.info(f"MUST reset/recover session state.")
 
-                    # FLAGS: MUST re-login to fetch chapter text content
+                    # FLAGS: MUST re-login after payment to fetch chapter text content
                     return new_novel, final_catalog_list, 'NEED_RESET_SESSION'
                 else:
                     # 2.2.2
                     self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
                     sys.exit()
 
-    async def _check_user_level_limit(self, html_text, url):
+    def _check_user_level_limit(self, html_text, url):
         index = html_text.find("小孩子不能看")
         if index != -1:
             self.logger.error(f"[等级限制]: 你在真白萌的用户等级不足以查看链接: {url}")
             sys.exit()
 
-    async def _crawl_basic_info(self, html_text, url):
+    def _extract_basic_info(self, html_text, url):
         soup = BeautifulSoup(html_text, 'lxml')
 
         # title √

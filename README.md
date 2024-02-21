@@ -212,7 +212,7 @@ Don't need login, no threshold.
 | pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                    |
 | clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                    |
 | http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。      |
-| http_retries            | number  | NO       | 5                             | 当一个 HTTP 请求失败后，重试的最大次数。                               |
+| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                               |
 | http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                      |
 | custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                   |
 | custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                     |
@@ -225,7 +225,8 @@ Don't need login, no threshold.
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
-- [ ] change installation from pypi to git protocol
+- [ ] add installation alternatives: from pypi to git protocol
+- [ ] add doc about internal parallelization or serialization when crawling pages.
 
 ## Contributors
 

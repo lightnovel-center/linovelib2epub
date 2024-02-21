@@ -325,6 +325,7 @@ class Linovelib2Epub:
                  custom_style_chapter: str | None = None,
                  disable_proxy: bool = settings.DISABLE_PROXY,
                  image_download_strategy: str = ASYNCIO,
+                 log_level: str = "INFO"
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -356,7 +357,8 @@ class Linovelib2Epub:
             'novel_pickle_path': f'{pickle_temp_folder}/{run_identifier}.pickle',
             'clean_artifacts': clean_artifacts,
             'select_volume_mode': select_volume_mode,
-            'log_filename': run_identifier
+            'log_filename': run_identifier,
+            'log_level':log_level
         }
 
         self.spider_settings = {
@@ -386,6 +388,7 @@ class Linovelib2Epub:
         log_filename = self.common_settings["log_filename"]
         log_filename_str = cast(str, log_filename)
         self.logger = Logger(logger_name=type(self).__name__,
+                             logger_level=self.common_settings["log_level"],
                              log_filename=log_filename_str).get_logger()
 
     def run(self) -> None:

@@ -12,6 +12,9 @@ pip install mypy
 mypy example.py --pretty
 # strict mode
 mypy example.py --strict
+
+# generate *.pyi file
+stubgen foo.py
 ```
 
 > In Python 3.10, you no longer need to import Union at all. All the details are in PEP 604. 
