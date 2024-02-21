@@ -248,7 +248,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         # goal: solve all page links of a certain chapter
         while True:
-            resp = requests_get_with_retry(self.session, url_next, logger=None)
+            resp = requests_get_with_retry(self.session, url_next,
+                                           headers=self.request_headers(),
+                                           retry_max=self.spider_settings['http_retries'],
+                                           timeout=self.spider_settings["http_timeout"],
+                                           logger=self.logger)
             if resp:
                 soup = BeautifulSoup(resp.text, 'lxml')
             else:
