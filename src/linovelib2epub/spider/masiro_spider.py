@@ -200,10 +200,13 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     def _login_by_browser(self) -> LoginSessionState:
         # see https://g1879.gitee.io/drissionpagedocs/get_start/before_start
-        # Chromium Browser Path
-        browser_path = "/usr/bin/google-chrome"
         co = ChromiumOptions()
-        # co.set_paths(browser_path=browser_path)
+        if self.spider_settings['browser_path']:
+            # 似乎这个set_browser_path不 work。暂时没有解决方案。
+            # path = "/usr/bin/google-chrome"
+            # path = r'D:\Chrome\Chrome.exe'
+            path = self.spider_settings['browser_path']
+            co.set_browser_path(path).save()
         arguments = [
             "-no-first-run",
             "-force-color-profile=srgb",

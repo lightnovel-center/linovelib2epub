@@ -145,6 +145,11 @@ specify `target_site` parameter.
 
 > target site: https://masiro.me
 
+> 2024-02-22 Update: Now Masiro has a very strict cloudflare turnstile protection and requests rate limit. The code has been
+> refactored to bypass the [cloudflare turnstile](https://www.cloudflare.com/zh-cn/products/turnstile/) using a python 
+> library called [DrissionPage](https://github.com/g1879/DrissionPage). DrissionPage will auto-detect and use Chrome browser.
+> If you encounter a path error of Chrome browser, please set the `browser_path` parameter to `Linovelib2Epub()`.
+
 ```python
 from linovelib2epub import Linovelib2Epub, TargetSite
 
