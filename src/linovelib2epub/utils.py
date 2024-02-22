@@ -31,7 +31,6 @@ def create_folder_if_not_exists(path: str) -> None:
         os.makedirs(path)
 
 
-# TODO extract retry logic from these http helper function or use retry library like tenacity
 def requests_get_with_retry(client: Any,
                             url: str,
                             headers: Dict[str, Any] | None = None,
@@ -72,7 +71,7 @@ def requests_get_with_retry(client: Any,
         n = current_num_of_request
         random_number_seconds = round(random.uniform(0, 1), 2) # 0.01-0.99s
         maximum_backoff = 10
-        retry_interval = min(((2 ^ (n - 1)) + random_number_seconds), maximum_backoff)
+        retry_interval = min(((2 ** (n - 1)) + random_number_seconds), maximum_backoff)
 
         if logger:
             logger.warning(f'current_num_of_request: {current_num_of_request}; retry_interval: {retry_interval}(s)')

@@ -309,7 +309,7 @@ class BaseNovelWebsiteSpider(ABC):
         page_url_set = {chapter.chapter_url for volume in catalog_list for chapter in volume.chapters}
         url_to_page = await self.download_pages(session, page_url_set)
 
-        # TODO 下面这部分代码提取到父类进行重用，不涉及网络请求，只是HTML解构解析
+        # TODO 下面这部分代码提取到单独的func，不涉及网络请求，只是HTML解构解析
 
         #  Main goals:
         #  1. extract body and update dict

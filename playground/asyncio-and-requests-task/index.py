@@ -4,9 +4,6 @@ import requests
 
 async def async_request(url):
     response = requests.get(url)
-    # The request was rejected because of the bilibili security control policy.
-    if url == "https://www.bilibili.com":
-        print(response.text)
     print(f"Response from {url}: {response.status_code}")
 
 

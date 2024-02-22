@@ -15,10 +15,9 @@ from bs4 import BeautifulSoup
 from lxml import html
 from rich.prompt import Confirm
 
-from linovelib2epub.logger import Logger
 from linovelib2epub.models import LightNovel, LightNovelImage, CatalogMasiroChapter, CatalogMasiroVolume
 from linovelib2epub.spider import BaseNovelWebsiteSpider
-from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry
+from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry, requests_get_with_retry
 from .config import env_settings
 from ..exceptions import LinovelibException
 
@@ -30,6 +29,12 @@ class MasiroLoginInfo:
     username: str = field(default="", repr=False)
     password: str = field(default="", repr=False)
     token: str = ''
+
+
+@dataclass()
+class LoginSessionState:
+    page: WebPage
+    csrf_token: str
 
 
 class MasiroSpider(BaseNovelWebsiteSpider):
@@ -50,22 +55,21 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         return novel
 
     async def _fetch(self) -> LightNovel:
-        page: WebPage = self._login_by_browser()
+        login_state = self._login_by_browser()
+        page = login_state.page
+        csrf_token = login_state.csrf_token
+        login_info = MasiroLoginInfo(token=csrf_token)
 
         page.cookies_to_session(copy_user_agent=True)
         # rprint(page.session.cookies)
 
-        # change to data packet mode
-        # page.change_mode('s')
-        # print(page.title)
-
         book_url = f"https://masiro.me/admin/novelView?novel_id={self.spider_settings['book_id']}"
-        novel = await self._crawl_book_by_browser(book_url, page)
+        novel = await self._crawl_book_by_browser(book_url, page, login_info)
         return novel
 
-    async def _crawl_book_by_browser(self, url: str, session: WebPage):
+    async def _crawl_book_by_browser(self, url: str, session: WebPage, login_info: MasiroLoginInfo):
 
-        resp = session.get(url, show_errmsg=True, retry=5, interval=2, timeout=10)
+        url_is_ok = session.get(url, show_errmsg=True, retry=5, interval=2, timeout=10)
         session.wait.doc_loaded()
         html_text = session.html
 
@@ -115,9 +119,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
                     # 2.2.1
                     self.logger.info("用户积分余额足够，决定购买。")
-                    # todo refactor do payment code
-                    # todo fetch chapters
-                    return None
+                    await self._pay_chapters_by_browser(session, login_info, chapter_to_pay)
+                    await self.fetch_chapters(session, final_catalog_list, new_novel)
+                    return new_novel
                 else:
                     # 2.2.2
                     self.logger.info("用户积分余额足够，但是决定不购买，程序退出。")
@@ -158,7 +162,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 else:
                     # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
                     self.logger.error(
-                        f'Exception: {exception.__class__.__name__} | FAIL: {task_url}; should retry.')
+                        f'{exception.__class__.__name__}: {task_url} should retry.')
                     pending.add(
                         asyncio.create_task(self._download_page(session, semaphore, task_url), name=task_url))
 
@@ -174,24 +178,27 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     async def _download_page(self, session: WebPage, semaphore, url) -> str | None:
         async with semaphore:
-            is_url_available = session.get(url, headers=self.request_headers())
-            self.logger.info(f'正在等待页面 {url} 加载>>>>>>')
+            is_url_available = session.get(url, headers=self.request_headers(), retry=10, interval=3, timeout=10)
             loaded = session.wait.doc_loaded()
-            self.logger.info(f'{url} loaded state is {loaded=}')
-            # self.logger.info(f'{session.html=}')
-
             # 多等待，少被ban
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
 
-            if loaded and session.html:
+            html = session.html
+            if html:
+                if "访问频繁" in html:
+                    # <title>429 Too Many Requests</title>
+                    # <h3 style="font-size: 32px;">
+                    # 访问频繁，歇会吧您内。
+                    # </h3>
+                    raise LinovelibException(f'429 Too Many Requests when downloading {url}')
                 self.logger.info(f'page {url} => ok.')
-                return session.html
+                return html
             else:
                 # ...... => should retry
                 self.logger.error(f'page {url} => should retry.')
                 raise LinovelibException(f'fetch page url {url} failed with error status ?.')
 
-    def _login_by_browser(self) -> WebPage:
+    def _login_by_browser(self) -> LoginSessionState:
         # see https://g1879.gitee.io/drissionpagedocs/get_start/before_start
         # Chromium Browser Path
         browser_path = "/usr/bin/google-chrome"
@@ -217,7 +224,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             co.set_argument(argument)
 
         page = WebPage(chromium_options=co)
-        login_url = 'https://masiro.me/admin/auth/login'
+        login_url = MasiroLoginInfo.login_url
+        # <input type="hidden" name="_token" value="???">
         page.get(login_url)
 
         # 定义下面几种状态，使用有限状态机理论进行分析。
@@ -236,19 +244,19 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         logout_flag = page(already_logged_in_xpath)
         if logout_flag:
-            print('-> 已登录')
+            self.logger.info('-> 已登录')
         else:
-            print('未登录，正在尝试挑战或登录……')
+            self.logger.info('未登录，正在尝试挑战或登录……')
             while True:
                 # 这个方法有点耗时，可能需要留意
                 self._pass_cycle(page)
                 logout_flag = page(already_logged_in_xpath)
                 if logout_flag:
-                    print('-> 挑战 -> 已登录')
+                    self.logger.info('-> 挑战? -> 已登录')
                     # now can jump to next task
                     break
                 else:
-                    print('-> 挑战 -> 未登录')
+                    self.logger.info('-> 挑战? -> 未登录')
                     try:
                         # what is s_ele? https://g1879.gitee.io/drissionpagedocs/get_start/concept#-sessionelement
                         ele = page.s_ele('xpath://form[@id="loginForm"]/h1')
@@ -261,15 +269,21 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
                             page.ele('#login-btn').click()
                             page.wait.load_start()
-                            print('-> 挑战 -> 未登录 -> 登录成功')
+                            self.logger.info('-> 挑战? -> 未登录 -> 登录成功')
 
                             # now can jump to next task
                             break
 
-                        print('-> 挑战 -> 未登录：等待下一次重试')
+                        self.logger.info('-> 挑战? -> 未登录: 等待下一次重试')
                     except:
                         time.sleep(.2)
-        return page
+
+        #  after https://masiro.me/admin
+        # head tag <meta name="csrf-token" content="???">
+        csrf_token = page.ele('xpath://meta[@name="csrf-token"]/@content').attr('content')
+        self.logger.debug(f'csrf token: {csrf_token}')
+
+        return LoginSessionState(page, csrf_token)
 
     @staticmethod
     def _pass_cycle(_driver: ChromiumPage):
@@ -467,15 +481,64 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         return unpayed_chapter_dict
 
+    async def _pay_chapters_by_browser(self, session, login_info, chapter_to_pay: Dict[str, int]):
+        self.logger.info(f'len of chapter_to_pay = {len(chapter_to_pay)}')
+
+        _pay_chapter_func = self._pay_chapter_by_browser
+
+        max_concurrency = 2
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        tasks = {
+            asyncio.create_task(_pay_chapter_func(session, semaphore, login_info, chapter_id, chapter_cost),
+                                name=chapter_id)
+            for chapter_id, chapter_cost in chapter_to_pay.items()
+        }
+        pending: set = tasks
+        succeed_count = 0
+
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+            # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
+            # are returned in the second set
+
+            # 1. succeed => normal result in done(# HAPPY CASE)
+            # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
+            # 3  Other Exception before timeout => (SAD CASE(need retry)
+
+            for done_task in done:
+                exception = done_task.exception()
+                chapter_id = done_task.get_name()
+
+                if exception is None:
+                    # done_task.result()
+                    succeed_count += 1
+                else:
+                    # [TEST]make connect=.1 to reach this branch, should retry all the tasks that entered this case
+                    self.logger.info(f'Exception: {type(exception)}')
+                    self.logger.info(f'FAIL: {chapter_id}; should retry paying this chapter_id.')
+                    pending.add(
+                        asyncio.create_task(
+                            _pay_chapter_func(session, semaphore, login_info, chapter_id, chapter_to_pay[chapter_id]),
+                            name=chapter_id)
+                    )
+
+            self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
+            self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+
+        self.logger.info(f'All payment of chapters were successful.')
+
     async def _pay_chapters(self, session, login_info, chapter_to_pay: Dict[str, int]):
         self.logger.info(f'len of chapter_to_pay = {len(chapter_to_pay)}')
+
+        _pay_chapter_func = self._pay_chapter
 
         # payments concurrency level can be hardcoded
         max_concurrency = 2
         semaphore = asyncio.Semaphore(max_concurrency)
 
         async with session:
-            tasks = {asyncio.create_task(self._pay_chapter(session, semaphore, login_info, chapter_id, chapter_cost),
+            tasks = {asyncio.create_task(_pay_chapter_func(session, semaphore, login_info, chapter_id, chapter_cost),
                                          name=chapter_id)
                      for chapter_id, chapter_cost in chapter_to_pay.items()}
             pending: set = tasks
@@ -502,16 +565,36 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                         self.logger.info(f'Exception: {type(exception)}')
                         self.logger.info(f'FAIL: {chapter_id}; should retry paying this chapter_id.')
                         pending.add(
-                            asyncio.create_task(
-                                self._pay_chapter(session, semaphore, login_info, chapter_id,
-                                                  chapter_to_pay[chapter_id]),
-                                name=chapter_id)
+                            asyncio.create_task(_pay_chapter_func(session, semaphore, login_info, chapter_id,
+                                                                  chapter_to_pay[chapter_id]),
+                                                name=chapter_id)
                         )
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
         self.logger.info(f'All payment of chapters were successful.')
+
+    async def _pay_chapter_by_browser(self, session: WebPage, semaphore, login_info, chapter_id, chapter_cost):
+        async with semaphore:
+            pay_url = 'https://masiro.me/admin/pay'
+            pay_params = {'type': '2', 'object_id': chapter_id, 'cost': chapter_cost}
+            pay_headers = self._build_login_headers(login_info=login_info)
+            try:
+                # session.post() is not work,emm... workaround is using internal requests.session
+                requests_session = session.session
+                # add a retry mechanism for self retry
+                resp = requests_session.post(url=pay_url, data=pay_params, headers=pay_headers)
+                self.logger.debug(f'chapter payment {resp.text=}')
+                if resp and json.loads(resp.text)['code'] == 1:
+                    self.logger.info(f'[SUCCESS] pay for chapter {chapter_id} with cost {chapter_cost}.')
+                else:
+                    # resp None or
+                    # resp is not None but is not a json string
+                    raise LinovelibException(f"[FAIL] pay for chapter {chapter_id} with cost {chapter_cost}.")
+            except Exception as e:
+                self.logger.debug(f'chapter payment ({chapter_id}) failed. {e=}')
+                raise LinovelibException(f"[FAIL] pay for chapter {chapter_id} with cost {chapter_cost}.")
 
     async def _pay_chapter(self, session, semaphore, login_info, chapter_id, chapter_cost):
         async with semaphore:
