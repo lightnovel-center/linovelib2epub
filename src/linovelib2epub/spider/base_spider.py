@@ -90,7 +90,7 @@ class BaseNovelWebsiteSpider(ABC):
         # url is valid and never downloaded
         try:
             resp = self.session.get(download_url, headers=self.request_headers(),
-                                    timeout=self.spider_settings['http_timeout'])
+                                    timeout=self.spider_settings['http_timeout'], verify=False)
 
             expected_length = resp.headers and resp.headers.get('Content-Length')
             actual_length = resp.raw.tell()
@@ -115,7 +115,9 @@ class BaseNovelWebsiteSpider(ABC):
             image.download_url: image for image in light_novel_images
         }
 
-        async with aiohttp.ClientSession() as session:
+        # see issue https://github.com/lightnovel-center/linovelib2epub/issues/34
+        tcp_connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(connector=tcp_connector) as session:
             tasks = {asyncio.create_task(self._download_image(session,
                                                               image.download_url,
                                                               image.local_relative_path),
