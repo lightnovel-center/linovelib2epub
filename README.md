@@ -236,7 +236,7 @@ Don't need login, no threshold.
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -254,7 +254,8 @@ Don't need login, no threshold.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Papersman"><img src="https://avatars.githubusercontent.com/u/58485012?v=4?s=60" width="60px;" alt="Papersman"/><br /><sub><b>Papersman</b></sub></a><br /><a href="https://github.com/lightnovel-center/linovelib2epub/issues?q=author%3APapersman" title="Bug reports">🐛</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/inkroom"><img src="https://avatars.githubusercontent.com/u/27911304?v=4?s=60" width="60px;" alt="inkroom"/><br /><sub><b>inkroom</b></sub></a><br /><a href="https://github.com/lightnovel-center/linovelib2epub/commits?author=inkroom" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/inkroom"><img src="https://avatars.githubusercontent.com/u/27911304?v=4?s=60" width="60px;" alt="inkroom"/><br /><sub><b>inkroom</b></sub></a><br /><a href="https://github.com/lightnovel-center/linovelib2epub/issues?q=author%3Ainkroom" title="Bug reports">🐛</a> <a href="https://github.com/lightnovel-center/linovelib2epub/commits?author=inkroom" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Kuan-Lun"><img src="https://avatars.githubusercontent.com/u/33048725?v=4?s=60" width="60px;" alt="Kuan-Lun"/><br /><sub><b>Kuan-Lun</b></sub></a><br /><a href="https://github.com/lightnovel-center/linovelib2epub/issues?q=author%3AKuan-Lun" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
