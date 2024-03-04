@@ -49,18 +49,18 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 
 ## Supported  Websites (plan)
 
-| 序号 | 网站名称                                            | 语言    | 爬虫难度 | 支持进度                                     | 备注                                       | 技术难点                                                     |
-| ---- | --------------------------------------------------- | ------- | -------- | -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
-| 1    | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰      | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `                  | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
-| 2    | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰      | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。                    | N/A                                                          |
-| 3    | ~~[轻之国度](https://www.lightnovel.us/)~~          | 简 / 繁 | 高🤣      | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                               | ` 轻币门槛 ` ` 导航混乱 `                                    |
-| 4    | ~~[无限轻小说](https://www.8novel.com/)~~           | 繁      | 中😰      | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `                  | N/A                                                          |
-| 5    | [轻小说文库](https://www.wenku8.net/)               | 简 / 繁 | 低😆      | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `                  | 无                                                           |
-| 6    | ~~[轻小说百科](https://lnovel.org/)~~               | 简 / 繁 | 低😆      | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                                          |
-| 7    | [真白萌](https://masiro.me/admin/novels)            | 简 / 繁 | 中😰      | <img src="./merrli.png" width="36">          | ` 一章一页 `                               | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                       |
-| 8    | [百合会新站](https://www.yamibo.com/site/novel)     | 简 / 繁 | 中😰      | WIP                                          | `可选[登录]` ` 一章一页 `                  | ` 付费章节需要登录 ` ` coin 购买 `                           |
+| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                            |
+|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|-------------------------------------------------|
+| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
+| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                             |
+| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                               |
+| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | N/A                                             |
+| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            | 无                                               |
+| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                             |
+| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                      |
+| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | 搁置                                           | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                        |
 
-> 
+>
 
 爬虫友好度有两个重要指标：
 
@@ -145,9 +145,11 @@ specify `target_site` parameter.
 
 > target site: https://masiro.me
 
-> 2024-02-22 Update: Now Masiro has a very strict cloudflare turnstile protection and requests rate limit. The code has been
-> refactored to bypass the [cloudflare turnstile](https://www.cloudflare.com/zh-cn/products/turnstile/) using a python 
-> library called [DrissionPage](https://github.com/g1879/DrissionPage). DrissionPage will auto-detect and use Chrome browser.
+> 2024-02-22 Update: Now Masiro has a very strict cloudflare turnstile protection and requests rate limit. The code has
+> been
+> refactored to bypass the [cloudflare turnstile](https://www.cloudflare.com/zh-cn/products/turnstile/) using a python
+> library called [DrissionPage](https://github.com/g1879/DrissionPage). DrissionPage will auto-detect and use Chrome
+> browser.
 > If you encounter a path error of Chrome browser, please set the `browser_path` parameter to `Linovelib2Epub()`.
 
 ```python
@@ -206,24 +208,26 @@ Don't need login, no threshold.
 
 ## Options
 
-| Parameters              | type    | required | default                       | description                                           |
-|-------------------------|---------|----------|-------------------------------|-------------------------------------------------------|
-| book_id                 | number  | YES      | None                          | 书籍 ID。                                                |
-| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                   |
-| divide_volume           | boolean | NO       | False                         | 是否分卷                                                  |
-| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。               |
-| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                |
-| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                            |
-| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                    |
-| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                    |
-| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。      |
-| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                               |
-| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                      |
-| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                   |
-| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                     |
-| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                   |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                      |
+| Parameters              | type    | required | default                       | description                                          |
+|-------------------------|---------|----------|-------------------------------|------------------------------------------------------|
+| book_id                 | number  | YES      | None                          | 书籍 ID。                                               |
+| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                  |
+| divide_volume           | boolean | NO       | False                         | 是否分卷                                                 |
+| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。              |
+| has_illustration        | boolean | NO       | True                          | 是否下载插图                                               |
+| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                           |
+| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                   |
+| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                   |
+| chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章节的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
+| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。     |
+| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                              |
+| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                     |
+| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                  |
+| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                    |
+| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                  |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                     |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
+| browser_path            | string  | NO       | None                          | 浏览器的本地路径。爬虫时使用浏览器进行模拟，目前仅masiro支持。                   |
 
 ## Todo
 

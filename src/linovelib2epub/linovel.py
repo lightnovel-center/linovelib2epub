@@ -326,7 +326,8 @@ class Linovelib2Epub:
                  disable_proxy: bool = settings.DISABLE_PROXY,
                  image_download_strategy: str = ASYNCIO,
                  log_level: str = "INFO",
-                 browser_path: str | None = None
+                 browser_path: str | None = None,
+                 chapter_crawl_delay : int | None = None
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -359,7 +360,8 @@ class Linovelib2Epub:
             'clean_artifacts': clean_artifacts,
             'select_volume_mode': select_volume_mode,
             'log_filename': run_identifier,
-            'log_level':log_level
+            'log_level':log_level,
+            'chapter_crawl_delay': chapter_crawl_delay
         }
 
         self.spider_settings = {

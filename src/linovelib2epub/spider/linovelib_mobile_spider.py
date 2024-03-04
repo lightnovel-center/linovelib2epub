@@ -156,6 +156,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 chapter_id = -1
                 chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
                 for catalog_chapter in catalog_volume.chapters:
+
+                    self.apply_chapter_crawl_delay()
+
                     chapter_content = ''
                     chapter_title = catalog_chapter.chapter_title
                     chapter_id += 1
@@ -166,6 +169,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     self.logger.info(f'chapter : {chapter_title}')
 
                     # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败
+                    # 注意：由于特定一章的分页假设不会太多，因此这里不应用 chapter_crawl_delay 参数延迟。
                     url_next = self._expand_paginated_chapter_links(catalog_chapter, url_next)
 
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
@@ -235,6 +239,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
         return None
+
+    def apply_chapter_crawl_delay(self):
+        chapter_crawl_delay = self.spider_settings['chapter_crawl_delay']
+        if chapter_crawl_delay:
+            time.sleep(chapter_crawl_delay)
+            self.logger.info(f'Apply chapter_crawl_delay(s): {chapter_crawl_delay}')
 
     def _expand_paginated_chapter_links(self, chapter: CatalogLinovelibMobileChapter, url_next):
         # fix broken links in place(catalog_lis) if exits

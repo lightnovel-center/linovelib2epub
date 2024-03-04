@@ -69,9 +69,9 @@ def requests_get_with_retry(client: Any,
         # - random_number_seconds 是小于1的秒数（随机值）。
         # - maximum_backoff 设置为一个较大的容忍值，这里设置为10s。这是基于经验的估计。
         n = current_num_of_request
-        random_number_seconds = round(random.uniform(0, 1), 2) # 0.01-0.99s
+        random_number_seconds = round(random.uniform(0, 1), 2)  # 0.01-0.99s
         maximum_backoff = 10
-        retry_interval = min(((2 ** (n - 1)) + random_number_seconds), maximum_backoff)
+        retry_interval = min(round(((2 ** (n - 1)) + random_number_seconds), 2), maximum_backoff)
 
         if logger:
             logger.warning(f'current_num_of_request: {current_num_of_request}; retry_interval: {retry_interval}(s)')
