@@ -6,7 +6,9 @@ from urllib.parse import urljoin
 import demjson3
 import inquirer
 import requests
-from bs4 import (BeautifulSoup, Tag)
+from bs4 import (BeautifulSoup)
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rules import generate_mapping_result
@@ -29,6 +31,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self._mapping_dict = self._mapping_result.mapping_dict
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
+
+        self._init_browser_driver()
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
         default_mobile_ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/120.0.0.0'
@@ -86,6 +90,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 book_summary = soup.find('section', id="bookSummary").text
                 # see issue #10, strip invalid suffix characters after ? from cover url
                 book_cover_url = soup.find('img', {'class': 'book-cover'})['src'].split("?")[0]
+
+                self.logger.info(f'book name:《{book_title}》')
                 return book_title, author, book_summary, book_cover_url
             except (Exception,):
                 self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
@@ -174,22 +180,20 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
                     for page_link in catalog_chapter.chapter_urls:
-                        page_resp = requests_get_with_retry(self.session, page_link,
-                                                            headers=self.request_headers(),
-                                                            retry_max=self.spider_settings['http_retries'],
-                                                            timeout=self.spider_settings["http_timeout"],
-                                                            logger=self.logger)
+                        # use selenium instead of direct requests
+                        page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
+
                         if page_resp:
-                            soup = BeautifulSoup(page_resp.text, 'lxml')
+                            soup = BeautifulSoup(page_resp, 'lxml')
                         else:
                             raise Exception(f'[ERROR]: request {page_link} failed.')
 
                         new_title = soup.find(id='atitle')
                         # 分页判断过滤
                         if not new_title.text.startswith(light_novel_chapter.title):
-                            # 目录：第二章 可爱如花的N孩
+                            # 目录：第二章 可爱如花的 N 孩
                             # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
-                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于new_title可能带有分页信息，所以不能==
+                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于 new_title 可能带有分页信息，所以不能 ==
                             self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title.text}]')
                             light_novel_chapter.title = new_title.text
 
@@ -240,6 +244,57 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         return None
 
+    def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
+        driver = self._driver
+
+        request_count = 0
+        # total requests num = self(1) + max_retries
+        # if max_retries= 5, then total is 1+5=6
+
+        while request_count <= max_retries:
+            try:
+                driver.get(url)
+                html = driver.page_source
+                return html
+            except Exception as e:
+                request_count += 1
+                self.logger.warn(f"{url} encountered exception, retrying ({request_count}/{max_retries})...")
+
+        return None
+
+    def _init_browser_driver(self):
+        chrome_options = Options()
+        # 无头模式
+        # chrome_options.add_argument("--headless")
+
+        # 添加自定义 User-Agent
+        ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+        chrome_options.add_argument(f"user-agent={ua}")
+
+        # [ERROR:ssl_client_socket_impl.cc(970)] handshake failed;
+        # => these arguments are NOT WORK
+        chrome_options.add_argument('--ignore-certificate-errors')
+        chrome_options.add_argument('--ignore-certificate-errors-spki-list')
+        chrome_options.add_argument('--ignore-ssl-errors')
+
+        # suppress logging < FATAL
+        chrome_options.add_argument("log-level=3")
+
+        # 创建一个 Chrome 浏览器实例并传入选项
+        driver = webdriver.Chrome(options=chrome_options)
+        # page timeout
+        timeout = self.spider_settings["http_timeout"] or 10
+        driver.set_page_load_timeout(timeout)
+
+        # hardcode one url is ok
+        url = 'https://www.bilinovel.com/'
+        driver.get(url)
+        # 这个刷新只需要初始化一次，是因为第一次 get 无法得到正常结果。后续的请求都不再需要刷新。
+        driver.refresh()
+        self.logger.info(' 初始化 Driver 完毕...')
+
+        self._driver = driver
+
     def apply_chapter_crawl_delay(self):
         chapter_crawl_delay = self.spider_settings['chapter_crawl_delay']
         if chapter_crawl_delay:
@@ -284,10 +339,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
     def _remove_duplicate_images_in_html(self, chapter_list):
         # removing duplicate images in the first chapter
-        # chapter_list[0] 表示这一卷的第1个章节，在bilinovel中是插图页，这个页面部分插图会重复，会出现在这一卷的后续章节中。
-        # chapter_list[1:] 表示这一卷的第2个章节开始的所有章节，也就是正文章节。
+        # chapter_list[0] 表示这一卷的第 1 个章节，在 bilinovel 中是插图页，这个页面部分插图会重复，会出现在这一卷的后续章节中。
+        # chapter_list[1:] 表示这一卷的第 2 个章节开始的所有章节，也就是正文章节。
 
-        # 这个函数的作用就是将某一卷的第1个章节（插图章节）HTML的所有重复图片img元素，全部去掉。
+        # 这个函数的作用就是将某一卷的第 1 个章节（插图章节）HTML 的所有重复图片 img 元素，全部去掉。
 
         def _filter_duplicate_images(match, img_src_list):
             img = match.group()
@@ -342,10 +397,10 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         # catalog html structure:
         #     <div class="catalog-volume">
         #         <ul class="volume-chapters">
-        #             <li class="chapter-bar chapter-li"><h3>第一章『卡利娅·巴德尼克篇』</h3></li>
+        #             <li class="chapter-bar chapter-li"><h3> 第一章『卡利娅·巴德尼克篇』</h3></li>
         #             <li class="volume-cover chapter-li">...</li>
         #             <li class="chapter-li jsChapter">
-        #               <a href="/novel/3087/153701.html" class="chapter-li-a "><span class="chapter-index ">作品相关</span></a>
+        #               <a href="/novel/3087/153701.html" class="chapter-li-a "><span class="chapter-index "> 作品相关 </span></a>
         #             </li>
 
         catalog_list: List[CatalogLinovelibMobileVolume] = []
@@ -382,7 +437,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         # sanitize catalog_list => remove volume that has empty chapters
         # https://w.linovelib.com/novel/3847/catalog
-        # {'vid': 3, 'volume_title': '第四卷', 'chapters': []}
+        # {'vid': 3, 'volume_title': ' 第四卷 ', 'chapters': []}
         catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume.chapters]
         return catalog_list
 
