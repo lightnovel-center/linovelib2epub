@@ -32,7 +32,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
 
-        self._init_browser_driver()
+        self._driver = None
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
         default_mobile_ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/120.0.0.0'
@@ -245,6 +245,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         return None
 
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
+        if not self._driver:
+            self._init_browser_driver()
+
         driver = self._driver
 
         request_count = 0
@@ -258,7 +261,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 return html
             except Exception as e:
                 request_count += 1
-                self.logger.warn(f"{url} encountered exception, retrying ({request_count}/{max_retries})...")
+                self.logger.warn(f"{url} encountered {e.__class__.__name__}, retrying ({request_count}/{max_retries})...")
 
         return None
 
