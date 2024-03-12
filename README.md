@@ -7,6 +7,7 @@
 
 Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) and convert to epub.
 
+[![Python Version](https://img.shields.io/badge/python>=3.10-blue)]()
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)
 [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)
 [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)
