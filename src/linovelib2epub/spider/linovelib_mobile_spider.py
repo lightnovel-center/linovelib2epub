@@ -182,6 +182,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     for page_link in catalog_chapter.chapter_urls:
                         # use selenium instead of direct requests
                         page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
+                        self.logger.debug(f'{page_resp=}')
 
                         if page_resp:
                             soup = BeautifulSoup(page_resp, 'lxml')
@@ -281,7 +282,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         chrome_options.add_argument('--ignore-ssl-errors')
 
         # suppress logging < FATAL
-        chrome_options.add_argument("log-level=3")
+        # chrome_options.add_argument("log-level=3")
 
         # 创建一个 Chrome 浏览器实例并传入选项
         driver = webdriver.Chrome(options=chrome_options)
