@@ -1,3 +1,4 @@
+import random
 import re
 import time
 from typing import Dict, List, Optional
@@ -12,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rules import generate_mapping_result
-from ..exceptions import LinovelibException
+from ..exceptions import LinovelibException, PageContentIllegalException
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibMobileChapter, \
     CatalogLinovelibMobileVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
@@ -174,8 +175,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     chapter_illustrations: List[LightNovelImage] = []
                     self.logger.info(f'chapter : {chapter_title}')
 
-                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败
-                    # 注意：由于特定一章的分页假设不会太多，因此这里不应用 chapter_crawl_delay 参数延迟。
+                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
+                    # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
                     url_next = self._expand_paginated_chapter_links(catalog_chapter, url_next)
 
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
@@ -259,10 +260,45 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             try:
                 driver.get(url)
                 html = driver.page_source
+
+                # Determine whether the content of the page has the following tags:
+                # - You are being rate limited
+                # - 抱歉，章节内容不支持该浏览器显示
+                failed_patterns = ['You are being rate limited', '抱歉，章节内容不支持该浏览器显示']
+                for pattern in failed_patterns:
+                    # 使用正则表达式匹配页面内容
+                    match = re.search(pattern, html)
+                    if match:
+                        raise PageContentIllegalException(f'The page content of {url} is not desired.')
+
                 return html
+            except PageContentIllegalException as e:
+                self.logger.warn(f"{e.message}")
             except Exception as e:
-                request_count += 1
-                self.logger.warn(f"{url} encountered {e.__class__.__name__}, retrying ({request_count}/{max_retries})...")
+                self.logger.warn(f"{url} encountered {e.__class__.__name__}.")
+
+            request_count += 1
+            # 指数退避参考 https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn#example_algorithm
+            # 具体逻辑：
+            # 1.向服务器特定API发出请求。
+            # 2.如果请求失败，请等待 1 + random_number_milliseconds 秒后再重试请求。
+            # 3.如果请求失败，请等待 2 + random_number_milliseconds 秒后再重试请求。
+            # 4.如果请求失败，请等待 4 + random_number_milliseconds 秒后再重试请求。
+            # 5.依此类推，等待时间上限为 maximum_backoff。
+            # 等待时间达到上限后，您可以继续等待并重试，直到达到重试次数上限（但接下来的重试操作不会增加各次重试之间的等待时间）。
+
+            # 等待时间为 min(((2^n)+random_number_seconds), maximum_backoff)，其中，n 会在每次迭代（请求）后增加 1。
+            # 其中：
+            # - random_number_seconds 是小于1的秒数（随机值）。
+            # - maximum_backoff 设置为一个较大的容忍值，这里设置为10s。这是基于经验的估计。
+            n = request_count
+            random_number_seconds = round(random.uniform(0, 1), 2)  # 0.01-0.99s
+            maximum_backoff = 10
+            retry_interval = min(round(((2 ** (n - 1)) + random_number_seconds), 2), maximum_backoff)
+
+            self.logger.warning(
+                f'Retrying {url}({request_count}/{max_retries})...; retry_interval: {retry_interval}(s)')
+            time.sleep(retry_interval)
 
         return None
 
