@@ -163,8 +163,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                 chapter_id = -1
                 chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
                 for catalog_chapter in catalog_volume.chapters:
-
-                    self.apply_chapter_crawl_delay()
+                    self.apply_crawl_delay('chapter_crawl_delay')
 
                     chapter_content = ''
                     chapter_title = catalog_chapter.chapter_title
@@ -181,9 +180,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                     # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
                     for page_link in catalog_chapter.chapter_urls:
+                        self.apply_crawl_delay('page_crawl_delay')
+
                         # use selenium instead of direct requests
                         page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
-                        self.logger.debug(f'{page_resp=}')
+                        self.logger.debug(f'{page_resp[:100]=}')
 
                         if page_resp:
                             soup = BeautifulSoup(page_resp, 'lxml')
@@ -335,11 +336,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         self._driver = driver
 
-    def apply_chapter_crawl_delay(self):
-        chapter_crawl_delay = self.spider_settings['chapter_crawl_delay']
-        if chapter_crawl_delay:
-            time.sleep(chapter_crawl_delay)
-            self.logger.info(f'Apply chapter_crawl_delay(s): {chapter_crawl_delay}')
+    def apply_crawl_delay(self, delay_name):
+        crawl_delay = self.spider_settings.get(delay_name, None)
+        if crawl_delay:
+            time.sleep(crawl_delay)
+            self.logger.debug(f'Apply {delay_name}(s): {crawl_delay}')
 
     def _expand_paginated_chapter_links(self, chapter: CatalogLinovelibMobileChapter, url_next):
         # fix broken links in place(catalog_lis) if exits

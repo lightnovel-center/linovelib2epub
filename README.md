@@ -128,12 +128,15 @@ pip install linovelib2epub --upgrade
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
+> 2024-3-19 Update: Now linovelib also has a cloudflare access protection and requests rate limit. 
+> In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay parameters as follows. 
+> You can tune the delay parameters to fit your actual network environment.
+
 ```python
 from linovelib2epub import Linovelib2Epub
 
-# warning!: must run within __main__ module guard due to process spawn issue.
 if __name__ == '__main__':
-    linovelib_epub = Linovelib2Epub(book_id=3279)
+    linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2)
     linovelib_epub.run()
 ```
 
@@ -209,26 +212,27 @@ Don't need login, no threshold.
 
 ## Options
 
-| Parameters              | type    | required | default                       | description                                          |
-|-------------------------|---------|----------|-------------------------------|------------------------------------------------------|
-| book_id                 | number  | YES      | None                          | 书籍 ID。                                               |
-| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                  |
-| divide_volume           | boolean | NO       | False                         | 是否分卷                                                 |
-| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。              |
-| has_illustration        | boolean | NO       | True                          | 是否下载插图                                               |
-| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                           |
-| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                   |
-| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                   |
-| chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章节的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
-| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。     |
-| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                              |
-| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                     |
-| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                  |
-| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                    |
-| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                  |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                     |
-| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现） |
-| browser_path            | string  | NO       | None                          | 浏览器的本地路径。爬虫时使用浏览器进行模拟，目前仅masiro支持。                   |
+| Parameters              | type    | required | default                       | description                                                |
+|-------------------------|---------|----------|-------------------------------|------------------------------------------------------------|
+| book_id                 | number  | YES      | None                          | 书籍 ID。                                                     |
+| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                        |
+| divide_volume           | boolean | NO       | False                         | 是否分卷                                                       |
+| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                    |
+| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                     |
+| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                 |
+| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                         |
+| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
+| chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
+| page_crawl_delay        | number  | NO       | None                          | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
+| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
+| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
+| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
+| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
+| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
+| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                           |
+| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）      |
+| browser_path            | string  | NO       | None                          | 浏览器的本地路径。爬虫时使用浏览器进行模拟，目前仅masiro支持。                         |
 
 ## Todo
 
