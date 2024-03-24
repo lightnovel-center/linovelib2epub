@@ -13,7 +13,6 @@ from PIL import Image
 from ebooklib import epub
 from ebooklib.epub import EpubItem, EpubBook, EpubHtml
 from rich import print as rich_print
-from rich.prompt import Confirm
 
 from . import settings
 from .exceptions import LinovelibException
@@ -327,8 +326,8 @@ class Linovelib2Epub:
                  image_download_strategy: str = ASYNCIO,
                  log_level: str = "INFO",
                  browser_path: str | None = None,
-                 chapter_crawl_delay : int | None = None,
-                 page_crawl_delay : int | None = None
+                 chapter_crawl_delay: int | None = None,
+                 page_crawl_delay: int | None = None
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -361,7 +360,7 @@ class Linovelib2Epub:
             'clean_artifacts': clean_artifacts,
             'select_volume_mode': select_volume_mode,
             'log_filename': run_identifier,
-            'log_level':log_level
+            'log_level': log_level
         }
 
         self.spider_settings = {
@@ -404,12 +403,8 @@ class Linovelib2Epub:
         pickle_path = cast(str, pickle_path)
         novel_pickle_path = Path(pickle_path)
         if novel_pickle_path.exists():
-            if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
-                with open(pickle_path, 'rb') as fp:
-                    novel = pickle.load(fp)
-            else:
-                os.remove(novel_pickle_path)
-                novel = self._spider.fetch()
+            with open(pickle_path, 'rb') as fp:
+                novel = pickle.load(fp)
         else:
             novel = self._spider.fetch()
 
