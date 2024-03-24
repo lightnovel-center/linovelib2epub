@@ -185,8 +185,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         # retry until get the correct title
                         while True:
                             # use selenium instead of direct requests
-                            page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
-                            self.logger.debug(f'{page_resp[:100]=}')
+                            try:
+                                page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
+                                self.logger.debug(f'{page_resp[:100]=}')
+                            except (Exception,):
+                                continue
 
                             if page_resp:
                                 soup = BeautifulSoup(page_resp, 'lxml')
