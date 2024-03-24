@@ -233,6 +233,7 @@ Don't need login, no threshold.
 | disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                           |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）      |
 | browser_path            | string  | NO       | None                          | 浏览器的本地路径。爬虫时使用浏览器进行模拟，目前仅masiro支持。                         |
+| not_headless            | boolean | NO       | False                         | 是否显示浏览器窗口，开发和调试用途，默认为 False。目前仅哔哩轻小说可显示。                   |
 
 ## Todo
 

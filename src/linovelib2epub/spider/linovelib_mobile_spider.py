@@ -311,7 +311,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
     def _init_browser_driver(self):
         chrome_options = Options()
         # 无头模式
-        # chrome_options.add_argument("--headless")
+        if not self.spider_settings["not_headless"]:
+            chrome_options.add_argument("--headless")
 
         # 添加自定义 User-Agent
         ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
