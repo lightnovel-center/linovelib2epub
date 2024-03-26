@@ -171,6 +171,10 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
             self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
+            delay_seconds = 3
+            self.logger.info(f'为降低被限流机制捕获的风险，等待一会：{delay_seconds}(s)')
+            await asyncio.sleep(delay_seconds)
+
         # ASSERTION: make sure data is ok.
         for page_content in url_to_page.values():
             if page_content == "NOT_DOWNLOAD_READY":
