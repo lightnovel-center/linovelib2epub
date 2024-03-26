@@ -269,6 +269,10 @@ class BaseNovelWebsiteSpider(ABC):
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
                 self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
+                delay_seconds = 3
+                self.logger.info(f'为降低被限流机制捕获的风险，等待一会：{delay_seconds}(s)')
+                await asyncio.sleep(delay_seconds)
+
         # ASSERTION: make sure data is ok.
         for page_content in url_to_page.values():
             if page_content == "NOT_DOWNLOAD_READY":
@@ -293,7 +297,9 @@ class BaseNovelWebsiteSpider(ABC):
                     # 429 too many requests => should retry
                     if resp.status == 429:
                         # 更好的做法：y=2^x 指数退化规避，目前的线性常数 C 退化效果很差
-                        await asyncio.sleep(1)
+                        delay_seconds = 3
+                        self.logger.warning(f'page {url} 429 => 等待一段时间 {delay_seconds}(s)进行退避.')
+                        await asyncio.sleep(delay_seconds)
                     # 503 Service Unavailable => should retry
                     # ...... => should retry
                     self.logger.error(f'page {url} {resp.status} => should retry.')
@@ -319,6 +325,7 @@ class BaseNovelWebsiteSpider(ABC):
         #  3. generate illustration_dict.
 
         for url, page in url_to_page.items():
+            # TODO 这里需要检测page内容是否混入了cf的检测页面
             url_to_page[url] = self.extract_body_content(page)
 
         volume_id = 0

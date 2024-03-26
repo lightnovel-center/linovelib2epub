@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Tuple
 from urllib.parse import urljoin
+from urllib.parse import urlparse, parse_qs
 
 import aiohttp
 import inquirer
@@ -17,7 +18,7 @@ from rich.prompt import Confirm
 
 from linovelib2epub.models import LightNovel, LightNovelImage, CatalogMasiroChapter, CatalogMasiroVolume
 from linovelib2epub.spider import BaseNovelWebsiteSpider
-from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry, requests_get_with_retry
+from linovelib2epub.utils import aiohttp_get_with_retry, aiohttp_post_with_retry
 from .config import env_settings
 from ..exceptions import LinovelibException
 
@@ -79,6 +80,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         self.logger.debug(f'{new_novel=}; {points_balance=}')
 
         catalog_list: List[CatalogMasiroVolume] = self._convert_to_catalog_list(html_text)
+        self.logger.debug(f'{catalog_list=}')
 
         # select_volume_mode
         if self.spider_settings['select_volume_mode']:
@@ -90,7 +92,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         self.logger.debug(f'{final_catalog_list=}')
 
         # 计算所需的积分价格，必须排除用户已经购买过的章节
-        quote = sum([volume.volume_cost for volume in final_catalog_list])
+        quote = sum([volume.volume_unpaid_cost_estimate for volume in final_catalog_list])
 
         # 如果本书所有章节都是不需要积分查看的 => 直接起飞
         if quote == 0:
@@ -102,9 +104,9 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             # 2
             # [可选]显示当前挑选卷的积分消耗预计值和用户当前积分余额
             table_header = [
-                ['vid', 'volume title', 'volume cost(G)']
+                ['vid', 'volume title', 'volume estimate cost(G)']
             ]
-            table_body = [[volume.vid, volume.volume_title, volume.volume_cost] for volume in
+            table_body = [[volume.vid, volume.volume_title, volume.volume_unpaid_cost_estimate] for volume in
                           final_catalog_list]
             table_data = table_header + table_body
             table_view = tabulate.tabulate(table_data)
@@ -112,11 +114,11 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
             if quote > points_balance:
                 # 2.1
-                self.logger.warning(f"Need {quote} and your balance is {points_balance}, exit.")
+                self.logger.warning(f"[Estimate]Need {quote} and your balance is {points_balance}, exit.")
                 sys.exit()
             else:
                 # 2.2
-                if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
+                if Confirm.ask(f"[Estimate]Need {quote} and your balance is {points_balance}, buy and continue?"):
                     # 2.2.1
                     self.logger.info("用户积分余额足够，决定购买。")
                     await self._pay_chapters_by_browser(session, login_info, chapter_to_pay)
@@ -301,6 +303,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         except:
             pass
 
+    # @deprecated
     async def _fetch_legacy(self) -> LightNovel:
         # can share
         trust_env = False if self.spider_settings["disable_proxy"] else True
@@ -382,7 +385,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         chapter_to_pay: Dict[str, int] = self._get_unpayed_chapter(final_catalog_list)
 
         # 计算所需的积分价格，必须排除用户已经购买过的章节
-        quote = sum([volume.volume_cost for volume in final_catalog_list])
+        quote = sum([volume.volume_unpaid_cost_estimate for volume in final_catalog_list])
 
         # 如果本书所有章节都是不需要积分查看的 => 直接起飞
         if quote == 0:
@@ -395,7 +398,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             table_header = [
                 ['vid', 'volume title', 'volume cost(G)']
             ]
-            table_body = [[volume.vid, volume.volume_title, volume.volume_cost] for volume in
+            table_body = [[volume.vid, volume.volume_title, volume.volume_unpaid_cost_estimate] for volume in
                           final_catalog_list]
             table_data = table_header + table_body
             table_view = tabulate.tabulate(table_data)
@@ -403,11 +406,11 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
             if quote > points_balance:
                 # 2.1
-                self.logger.warning(f"Need {quote} and your balance is {points_balance}, exit.")
+                self.logger.warning(f"[Estimate]Need {quote} and your balance is {points_balance}, exit.")
                 sys.exit()
             else:
                 # 2.2
-                if Confirm.ask(f"Need {quote} and your balance is {points_balance}, buy and continue?"):
+                if Confirm.ask(f"[Estimate]Need {quote} and your balance is {points_balance}, buy and continue?"):
                     # 2.2.1
                     self.logger.info("用户积分余额足够，决定购买。")
 
@@ -478,7 +481,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             volume_unpayed_chapter_dict = {
                 chapter.remote_chapter_id: int(chapter.chapter_cost)
                 for chapter in volume.chapters
-                if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0
+                if int(chapter.chapter_payed) == 2 and int(chapter.chapter_cost) > 0
             }
             unpayed_chapter_dict.update(volume_unpayed_chapter_dict)
 
@@ -489,7 +492,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
         _pay_chapter_func = self._pay_chapter_by_browser
 
-        max_concurrency = 2
+        max_concurrency = 1
         semaphore = asyncio.Semaphore(max_concurrency)
 
         tasks = {
@@ -590,7 +593,18 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 resp = requests_session.post(url=pay_url, data=pay_params, headers=pay_headers)
                 self.logger.debug(f'chapter payment {resp.text=}')
                 if resp and json.loads(resp.text)['code'] == 1:
+                    # 这两种情况都认为是成功：
+                    # => 您已支付, 无需再次支付!
+                    # resp.text='{"code":1,"msg":"\\u60a8\\u5df2\\u652f\\u4ed8,\\u65e0\\u9700\\u518d\\u6b21\\u652f\\u4ed8!"}'
+                    # 或者
+                    # => 支付成功
+                    # resp.text='{"code":1,"msg":"支付成功！"}'
                     self.logger.info(f'[SUCCESS] pay for chapter {chapter_id} with cost {chapter_cost}.')
+                elif resp and json.loads(resp.text)['code'] == -1:
+                    # 禁止频繁操作!
+                    # resp.text='{"code":-1,"msg":"\\u7981\\u6b62\\u9891\\u7e41\\u64cd\\u4f5c!"}'
+                    self.logger.info('禁止频繁操作! => 讲武德，休息一会~')
+                    await asyncio.sleep(2)
                 else:
                     # resp None or
                     # resp is not None but is not a json string
@@ -617,37 +631,6 @@ class MasiroSpider(BaseNovelWebsiteSpider):
 
     def _convert_to_catalog_list(self, html_text) -> List[CatalogMasiroVolume]:
         """
-        input example:
-
-        <ul class="chapter-ul">
-
-            <li id="1" class="chapter-box"><span class="sign minus">-</span><b>杂项1</b></li>
-            <li>
-              <ul data-enum="21" class="episode-ul">
-                <a href="/admin/novelReading?cid=71343" data-id="71343"
-                   data-cost="0" data-payed="0" data-uid="61162" class="to-read">
-
-                    <li class="episode-box ">
-                        <span>第1话 章节标题&nbsp;</span>
-                        <small></small>
-                        <span>
-                            <span title="创建时间：2023-07-10 12:01:42；更新时间：2023-07-13 06:34:43">23-07-10 12:01</span>
-                            &nbsp;
-                            <small title="更新时间：2023-07-13 06:34:43">(<u>更新</u>)</small>
-                        </span>
-                    </li>
-                </a>
-                <a>...</a>
-              </ul>
-            </li>
-
-            <li id="2" class="chapter-box"><span class="sign minus">-</span><b>杂项2</b></li>
-            <li>
-              <ul class=“episode-ul”>...</ul>
-            </li>
-
-            ...
-        <li>
         """
 
         # [{vid:1, volume_title: "XX", chapters:[{dict},{dict},{...}]
@@ -682,21 +665,25 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     )
                     catalog_list.append(new_volume)
                 else:
-                    chapter_link_items = li.select('a.to-read')
+                    chapter_link_items = li.select('.episode-ul > a')
 
                     for idx, chapter_a_item in enumerate(chapter_link_items):
-                        #  <a href="/admin/novelReading?cid=71343" data-id="71343"
-                        #     data-cost="0" data-payed="0" data-uid="61162" class="to-read">
-
-                        data_cost = chapter_a_item['data-cost']
-                        # 0 => unpayed; 1 => payed
-                        data_payed = chapter_a_item['data-payed']
-                        # remote server chapter_id
-                        remote_chapter_id = chapter_a_item['data-id']
-
                         a_href = chapter_a_item['href']
-                        chapter_url = urljoin('https://masiro.me', a_href)
 
+                        # example: "1G"
+                        cost_with_unit = chapter_a_item.find('li').find('small').text
+                        data_cost = cost_with_unit.strip()[:-1] if cost_with_unit else 0
+
+                        # 目前masiro已经取消了这个字段的显示，因此这个支付状态还需要一个“未知”的枚举
+                        # 默认为未知。不管是否已支付，一律认为未支付
+                        data_payed = "2"
+
+                        # remote server chapter_id
+                        parsed_url = urlparse(a_href)
+                        query_params = parse_qs(parsed_url.query)
+                        remote_chapter_id = query_params.get('cid', [])[0]
+
+                        chapter_url = urljoin('https://masiro.me', a_href)
                         chapter_title = chapter_a_item.find('li').find('span').text
                         # remove `&nbsp;` and `\r\n`.
                         chapter_title = chapter_title.strip()
@@ -723,7 +710,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             choice_view = []
             for volume in catalog_list:
                 item_text = f"{volume.volume_title} | chapter nums: {len(volume.chapters)} " \
-                            f"| volume cost: {volume.volume_cost}"
+                            f"| volume estimate cost: {volume.volume_unpaid_cost_estimate}"
                 choice_view.append((item_text, volume.vid))
             return choice_view
 

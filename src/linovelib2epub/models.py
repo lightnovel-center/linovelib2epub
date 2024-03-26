@@ -86,7 +86,7 @@ class CatalogMasiroChapter(CatalogBaseChapter):
 
     chapter_cost: int = 0
 
-    # '0' unpayed , or '1' payed
+    # '0' unpayed , or '1' payed, or "2" unknown
     chapter_payed: str = '0'
 
     remote_chapter_id: str = ''
@@ -109,9 +109,15 @@ class CatalogMasiroVolume(CatalogBaseVolume):
 
     @property
     def volume_cost(self) -> int:
-        # todo 一次计算，缓存，不要重复计算
         volume_cost = sum([int(chapter.chapter_cost) for chapter in self.chapters
                            if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0])
+        return volume_cost
+
+#     total_unpaid_gold_coins_value_estimate
+    @property
+    def volume_unpaid_cost_estimate(self) -> int:
+        volume_cost = sum([int(chapter.chapter_cost) for chapter in self.chapters
+                           if int(chapter.chapter_payed) == 2 and int(chapter.chapter_cost) > 0])
         return volume_cost
 
 
