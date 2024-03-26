@@ -321,7 +321,6 @@ class BaseNovelWebsiteSpider(ABC):
         #  3. generate illustration_dict.
 
         for url, page in url_to_page.items():
-            # TODO 这里需要检测page内容是否混入了cf的检测页面
             url_to_page[url] = self.extract_body_content(page)
 
         volume_id = 0

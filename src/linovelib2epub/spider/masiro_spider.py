@@ -144,6 +144,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                  for url in page_url_set}
         pending: set = tasks
         succeed_count = 0
+        fail_count = 0
 
         while pending:
             done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
@@ -162,6 +163,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                     url_to_page[task_url] = done_task.result()
                     succeed_count += 1
                 else:
+                    fail_count += 1
                     # [TEST]make connect=.1 to reach this branch, should retry all the urls that entered this case
                     self.logger.error(
                         f'{exception.__class__.__name__}: {task_url} should retry.')
@@ -171,9 +173,14 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
             self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
 
-            delay_seconds = 3
+            delay_seconds = 5
             self.logger.info(f'为降低被限流机制捕获的风险，等待一会：{delay_seconds}(s)')
             await asyncio.sleep(delay_seconds)
+
+        # statistics
+        success_rate_percentage = round(succeed_count / (succeed_count + fail_count), 4) * 100
+        self.logger.info(
+            f'SUCCESS COUNT:{succeed_count}; FAILURE COUNT:{fail_count}; SUCCESS RATE: {success_rate_percentage}%')
 
         # ASSERTION: make sure data is ok.
         for page_content in url_to_page.values():
@@ -186,17 +193,42 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         async with semaphore:
             is_url_available = session.get(url, headers=self.request_headers(), retry=10, interval=3, timeout=10)
             loaded = session.wait.doc_loaded()
-            # 多等待，少被ban
+
+            # can be extracted to the page_crawl_delay parameter
             await asyncio.sleep(3)
 
             html = session.html
             if html:
+                # check if 429
                 if "访问频繁" in html:
                     # <title>429 Too Many Requests</title>
                     # <h3 style="font-size: 32px;">
                     # 访问频繁，歇会吧您内。
                     # </h3>
-                    raise LinovelibException(f'429 Too Many Requests when downloading {url}')
+                    msg = f'page {url} => encounter 429 Too Many Requests.'
+                    self.logger.warning(msg)
+                    raise LinovelibException(msg)
+
+                # check whether the html string has correct text
+                html_content = BeautifulSoup(html, 'lxml')
+                body_content = html_content.find('div', {'class': 'nvl-content'})
+                if not body_content:
+                    msg = f"page {url} => doesn't have the desired tag, considered it's a bad response. Need retry."
+                    self.logger.warning(msg)
+                    # 必须先过CF检测
+                    while True:
+                        page = session
+                        already_logged_in_xpath = 't:a@tx():登出'
+
+                        self._pass_cycle(page)
+                        logout_flag = page(already_logged_in_xpath)
+                        if logout_flag:
+                            self.logger.info('-> 再次突破 CloudFlare 风控检测...')
+                            break
+                    # 这里直接抛异常，将当前这个url的抓取任务延迟到下一轮尝试
+                    raise LinovelibException(msg)
+
+                # here is ok
                 self.logger.info(f'page {url} => ok.')
                 return html
             else:
