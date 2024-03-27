@@ -329,7 +329,7 @@ class Linovelib2Epub:
                  browser_path: str | None = None,
                  chapter_crawl_delay: int | None = None,
                  page_crawl_delay: int | None = None,
-                 not_headless: bool = False
+                 headless: bool = False
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -376,7 +376,7 @@ class Linovelib2Epub:
             'disable_proxy': disable_proxy,
             'chapter_crawl_delay': chapter_crawl_delay,
             'page_crawl_delay': page_crawl_delay,
-            'not_headless': not_headless,
+            'headless': headless,
         }
         site_to_spider = {
             TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
