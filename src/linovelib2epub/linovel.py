@@ -13,6 +13,7 @@ from PIL import Image
 from ebooklib import epub
 from ebooklib.epub import EpubItem, EpubBook, EpubHtml
 from rich import print as rich_print
+from rich.prompt import Confirm
 
 from . import settings
 from .exceptions import LinovelibException
@@ -405,8 +406,12 @@ class Linovelib2Epub:
         pickle_path = cast(str, pickle_path)
         novel_pickle_path = Path(pickle_path)
         if novel_pickle_path.exists():
-            with open(pickle_path, 'rb') as fp:
-                novel = pickle.load(fp)
+            if Confirm.ask("The last unfinished work was detected, continue with your last job?"):
+                with open(pickle_path, 'rb') as fp:
+                    novel = pickle.load(fp)
+            else:
+                os.remove(novel_pickle_path)
+                novel = self._spider.fetch()
         else:
             novel = self._spider.fetch()
 
