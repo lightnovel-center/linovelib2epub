@@ -195,7 +195,8 @@ class MasiroSpider(BaseNovelWebsiteSpider):
             loaded = session.wait.doc_loaded()
 
             # can be extracted to the page_crawl_delay parameter
-            await asyncio.sleep(3)
+            # 5、6秒是一个合理的甜点值，429概率极大降低。也不至于等待过久。
+            await asyncio.sleep(5)
 
             html = session.html
             if html:
@@ -213,7 +214,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
                 html_content = BeautifulSoup(html, 'lxml')
                 body_content = html_content.find('div', {'class': 'nvl-content'})
                 if not body_content:
-                    msg = f"page {url} => doesn't have the desired tag, considered it's a bad response. Need retry."
+                    msg = f"page {url} => doesn't have the desired tag, maybe caught by cloudflare. Need retry."
                     self.logger.warning(msg)
                     # 必须先过CF检测
                     while True:
