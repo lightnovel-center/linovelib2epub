@@ -49,7 +49,7 @@ def requests_get_with_retry(client: Any,
                 return response
             else:
                 if logger:
-                    logger.warning(f'Request {url} succeed but data is empty.')
+                    logger.warning(f'Request {url} succeed but data is empty, retry {current_num_of_request + 1} times')
         except (Exception,) as e:
             if logger:
                 logger.error(f'Request {url} failed.', e)
@@ -78,6 +78,7 @@ def requests_get_with_retry(client: Any,
 
         time.sleep(retry_interval)
 
+    logger.error(f'Request {url} failed after {retry_max} retries.')
     return None
 
 

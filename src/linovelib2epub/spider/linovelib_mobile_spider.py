@@ -182,16 +182,24 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     for page_link in catalog_chapter.chapter_urls:
                         self.apply_crawl_delay('page_crawl_delay')
 
-                        # use selenium instead of direct requests
-                        page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
-                        self.logger.debug(f'{page_resp[:100]=}')
+                        # retry until get the correct title
+                        while True:
+                            # use selenium instead of direct requests
+                            try:
+                                page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
+                                self.logger.debug(f'{page_resp[:100]=}')
+                            except (Exception,):
+                                continue
 
-                        if page_resp:
-                            soup = BeautifulSoup(page_resp, 'lxml')
-                        else:
-                            raise Exception(f'[ERROR]: request {page_link} failed.')
+                            if page_resp:
+                                soup = BeautifulSoup(page_resp, 'lxml')
+                            else:
+                                raise Exception(f'[ERROR]: request {page_link} failed.')
 
-                        new_title = soup.find(id='atitle')
+                            new_title = soup.find(id='atitle')
+                            if new_title is not None:
+                                break
+
                         # 分页判断过滤
                         if not new_title.text.startswith(light_novel_chapter.title):
                             # 目录：第二章 可爱如花的 N 孩
@@ -306,7 +314,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
     def _init_browser_driver(self):
         chrome_options = Options()
         # 无头模式
-        # chrome_options.add_argument("--headless")
+        if self.spider_settings["headless"]:
+            chrome_options.add_argument("--headless")
 
         # 添加自定义 User-Agent
         ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'

@@ -327,8 +327,9 @@ class Linovelib2Epub:
                  image_download_strategy: str = ASYNCIO,
                  log_level: str = "INFO",
                  browser_path: str | None = None,
-                 chapter_crawl_delay : int | None = None,
-                 page_crawl_delay : int | None = None
+                 chapter_crawl_delay: int | None = None,
+                 page_crawl_delay: int | None = None,
+                 headless: bool = False
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -361,7 +362,7 @@ class Linovelib2Epub:
             'clean_artifacts': clean_artifacts,
             'select_volume_mode': select_volume_mode,
             'log_filename': run_identifier,
-            'log_level':log_level
+            'log_level': log_level,
         }
 
         self.spider_settings = {
@@ -374,7 +375,8 @@ class Linovelib2Epub:
             'browser_path': browser_path,
             'disable_proxy': disable_proxy,
             'chapter_crawl_delay': chapter_crawl_delay,
-            'page_crawl_delay': page_crawl_delay
+            'page_crawl_delay': page_crawl_delay,
+            'headless': headless,
         }
         site_to_spider = {
             TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
