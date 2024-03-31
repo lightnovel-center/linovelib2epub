@@ -152,7 +152,7 @@ class EpubWriter:
 
                 write_content = ""
 
-        illustrations: List[LightNovelVolume] = []
+        illustrations: List[LightNovelImage] = []
 
         if not self.epub_settings["divide_volume"]:
             volumes_list = cast(List[LightNovelVolume], volumes)  # Cast to List[LightNovelVolume]
