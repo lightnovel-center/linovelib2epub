@@ -186,7 +186,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                         while True:
                             # use selenium instead of direct requests
                             try:
-                                page_resp = self._fetch_page(page_link, max_retries=self.spider_settings['http_retries'])
+                                page_resp = self._fetch_page(page_link,
+                                                             max_retries=self.spider_settings['http_retries'])
                                 self.logger.debug(f'{page_resp[:100]=}')
                             except (Exception,):
                                 continue
@@ -331,7 +332,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         # chrome_options.add_argument("log-level=3")
 
         # 创建一个 Chrome 浏览器实例并传入选项
-        driver = webdriver.Chrome(options=chrome_options)
+        if self.spider_settings['browser_path']:
+            from selenium.webdriver.chrome.service import Service
+            # r'C:/path/to/chromedriver.exe' => NOT browser PATH
+            driver = webdriver.Chrome(options=chrome_options, service=Service(self.spider_settings['browser_path']))
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
         # page timeout
         timeout = self.spider_settings["http_timeout"] or 10
         driver.set_page_load_timeout(timeout)

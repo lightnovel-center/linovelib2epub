@@ -106,7 +106,7 @@ python -m pip install -e .
 
 ### install from pypi
 
-> 注意: 由于爬虫程序对时效非常敏感，而 pypi 发布的版本一般是滞后的，因此不推荐这种安装方式。
+> 注意: 由于爬虫程序对时效非常敏感，而 pypi 发布的版本非常缓慢和滞后，因此目前**强烈不推荐**这种安装方式。
 
 1. Install this package from pypi:
 
@@ -128,8 +128,9 @@ pip install linovelib2epub --upgrade
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
-> 2024-3-19 Update: Now linovelib also has a cloudflare access protection and requests rate limit. 
-> In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay parameters as follows. 
+> 2024-3-19 Update: Now linovelib also has a cloudflare access protection and requests rate limit.
+> In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay
+> parameters as follows.
 > You can tune the delay parameters to fit your actual network environment.
 
 ```python
@@ -138,6 +139,21 @@ from linovelib2epub import Linovelib2Epub
 if __name__ == '__main__':
     linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2)
     linovelib_epub.run()
+```
+
+Or specify browser driver path(NOT browser path):
+
+```python
+from linovelib2epub import Linovelib2Epub
+
+if __name__ == '__main__':
+    # /path/to/chromedriver
+    # for example in Windows os
+    browser_driver_path = r'C:\Users\{YOUR_NAME}\.cache\selenium\chromedriver\win64\123.0.6312.86\chromedriver.exe'
+    linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2,
+                                    browser_path=browser_driver_path)
+    linovelib_epub.run()
+
 ```
 
 If it finished without errors, you can see the epub file is under the folder where your python file is located.
@@ -161,6 +177,19 @@ from linovelib2epub import Linovelib2Epub, TargetSite
 
 if __name__ == '__main__':
     linovelib_epub = Linovelib2Epub(book_id=1039, target_site=TargetSite.MASIRO)
+    linovelib_epub.run()
+```
+
+Or specify browser path:
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+# Chromium-based browser is ok
+browser_path = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+
+if __name__ == '__main__':
+    linovelib_epub = Linovelib2Epub(book_id=1039, target_site=TargetSite.MASIRO, browser_path=browser_path)
     linovelib_epub.run()
 ```
 
@@ -212,28 +241,29 @@ Don't need login, no threshold.
 
 ## Options
 
-| Parameters          | type    | required | default                       | description                                                |
-|---------------------|---------|----------|-------------------------------|------------------------------------------------------------|
-| book_id             | number  | YES      | None                          | 书籍 ID。                                                     |
-| target_site         | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                        |
-| divide_volume       | boolean | NO       | False                         | 是否分卷                                                       |
-| select_volume_mode  | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                    |
-| has_illustration    | boolean | NO       | True                          | 是否下载插图                                                     |
-| image_download_folder | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                 |
-| pickle_temp_folder  | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                         |
-| clean_artifacts     | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
-| chapter_crawl_delay | number  | NO       | None                          | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
-| page_crawl_delay    | number  | NO       | None                          | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
-| http_timeout        | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
-| http_retries        | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
-| http_cookie         | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
-| custom_style_cover  | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
-| custom_style_nav    | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
-| custom_style_chapter | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
-| disable_proxy       | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                           |
+| Parameters              | type    | required | default                       | description                                                |
+|-------------------------|---------|----------|-------------------------------|------------------------------------------------------------|
+| book_id                 | number  | YES      | None                          | 书籍 ID。                                                     |
+| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                        |
+| divide_volume           | boolean | NO       | False                         | 是否分卷                                                       |
+| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                    |
+| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                     |
+| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                 |
+| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                         |
+| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
+| chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
+| page_crawl_delay        | number  | NO       | None                          | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
+| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
+| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
+| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
+| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
+| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
+| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                           |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）      |
-| browser_path        | string  | NO       | None                          | 浏览器的本地路径。爬虫时使用浏览器进行模拟，目前仅masiro支持。                         |
-| headless            | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                   |
+| browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                      |
+| browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                       |
+| headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                   |
 
 ## Todo
 
@@ -241,7 +271,21 @@ Don't need login, no threshold.
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
 - [ ] add installation alternatives: from pypi to git protocol
-- [ ] add doc about internal parallelization or serialization when crawling pages.
+
+## Under the hood
+
+Here are some description about internal mechanism of this project.
+
+| Target Site          | pages downloading | images downloading | use browser? |
+|----------------------|-------------------|--------------------|--------------|
+| Bilinovel(linovelib) | serial*           | parallel           | Selenium     |
+| Masiro               | parallel*         | parallel           | DrissionPage |
+| Webku8               | parallel          | parallel           | aiohttp      |
+
+说明：
+
+- Bilinovel pages downloading is serial because its some chapter urls are broken, and we need to fix them.
+- Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate limit.
 
 ## Contributors
 
