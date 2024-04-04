@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: "[BUG] XXX"
+title: "[BUG] 一句话描述这个BUG是什么"
 labels: bug
 assignees: ''
 
@@ -25,6 +25,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Environment（软件环境）**
+ - 网络环境: 代码是在地球的哪一个区域运行的？这个会影响到网站的自动重定向。
  - OS Verison:  例如：Windows 10 专业版10.0.19045
  - Python Version: `python --version`
  - Pip Version: `pip --version`
