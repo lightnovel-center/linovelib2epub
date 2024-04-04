@@ -151,7 +151,7 @@ if __name__ == '__main__':
     # for example in Windows os
     browser_driver_path = r'C:\Users\{YOUR_NAME}\.cache\selenium\chromedriver\win64\123.0.6312.86\chromedriver.exe'
     linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2,
-                                    browser_path=browser_driver_path)
+                                    browser_driver_path=browser_driver_path)
     linovelib_epub.run()
 
 ```

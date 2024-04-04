@@ -327,6 +327,7 @@ class Linovelib2Epub:
                  image_download_strategy: str = ASYNCIO,
                  log_level: str = "INFO",
                  browser_path: str | None = None,
+                 browser_driver_path: str | None = None,
                  chapter_crawl_delay: int | None = None,
                  page_crawl_delay: int | None = None,
                  headless: bool = False
@@ -373,6 +374,7 @@ class Linovelib2Epub:
             'random_useragent': random_useragent(),
             'http_cookie': http_cookie,
             'browser_path': browser_path,
+            'browser_driver_path': browser_driver_path,
             'disable_proxy': disable_proxy,
             'chapter_crawl_delay': chapter_crawl_delay,
             'page_crawl_delay': page_crawl_delay,

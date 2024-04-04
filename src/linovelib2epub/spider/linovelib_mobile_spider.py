@@ -332,7 +332,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         # chrome_options.add_argument("log-level=3")
 
         # 创建一个 Chrome 浏览器实例并传入选项
-        if self.spider_settings['browser_path']:
+        if self.spider_settings['browser_driver_path']:
             from selenium.webdriver.chrome.service import Service
             # r'C:/path/to/chromedriver.exe' => NOT browser PATH
             driver = webdriver.Chrome(options=chrome_options, service=Service(self.spider_settings['browser_path']))
