@@ -360,7 +360,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         else:
             driver = webdriver.Chrome(options=chrome_options)
 
-        # 'zh-cn'中文简体
+        # 'zh-CN'中文简体
         # 'zh'中文
         # 'zh-TW'中文（繁体）
         # 'zh-HK'中文（中国香港特别行政区）
