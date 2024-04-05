@@ -291,11 +291,11 @@ Here are some description about internal mechanism of this project.
 | Masiro               | parallel[^3]      | desired tag found      | Yes                                        | parallel           | DrissionPage |
 | Wenku8               | parallel          | simple status `200`    | N/A                                        | parallel           | aiohttp      |
 
-说明：
+[^1]: Bilinovel pages downloading is serial because its some chapter urls are broken, and we need to fix them.
 
-- [^1]: Bilinovel pages downloading is serial because its some chapter urls are broken, and we need to fix them.
-- [^2]: Bilinovel doesn't challenge CF when downloading one page, maybe it will stagnate into a endless loop.
-- [^3]: Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate
+[^2]: Bilinovel doesn't challenge CF when downloading one page, maybe it will stagnate into a endless loop.
+
+[^3]: Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate
   limit.
 
 ## Contributors
