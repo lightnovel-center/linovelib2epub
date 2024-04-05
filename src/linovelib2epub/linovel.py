@@ -300,7 +300,11 @@ class EpubWriter:
 
 
 class TargetSite(Enum):
+    # ZH
     LINOVELIB_MOBILE = 'linovelib_mobile'
+    # 繁体 TW or HK
+    LINOVELIB_MOBILE_TRADITIONAL = 'linovelib_mobile_traditional'
+    # currently not use
     LINOVELIB_WEB = 'linovelib_web'
     MASIRO = 'masiro'
     WENKU8 = 'wenku8'
@@ -338,12 +342,20 @@ class Linovelib2Epub:
         self.target_site = target_site
 
         site_to_base_url = {
+            # linovelib.com => www.linovelib.com 电脑端页面，暂时它不是目标爬取网站
+            # bilinovel.com | https://www.bilinovel.com => https://tw.linovelib.com/ or ?
             TargetSite.LINOVELIB_MOBILE: 'https://www.bilinovel.com',
+            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: 'https://www.bilinovel.com',
             TargetSite.MASIRO: 'https://masiro.me',
             TargetSite.WENKU8: 'https://www.wenku8.net',
         }
         # user override base_url, or use fallback detection
         base_url = site_to_base_url[self.target_site]
+
+        # traditional flag
+        traditional = False
+        if target_site == TargetSite.LINOVELIB_MOBILE_TRADITIONAL:
+            traditional = True
 
         u = urllib.parse.urlsplit(base_url)
 
@@ -364,6 +376,7 @@ class Linovelib2Epub:
             'select_volume_mode': select_volume_mode,
             'log_filename': run_identifier,
             'log_level': log_level,
+            'traditional': traditional
         }
 
         self.spider_settings = {
@@ -382,6 +395,7 @@ class Linovelib2Epub:
         }
         site_to_spider = {
             TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
+            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: LinovelibMobileSpider,
             TargetSite.MASIRO: MasiroSpider,
             TargetSite.WENKU8: Wenku8Spider,
         }

@@ -1,5 +1,6 @@
 import random
 import re
+import sys
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
@@ -27,9 +28,11 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self._init_http_client()
 
         # it might be better to refactor to asyncio mode
-        self._mapping_result = generate_mapping_result()
+        self._mapping_result = generate_mapping_result(traditional=self.spider_settings['traditional'])
         self._html_content_id = self._mapping_result.content_id
+        self.logger.info(f'_html_content_id={self._html_content_id}')
         self._mapping_dict = self._mapping_result.mapping_dict
+        self.logger.info(f'len(_mapping_dict)={len(self._mapping_dict.keys())}')
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
 
@@ -182,23 +185,21 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     for page_link in catalog_chapter.chapter_urls:
                         self.apply_crawl_delay('page_crawl_delay')
 
-                        # retry until get the correct title
+                        # retry until get the correct title & content body
                         while True:
                             # use selenium instead of direct requests
                             try:
                                 page_resp = self._fetch_page(page_link,
                                                              max_retries=self.spider_settings['http_retries'])
-                                self.logger.debug(f'{page_resp[:100]=}')
                             except (Exception,):
                                 continue
 
-                            if page_resp:
-                                soup = BeautifulSoup(page_resp, 'lxml')
-                            else:
-                                raise Exception(f'[ERROR]: request {page_link} failed.')
-
+                            page_resp = page_resp or ''
+                            soup = BeautifulSoup(page_resp, 'lxml')
                             new_title = soup.find(id='atitle')
                             if new_title is not None:
+                                # 这里标志着已成功拿到某一个page的正常的正文内容。
+                                self.logger.debug(f'page({page_link}) size={len(page_resp)}')
                                 break
 
                         # 分页判断过滤
@@ -210,7 +211,22 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                             light_novel_chapter.title = new_title.text
 
                         images = soup.find_all('img')
+
+                        # solve dynamic id
+                        # 绝对不用class来挑选，必须动态解析id
+                        # <div id="acontent1" class="acontent">
+                        # <div id="acontentz" class="acontent">
+                        # <div id="ccacontent" class="bcontent">
+                        # ...
+
                         article_soup = soup.find(id=self._html_content_id)
+                        if not article_soup:
+                            self.logger.fatal(
+                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
+                                f'Please report this bug to '
+                                f'[github issue](https://github.com/lightnovel-center/linovelib2epub/issues).')
+                            sys.exit(1)
+
                         article = _sanitize_html(article_soup)
                         for _, image in enumerate(images):
                             # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
@@ -281,6 +297,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
                     if match:
                         raise PageContentIllegalException(f'The page content of {url} is not desired.')
 
+                # maybe here should challenge CF if detected
+
                 return html
             except PageContentIllegalException as e:
                 self.logger.warn(f"{e.message}")
@@ -318,6 +336,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         if self.spider_settings["headless"]:
             chrome_options.add_argument("--headless")
 
+        if self.spider_settings['traditional']:
+            chrome_options.add_argument("--lang=zh-TW")
+
         # 添加自定义 User-Agent
         ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
         chrome_options.add_argument(f"user-agent={ua}")
@@ -338,6 +359,14 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             driver = webdriver.Chrome(options=chrome_options, service=Service(self.spider_settings['browser_path']))
         else:
             driver = webdriver.Chrome(options=chrome_options)
+
+        # 'zh-cn'中文简体
+        # 'zh'中文
+        # 'zh-TW'中文（繁体）
+        # 'zh-HK'中文（中国香港特别行政区）
+        navigator_language = driver.execute_script("return navigator.language.toLowerCase()")
+        self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
+
         # page timeout
         timeout = self.spider_settings["http_timeout"] or 10
         driver.set_page_load_timeout(timeout)

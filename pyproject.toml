@@ -52,7 +52,8 @@ dependencies = [
     'lxml>=4.9.2',
     'tabulate>=0.9.0',
     'DrissionPage>=4.0.4.5',
-    'selenium>=4.17.2'
+    'selenium>=4.17.2',
+    'esprima>=4.0.1'
 ]
 dynamic = ["version"]
 

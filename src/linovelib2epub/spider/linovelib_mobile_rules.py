@@ -4,6 +4,7 @@ import re
 from typing import Dict, Any
 
 import aiohttp
+import esprima
 
 from linovelib2epub.utils import aiohttp_get_with_retry
 
@@ -17,14 +18,17 @@ class ParsedRuleResult:
         self.content_id = content_id
 
 
-def generate_mapping_result():
-    js_text = _fetch_js_text()
-    result_set = _parse_mapping(js_text)
+def generate_mapping_result(traditional: bool = False):
+    js_text = _fetch_js_text(traditional)
+    result_set = _parse_mapping(js_text, traditional)
     return result_set
 
 
-def _parse_mapping(js_text) -> ParsedRuleResult:
-    content_id, replace_rules = _parse_mapping_v2(js_text)
+def _parse_mapping(js_text, traditional) -> ParsedRuleResult:
+    if not traditional:
+        content_id, replace_rules = _parse_mapping_v2_zh(js_text)
+    else:
+        content_id, replace_rules = _parse_mapping_v2_zh_tw(js_text)
     parsed_rule_result = ParsedRuleResult(mapping_dict=replace_rules, content_id=content_id)
     return parsed_rule_result
 
@@ -34,8 +38,9 @@ def _parse_mapping_v1(js_text) -> tuple:
     pass
 
 
-def _parse_mapping_v2(js_text) -> tuple:
+def _parse_mapping_v2_zh(js_text) -> tuple:
     """
+    简体版网站
     第二代：使用A110B90V45这种长字符串，将字符串按字母切割得到ascii codes，拼接对应字符得到js明文。
 
     :param js_text:
@@ -51,13 +56,13 @@ def _parse_mapping_v2(js_text) -> tuple:
     js_code = ''.join(chr(int(token)) for token in code_tokens)
 
     # resolve content_id
-    # GOAL: document.getElementById('acontentz').innerHTML => acontentz
+    # zh => GOAL: document.getElementById('acontentz').innerHTML => acontentz
     pattern_content_id = r"document.getElementById\(\'(.+?)\'\).innerHTML"
     match = re.search(pattern_content_id, js_code)
     content_id = ""
     if match:
         content_id = match[1]
-    assert content_id, "[_parse_mapping_v2]: content_id can't be empty string, please submit this bug to github issue."
+    assert content_id, "[_parse_mapping_v2]: content_id can't be an empty string, please submit this bug to github issue."
 
     # find mapping
     pattern = r"RegExp\([\"|\']([^\"]+?)[\"|\'],\s*\"gi\"\),\s*\"([^\"]+?)\"\)"
@@ -70,6 +75,41 @@ def _parse_mapping_v2(js_text) -> tuple:
         key = match[0]
         value = match[1]
         replace_rules[key] = value
+
+    return content_id, replace_rules
+
+
+def _parse_mapping_v2_zh_tw(js_text) -> tuple:
+    """
+    繁体版网站
+    :param js_text:
+    :return:
+    """
+
+    def remove_comments(js_code):
+        # 使用正则表达式匹配和替换注释
+        pattern = r"/\*[\s\S]*?\*/|//.*?$"
+        cleaned_code = re.sub(pattern, "", js_code, flags=re.MULTILINE)
+        return cleaned_code
+
+    def extract_contentid(ast) -> str:
+        try:
+            properties = ast.body[0].declarations[0].init.properties
+            iterator = filter(lambda x: x.key.name == 'contentid', properties)
+            list = [item for item in iterator]
+            contentid_val = list[0].value.value
+            return contentid_val
+        except:
+            # fallback
+            return 'acontent1'
+
+    cleaned_js = remove_comments(js_text)
+    ast = esprima.parse(cleaned_js)
+    content_id = extract_contentid(ast)
+
+    # generate mapping rules
+    # 目前繁体网站没有对正文进行js混淆，直接空对象即可
+    replace_rules = {}
 
     return content_id, replace_rules
 
@@ -113,14 +153,19 @@ def write_rules(rules):
         json.dump(escaped_rules, json_file, ensure_ascii=False, indent=2)
 
 
-async def _probe_js_encrypted_file():
+async def _probe_js_encrypted_file(traditional: bool = False):
     # 候选的url请求数组进行竞速，取第一个成功返回的js，天天都在改改改，猜测是随机变更。
     # better implementation: extract candidate urls from current chapter page
     # https://w.linovelib.com/novel/2883/141634.html
 
-    url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
-    url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
-    urls = [url1, url2]
+    if not traditional:
+        url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
+        url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
+        urls = [url1, url2]
+    else:
+        url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
+        url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
+        urls = [url1, url2]
 
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(aiohttp_get_with_retry(session, url)) for url in urls]
@@ -135,6 +180,6 @@ async def _probe_js_encrypted_file():
     return None
 
 
-def _fetch_js_text():
-    js_file_text = asyncio.run(_probe_js_encrypted_file())
+def _fetch_js_text(traditional: bool = False):
+    js_file_text = asyncio.run(_probe_js_encrypted_file(traditional))
     return js_file_text

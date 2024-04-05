@@ -1,0 +1,132 @@
+{
+    type: "Program",
+    sourceType: "script",
+    body: [
+        {
+            type: "VariableDeclaration",
+            declarations: [
+                {
+                    type: "VariableDeclarator",
+                    id: {
+                        type: "Identifier",
+                        name: "ReadTools"
+                    },
+                    init: {
+                        type: "ObjectExpression",
+                        properties: [
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "tiptime"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "Literal",
+                                    value: 3000,
+                                    raw: "3000"
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            },
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "contentid"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "Literal",
+                                    value: "acontent1",
+                                    raw: "'acontent1'"
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            },
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "pageid"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "Literal",
+                                    value: "aread",
+                                    raw: "'aread'"
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            },
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "showtools"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "Literal",
+                                    value: False,
+                                    raw: "false"
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            },
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "foo"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "ArrowFunctionExpression",
+                                    generator: False,
+                                    isAsync: False,
+                                    params: [],
+                                    body: {
+                                        type: "BlockStatement",
+                                        body: []
+                                    },
+                                    expression: False
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            },
+                            {
+                                type: "Property",
+                                key: {
+                                    type: "Identifier",
+                                    name: "bar"
+                                },
+                                computed: False,
+                                value: {
+                                    type: "ArrowFunctionExpression",
+                                    generator: False,
+                                    isAsync: False,
+                                    params: [],
+                                    body: {
+                                        type: "BlockStatement",
+                                        body: []
+                                    },
+                                    expression: False
+                                },
+                                kind: "init",
+                                method: False,
+                                shorthand: False
+                            }
+                        ]
+                    }
+                }
+            ],
+            kind: "var"
+        }
+    ]
+}

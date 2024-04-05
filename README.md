@@ -276,16 +276,18 @@ Don't need login, no threshold.
 
 Here are some description about internal mechanism of this project.
 
-| Target Site          | pages downloading | images downloading | use browser? |
-|----------------------|-------------------|--------------------|--------------|
-| Bilinovel(linovelib) | serial*           | parallel           | Selenium     |
-| Masiro               | parallel*         | parallel           | DrissionPage |
-| Webku8               | parallel          | parallel           | aiohttp      |
+| Target Site          | pages downloading | page success condition | challenge CloudFlare when page downloading | images downloading | use browser? |
+|----------------------|-------------------|------------------------|--------------------------------------------|--------------------|--------------|
+| Bilinovel(linovelib) | serial[^1]        | desired tag found      | No[^2]                                     | parallel           | Selenium     |
+| Masiro               | parallel[^3]      | desired tag found      | Yes                                        | parallel           | DrissionPage |
+| Wenku8               | parallel          | simple status `200`    | N/A                                        | parallel           | aiohttp      |
 
 说明：
 
-- Bilinovel pages downloading is serial because its some chapter urls are broken, and we need to fix them.
-- Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate limit.
+- [^1]: Bilinovel pages downloading is serial because its some chapter urls are broken, and we need to fix them.
+- [^2]: Bilinovel doesn't challenge CF when downloading one page, maybe it will stagnate into a endless loop.
+- [^3]: Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate
+  limit.
 
 ## Contributors
 
