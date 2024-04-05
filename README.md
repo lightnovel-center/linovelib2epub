@@ -261,9 +261,6 @@ Don't need login, no threshold.
 | clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
 | chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
 | page_crawl_delay        | number  | NO       | None                          | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
-| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
-| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
-| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
 | custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
 | custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
 | custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
@@ -272,6 +269,17 @@ Don't need login, no threshold.
 | browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                      |
 | browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                       |
 | headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                   |
+
+需要重新分析和修订的参数：
+> 下面的参数暂时无效或者不可用，需要重新设计或者删除。
+
+| Parameters              | type    | required | default                       | description                                                |
+|-------------------------|---------|----------|-------------------------------|------------------------------------------------------------|
+| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
+| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
+| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
+
+
 
 ## Todo
 
