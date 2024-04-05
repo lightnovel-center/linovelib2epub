@@ -12,6 +12,19 @@ A clear and concise description of what the bug is.
 
 **To Reproduce（复现步骤）**
 复现的代码以及操作（例如分支选择、卷选择等等）
+
+注意：请务必打开**DEBUG logging** 模式。示例代码：
+```python
+from linovelib2epub import Linovelib2Epub
+
+if __name__ == '__main__':
+    # /path/to/chromedriver
+    browser_driver_path = r'C:\path\to\chromedriver.exe'
+    linovelib_epub = Linovelib2Epub(book_id=8, chapter_crawl_delay=3, page_crawl_delay=2, select_volume_mode=True,
+                                    browser_driver_path=browser_driver_path,
+                                    log_level='DEBUG')
+    linovelib_epub.run()
+```
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
