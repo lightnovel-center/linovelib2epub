@@ -7,17 +7,14 @@
 
 Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) and convert to epub.
 
-[![Python Version](https://img.shields.io/badge/python>=3.10-blue)]()
-[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)
-[![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)
-[![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)
-![PyPI](https://img.shields.io/pypi/v/linovelib2epub)
-![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub)
-[![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)
-[![Maintainability](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/maintainability)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/test_coverage)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/test_coverage)
+| 指标分类             | 指标集                                                                                                                                                                                                                                                                                                                                                           |
+|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]() [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch) ![PyPI](https://img.shields.io/pypi/v/linovelib2epub)                                                                                                          |
+| Code Style       | [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)                                                                                                                                                                                                                                                          |
+| Code Statistics  | ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub) ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)                                                                                                                                                                   |
+| Code Activity    | [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)                                                                    |
+| Code Quality     | [![Maintainability](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/maintainability)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/test_coverage)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/test_coverage) |
+| CI Status        | [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)                                                                                                                        |
 
 ## preview
 
@@ -50,18 +47,16 @@ Crawl light novel from [哔哩轻小说 (linovelib)](https://w.linovelib.com/) a
 
 ## Supported  Websites (plan)
 
-| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                            |
-|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|-------------------------------------------------|
-| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 加密 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` |
-| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                             |
-| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                               |
-| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | N/A                                             |
-| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            | 无                                               |
-| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                             |
-| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 `                      |
-| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | 搁置                                           | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                        |
-
->
+| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                                   |
+|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|--------------------------------------------------------|
+| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 文本混淆 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` `限流` |
+| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                                    |
+| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                                      |
+| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | N/A                                                    |
+| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            | 无                                                      |
+| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                                    |
+| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 ` `CF turnstile` `限流`         |
+| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | 搁置                                           | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                               |
 
 爬虫友好度有两个重要指标：
 
@@ -126,22 +121,36 @@ pip install linovelib2epub --upgrade
 
 > target site: https://w.linovelib.com
 
-Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
-
 > 2024-3-19 Update: Now linovelib also has a cloudflare access protection and requests rate limit.
 > In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay
 > parameters as follows.
 > You can tune the delay parameters to fit your actual network environment.
 
-```python
-from linovelib2epub import Linovelib2Epub
+LinovelibMobile has two Chinese version(`zh/zh-CN` or `zh-TW/zh-HK`).
 
-if __name__ == '__main__':
-    linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2)
-    linovelib_epub.run()
-```
+Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
-Or specify browser driver path(NOT browser path):
+You should specify what version you need:
+
+- `zh/zh-CN` => use `target_site=TargetSite.LINOVELIB_MOBILE` or omit `target_site` parameter.
+  ```python
+  from linovelib2epub import Linovelib2Epub
+  
+  if __name__ == '__main__':
+      linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2)
+      linovelib_epub.run()
+  ```
+- `zh-TW/zh-HK` => use `target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL`.
+  ```python
+  from linovelib2epub import Linovelib2Epub, TargetSite
+
+  if __name__ == '__main__':
+      linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2,
+                                      target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL)
+      linovelib_epub.run()
+  ```
+
+If you encounter some problems about browser, you should specify browser driver path(NOT browser path):
 
 ```python
 from linovelib2epub import Linovelib2Epub
@@ -157,9 +166,6 @@ if __name__ == '__main__':
 ```
 
 If it finished without errors, you can see the epub file is under the folder where your python file is located.
-
-LinovelibMobile is first website to be supported, and it's the default target site. So you don't need to
-specify `target_site` parameter.
 
 ### Masiro
 
@@ -271,6 +277,7 @@ Don't need login, no threshold.
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
 - [ ] add installation alternatives: from pypi to git protocol
+- [ ] strip "不要服务器采集" text from page body
 
 ## Under the hood
 
