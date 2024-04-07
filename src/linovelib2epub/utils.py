@@ -52,7 +52,7 @@ def requests_get_with_retry(client: Any,
                     logger.warning(f'Request {url} succeed but data is empty, retry {current_num_of_request + 1} times')
         except (Exception,) as e:
             if logger:
-                logger.error(f'Request {url} failed.', e)
+                logger.error(f'Request {url} failed. {e}.')
 
         current_num_of_request += 1
         # 指数退避参考 https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn#example_algorithm
@@ -78,7 +78,9 @@ def requests_get_with_retry(client: Any,
 
         time.sleep(retry_interval)
 
-    logger.error(f'Request {url} failed after {retry_max} retries.')
+    if logger:
+        logger.error(f'Request {url} failed after {retry_max} retries.')
+
     return None
 
 
