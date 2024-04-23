@@ -13,7 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from . import BaseNovelWebsiteSpider
-from .linovelib_mobile_rules import generate_mapping_result
+from .linovelib_mobile_rule import LinovelibMobileRuleParser
 from ..exceptions import LinovelibException, PageContentIllegalException
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibMobileChapter, \
     CatalogLinovelibMobileVolume
@@ -27,8 +27,12 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         super().__init__(spider_settings)
         self._init_http_client()
 
-        # it might be better to refactor to asyncio mode
-        self._mapping_result = generate_mapping_result(traditional=self.spider_settings['traditional'])
+        # rule parsing
+        rule_parser = LinovelibMobileRuleParser(logger=self.logger,
+                                                traditional=self.spider_settings['traditional'],
+                                                disable_proxy=self.spider_settings["disable_proxy"])
+        self._mapping_result = rule_parser.generate_mapping_result()
+
         self._html_content_id = self._mapping_result.content_id
         self.logger.info(f'_html_content_id={self._html_content_id}')
         self._mapping_dict = self._mapping_result.mapping_dict
@@ -325,7 +329,7 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
             retry_interval = min(round(((2 ** (n - 1)) + random_number_seconds), 2), maximum_backoff)
 
             self.logger.warning(
-                f'Retrying {url}({request_count}/{max_retries})...; retry_interval: {retry_interval}(s)')
+                f'Retrying {url}...({request_count}/{max_retries}); retry_interval: {retry_interval}(s)')
             time.sleep(retry_interval)
 
         return None

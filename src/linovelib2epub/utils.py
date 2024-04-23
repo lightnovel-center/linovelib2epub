@@ -96,19 +96,21 @@ async def aiohttp_get_with_retry(client: aiohttp.ClientSession,
     current_num_of_request: int = 0
 
     while current_num_of_request <= retry_max:
+        response_status = None
         try:
             async with client.get(url, headers=headers, timeout=timeout) as response:
-                if response.status == 200:
+                response_status = response.status
+                if response_status == 200:
                     return await response.text()
-                elif response.status == 404:
+                elif response_status == 404:
                     return None
                 else:
                     if logger:
-                        logger.warning(f'Request {url} succeed but status code is {response.status}.')
+                        logger.warning(f'Request {url} succeed but status code is {response_status}.')
                     await asyncio.sleep(1)
         except Exception as e:
             if logger:
-                logger.error(f'Request {url} failed: {e}')
+                logger.error(f'Request {url} failed: {e.__class__.__name__},{response_status=}')
             await asyncio.sleep(1)
 
         current_num_of_request += 1

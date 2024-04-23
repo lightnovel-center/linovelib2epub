@@ -264,7 +264,7 @@ Don't need login, no threshold.
 | custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
 | custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
 | custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用                                           |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。              |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）      |
 | browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                      |
 | browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                       |
@@ -273,13 +273,11 @@ Don't need login, no threshold.
 需要重新分析和修订的参数：
 > 下面的参数暂时无效或者不可用，需要重新设计或者删除。
 
-| Parameters              | type    | required | default                       | description                                                |
-|-------------------------|---------|----------|-------------------------------|------------------------------------------------------------|
-| http_timeout            | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。           |
-| http_retries            | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。                                    |
-| http_cookie             | string  | NO       | ''                            | 自定义 HTTP cookie。                                           |
-
-
+| Parameters   | type   | required | default | description                                      |
+|--------------|--------|----------|---------|--------------------------------------------------|
+| http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。 |
+| http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。                          |
+| http_cookie  | string | NO       | ''      | 自定义 HTTP cookie。                                 |
 
 ## Todo
 
@@ -287,7 +285,7 @@ Don't need login, no threshold.
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
 - [ ] add installation alternatives: from pypi to git protocol
-- [ ] strip "不要服务器采集" text from page body
+- [ ] linovelib: strip "不要服务器采集" text from page body
 
 ## Under the hood
 
@@ -304,7 +302,7 @@ Here are some description about internal mechanism of this project.
 [^2]: Bilinovel doesn't challenge CF when downloading one page, maybe it will stagnate into a endless loop.
 
 [^3]: Masiro pages downloading is parallel but the actual effect is equal to serial because its strict requests rate
-  limit.
+limit.
 
 ## Contributors
 
