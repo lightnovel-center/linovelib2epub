@@ -1,6 +1,7 @@
 import random
 import re
 import sys
+import textwrap
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
@@ -225,10 +226,16 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                         article_soup = soup.find(id=self._html_content_id)
                         if not article_soup:
+                            hints = """
+                            This can happen for the following reasons:
+                            - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                            - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
+                             without specifying the target_site parameter. => Refer README document and set the target_site parameter.
+                            """
+                            dedent_hints = textwrap.dedent(hints)
                             self.logger.fatal(
                                 f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
-                                f'Please report this bug to '
-                                f'[github issue](https://github.com/lightnovel-center/linovelib2epub/issues).')
+                                f'{dedent_hints}')
                             sys.exit(1)
 
                         article = _sanitize_html(article_soup)
