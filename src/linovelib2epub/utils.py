@@ -5,7 +5,7 @@ import re
 import time
 from functools import wraps
 from http.cookies import SimpleCookie
-from typing import Any, Callable, Dict, NoReturn
+from typing import Any, Callable, Dict, NoReturn, AnyStr
 
 import aiohttp
 import pkg_resources
@@ -214,3 +214,8 @@ def async_timed() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
 
 def is_async(func: Callable[..., Any]) -> bool:
     return asyncio.iscoroutinefunction(func)
+
+
+def save_file(file_path: str, data: AnyStr):
+    with open(file_path, 'w', encoding='utf-8') as fp:
+        fp.write(data)

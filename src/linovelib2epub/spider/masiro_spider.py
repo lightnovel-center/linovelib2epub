@@ -56,7 +56,7 @@ class MasiroSpider(BaseNovelWebsiteSpider):
         return novel
 
     async def _fetch(self) -> LightNovel:
-        login_state = self._login_by_browser()
+        login_state: LoginSessionState = self._login_by_browser()
         page = login_state.page
         csrf_token = login_state.csrf_token
         login_info = MasiroLoginInfo(token=csrf_token)

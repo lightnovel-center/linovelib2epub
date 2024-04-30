@@ -24,5 +24,6 @@ headers = request_headers()
 url = 'https://www.bilinovel.com/novel/3721/190988.html'
 r = s.get(url, headers=headers)
 
+print(r.status_code)
 print(r.request.headers)
 print(r.text)

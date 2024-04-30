@@ -3,19 +3,21 @@ import re
 import sys
 import textwrap
 import time
+import warnings
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
 import demjson3
 import inquirer
 import requests
+from DrissionPage import ChromiumOptions, WebPage
 from bs4 import (BeautifulSoup)
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rule import LinovelibMobileRuleParser
-from ..exceptions import LinovelibException, PageContentIllegalException
+from ..exceptions import LinovelibException, PageContentAbnormalException
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibMobileChapter, \
     CatalogLinovelibMobileVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
@@ -44,15 +46,13 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self._driver = None
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
-        default_mobile_ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/120.0.0.0'
+        default_mobile_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0'
         default_referer = 'https://www.bilinovel.com'
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
             'Referer': referer if referer else default_referer,
-            # use random mobile phone header later
-            # 'User-Agent': self.spider_settings['random_useragent'] if random_ua else default_ua
             'User-Agent': default_mobile_ua
         }
         return headers
@@ -192,18 +192,18 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
                         # retry until get the correct title & content body
                         while True:
-                            # use selenium instead of direct requests
                             try:
+                                # selenium -> drissionpage 仅仅是为了降低被CF识别的频率
                                 page_resp = self._fetch_page(page_link,
                                                              max_retries=self.spider_settings['http_retries'])
                             except (Exception,):
                                 continue
 
+                            # double check if the title exists
                             page_resp = page_resp or ''
                             soup = BeautifulSoup(page_resp, 'lxml')
                             new_title = soup.find(id='atitle')
                             if new_title is not None:
-                                # 这里标志着已成功拿到某一个page的正常的正文内容。
                                 self.logger.debug(f'page({page_link}) size={len(page_resp)}')
                                 break
 
@@ -285,9 +285,9 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
         if not self._driver:
-            self._init_browser_driver()
+            self._init_drissionpage_driver()
 
-        driver = self._driver
+        driver: WebPage = self._driver
 
         request_count = 0
         # total requests num = self(1) + max_retries
@@ -295,41 +295,48 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         while request_count <= max_retries:
             try:
-                driver.get(url)
-                html = driver.page_source
+                # 参阅dp源码： DrissionPage._pages.session_page.SessionPage._make_response 函数
+                # 它这个重试机制是固定时间间隔的实现，比较粗糙。如果想要自定义指数退避算法，应该自行实现重试
+                # interval=5 是重试间隔。这里因为 retry=0 因此也不关心网络请求的重试间隔
+                is_url_available = driver.get(url, retry=0, interval=5, timeout=10)
+                # TODO why redirect to linovelib PC version
+                loaded = driver.wait.doc_loaded()
+                html = driver.html
 
-                # Determine whether the content of the page has the following tags:
-                # - You are being rate limited
-                # - 抱歉，章节内容不支持该浏览器显示
-                failed_patterns = ['You are being rate limited', '抱歉，章节内容不支持该浏览器显示']
-                for pattern in failed_patterns:
-                    # 使用正则表达式匹配页面内容
-                    match = re.search(pattern, html)
-                    if match:
-                        raise PageContentIllegalException(f'The page content of {url} is not desired.')
+                if html:
+                    # step 1: Determine whether the content of the page has the following tags(failed case):
+                    failed_patterns = ['You are being rate limited', '抱歉，章节内容不支持该浏览器显示']
+                    for pattern in failed_patterns:
+                        match = re.search(pattern, html)
+                        if match:
+                            raise PageContentAbnormalException(
+                                f'The page content of {url} is not desired. Reason: {pattern}')
 
-                # maybe here should challenge CF if detected
+                    # step 2: check whether the html string has correct text
+                    html_content = BeautifulSoup(html, 'lxml')
+                    # save_file(f'./logs/tmp.json', html)
+                    new_title = html_content.find(id='atitle')
+                    if not new_title:
+                        msg = f"page {url} => doesn't have the desired tag, maybe caught by cloudflare. Need retry."
+                        self.logger.warning(msg)
+                        # TODO 检测是否遇到CF挑战. 如果遇到，必须在这里解决这次CF。
 
-                return html
-            except PageContentIllegalException as e:
+                        # 抛异常，将当前这个url的抓取任务延迟到下一轮尝试
+                        raise PageContentAbnormalException(msg)
+
+                    # happy branch
+                    self.logger.info(f'page {url} => ok.')
+                    return html
+                else:
+                    # ...... => should retry
+                    self.logger.error(f'page {url} => should retry.')
+                    raise LinovelibException(f'fetch page url {url} failed with error status ?.')
+            except PageContentAbnormalException as e:
                 self.logger.warn(f"{e.message}")
             except Exception as e:
                 self.logger.warn(f"{url} encountered {e.__class__.__name__}.")
 
             request_count += 1
-            # 指数退避参考 https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn#example_algorithm
-            # 具体逻辑：
-            # 1.向服务器特定API发出请求。
-            # 2.如果请求失败，请等待 1 + random_number_milliseconds 秒后再重试请求。
-            # 3.如果请求失败，请等待 2 + random_number_milliseconds 秒后再重试请求。
-            # 4.如果请求失败，请等待 4 + random_number_milliseconds 秒后再重试请求。
-            # 5.依此类推，等待时间上限为 maximum_backoff。
-            # 等待时间达到上限后，您可以继续等待并重试，直到达到重试次数上限（但接下来的重试操作不会增加各次重试之间的等待时间）。
-
-            # 等待时间为 min(((2^n)+random_number_seconds), maximum_backoff)，其中，n 会在每次迭代（请求）后增加 1。
-            # 其中：
-            # - random_number_seconds 是小于1的秒数（随机值）。
-            # - maximum_backoff 设置为一个较大的容忍值，这里设置为10s。这是基于经验的估计。
             n = request_count
             random_number_seconds = round(random.uniform(0, 1), 2)  # 0.01-0.99s
             maximum_backoff = 10
@@ -341,7 +348,8 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
 
         return None
 
-    def _init_browser_driver(self):
+    def _init_selenium_driver(self):
+        warnings.warn("Deprecated in the future.", category=DeprecationWarning)
         chrome_options = Options()
         # 无头模式
         if self.spider_settings["headless"]:
@@ -390,6 +398,61 @@ class LinovelibMobileSpider(BaseNovelWebsiteSpider):
         self.logger.info(' 初始化 Driver 完毕...')
 
         self._driver = driver
+
+    def _init_drissionpage_driver(self):
+        co = ChromiumOptions()
+        if self.spider_settings['browser_path']:
+            # path = r'D:\Chrome\Chrome.exe'
+            path = self.spider_settings['browser_path']
+            co.set_browser_path(path).save()
+
+        #  basic arguments
+        arguments = [
+            "-no-first-run",
+            "-force-color-profile=srgb",
+            "-metrics-recording-only",
+            "-use-mock-keychain",
+            "-export-tagged-pdf",
+            "-no-default-browser-check",
+            "-disable-background-mode",
+            "-enable-features=NetworkService,NetworkServiceInProcess,LoadCryptoTokenExtension,PermuteTLSExtensions",
+            "-disable-features=FlashDeprecationWarning,EnablePasswordsAccountStorage",
+            "-deny-permission-prompts",
+            "-disable-gpu"
+        ]
+        for argument in arguments:
+            co.set_argument(argument)
+
+        # user arguments
+        if self.spider_settings["headless"]:
+            co.set_argument("--headless")
+        if self.spider_settings['traditional']:
+            co.set_argument("--lang=zh-TW")
+
+        # UA
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0'
+        co.set_argument(f"--user-agent={ua}")
+
+        # SSL related
+        # co.set_argument('--ignore-certificate-errors-spki-list')
+
+        # suppress logging < FATAL
+        # co.set_argument("log-level=3")
+
+        page = WebPage(chromium_options=co)
+
+        # 'zh-CN'中文简体
+        # 'zh'中文
+        # 'zh-TW'中文（繁体）
+        # 'zh-HK'中文（中国香港特别行政区）
+        navigator_language = page.run_js(script="return navigator.language.toLowerCase();")
+        self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
+
+        # try requesting a page to detect if it's ok
+        # 目前linovelib不需要登录来查看内容
+
+        self.logger.info(' 初始化 Driver 完毕...')
+        self._driver = page
 
     def apply_crawl_delay(self, delay_name):
         crawl_delay = self.spider_settings.get(delay_name, None)
