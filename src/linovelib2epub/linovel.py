@@ -19,7 +19,7 @@ from . import settings
 from .exceptions import LinovelibException
 from .logger import Logger
 from .models import LightNovel, LightNovelVolume, LightNovelImage
-from .spider import ASYNCIO, LinovelibMobileSpider  # type: ignore[attr-defined]
+from .spider import ASYNCIO, LinovelibSpider  # type: ignore[attr-defined]
 from .spider.masiro_spider import MasiroSpider
 from .spider.wenku8_spider import Wenku8Spider
 from .utils import (create_folder_if_not_exists, random_useragent,
@@ -300,12 +300,14 @@ class EpubWriter:
 
 
 class TargetSite(Enum):
-    # ZH
+    # ZH [移动版本]
     LINOVELIB_MOBILE = 'linovelib_mobile'
-    # 繁体 TW or HK
+    # 繁体 TW or HK [移动版本]
     LINOVELIB_MOBILE_TRADITIONAL = 'linovelib_mobile_traditional'
-    # currently not use
-    LINOVELIB_WEB = 'linovelib_web'
+    # ZH [电脑网页版本]
+    LINOVELIB_PC = 'linovelib_pc'
+    # 繁体 TW or HK [电脑网页版本]
+    LINOVELIB_PC_TRADITIONAL = 'linovelib_pc_traditional'
     MASIRO = 'masiro'
     WENKU8 = 'wenku8'
 
@@ -342,10 +344,14 @@ class Linovelib2Epub:
         self.target_site = target_site
 
         site_to_base_url = {
-            # linovelib.com => www.linovelib.com 电脑端页面，暂时它不是目标爬取网站
-            # bilinovel.com | https://www.bilinovel.com => https://tw.linovelib.com/ or ?
+            # https://www.bilinovel.com => https://tw.linovelib.com/ or no changed?
             TargetSite.LINOVELIB_MOBILE: 'https://www.bilinovel.com',
             TargetSite.LINOVELIB_MOBILE_TRADITIONAL: 'https://www.bilinovel.com',
+
+            TargetSite.LINOVELIB_PC: 'https://www.linovelib.com',
+            # 翻译版本位置：主页底部【简体化】按钮
+            TargetSite.LINOVELIB_PC_TRADITIONAL: 'https://www.linovelib.com',
+
             TargetSite.MASIRO: 'https://masiro.me',
             TargetSite.WENKU8: 'https://www.wenku8.net',
         }
@@ -354,8 +360,12 @@ class Linovelib2Epub:
 
         # traditional flag
         traditional = False
-        if target_site == TargetSite.LINOVELIB_MOBILE_TRADITIONAL:
+        if target_site in (TargetSite.LINOVELIB_MOBILE_TRADITIONAL, target_site == TargetSite.LINOVELIB_PC_TRADITIONAL):
             traditional = True
+        # mobile flag
+        mobile = False
+        if target_site in (TargetSite.LINOVELIB_MOBILE, TargetSite.LINOVELIB_MOBILE_TRADITIONAL):
+            mobile = True
 
         u = urllib.parse.urlsplit(base_url)
 
@@ -376,7 +386,8 @@ class Linovelib2Epub:
             'select_volume_mode': select_volume_mode,
             'log_filename': run_identifier,
             'log_level': log_level,
-            'traditional': traditional
+            'traditional': traditional,
+            'mobile': mobile
         }
 
         self.spider_settings = {
@@ -394,8 +405,10 @@ class Linovelib2Epub:
             'headless': headless,
         }
         site_to_spider = {
-            TargetSite.LINOVELIB_MOBILE: LinovelibMobileSpider,
-            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: LinovelibMobileSpider,
+            TargetSite.LINOVELIB_MOBILE: LinovelibSpider,
+            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: LinovelibSpider,
+            TargetSite.LINOVELIB_PC: LinovelibSpider,
+            TargetSite.LINOVELIB_PC_TRADITIONAL: LinovelibSpider,
             TargetSite.MASIRO: MasiroSpider,
             TargetSite.WENKU8: Wenku8Spider,
         }

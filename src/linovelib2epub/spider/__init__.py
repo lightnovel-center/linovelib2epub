@@ -1,11 +1,11 @@
 from .base_spider import (ASYNCIO, MULTIPROCESSING, MULTITHREADING,
                           BaseNovelWebsiteSpider)
-from .linovelib_mobile_spider import LinovelibMobileSpider
+from .linovelib_spider import LinovelibSpider
 
 # explicit exports
 __all__ = [
     BaseNovelWebsiteSpider,
-    LinovelibMobileSpider,
+    LinovelibSpider,
     MULTIPROCESSING,
     MULTITHREADING,
     ASYNCIO

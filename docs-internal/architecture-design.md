@@ -138,9 +138,9 @@ BaseNovelWebsiteSpider 应该拥有以下的抽象方法：
 但是此时会导致不同的用户调用时需要手动引入不同的子类，然后初始化。
 为了让API更加简洁。可以使用facade模式，将API统一起来，内部委托到相应的spider。可以使用依赖注入将对应spider传入。
 
-将普适的方法抽象泛化（上移）到基类 BaseNovelWebsiteSpider ，具体的方法实现特化（下移）在具体的实现类 LinovelibMobileSpider。
+将普适的方法抽象泛化（上移）到基类 BaseNovelWebsiteSpider ，具体的方法实现特化（下移）在具体的实现类 LinovelibSpider。
 
-## LinovelibMobileSpider
+## LinovelibSpider
 
 关键在于爬虫数据格式的处理，和转化为LightNovel模型。
 

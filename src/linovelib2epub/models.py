@@ -10,7 +10,7 @@ class ImageDuplicateCheckingStrategy:
         return url_1 == url_2
 
 
-class LinovelibMobileImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
+class LinovelibImageDuplicateCheckingStrategy(ImageDuplicateCheckingStrategy):
 
     def is_duplicate(self, url_1, url_2):
         # https://linovelib-img.zezefans.com/3/3843/206654/227245.jpg => /3/3843/206654/227245.jpg
@@ -65,7 +65,7 @@ class CatalogWenku8Chapter(CatalogBaseChapter):
 
 
 @dataclass
-class CatalogLinovelibMobileChapter(CatalogBaseChapter):
+class CatalogLinovelibChapter(CatalogBaseChapter):
     # 一章多页。
     other_paginated_chapter_urls: List[str] = field(default_factory=list)
 
@@ -98,6 +98,7 @@ class CatalogBaseVolume:
     vid: int
     volume_title: str = ""
     chapters: List[CatalogBaseChapter] = field(default_factory=list)
+    volume_cover: str = ""
 
     # 这里暂时不设计这个远程服务器的卷 id 字段，因为某些网站根本没有做这个数据概念抽象
     # remote_volume_id
@@ -113,7 +114,7 @@ class CatalogMasiroVolume(CatalogBaseVolume):
                            if int(chapter.chapter_payed) == 0 and int(chapter.chapter_cost) > 0])
         return volume_cost
 
-#     total_unpaid_gold_coins_value_estimate
+    #     total_unpaid_gold_coins_value_estimate
     @property
     def volume_unpaid_cost_estimate(self) -> int:
         volume_cost = sum([int(chapter.chapter_cost) for chapter in self.chapters
@@ -121,8 +122,8 @@ class CatalogMasiroVolume(CatalogBaseVolume):
         return volume_cost
 
 
-class CatalogLinovelibMobileVolume(CatalogBaseVolume):
-    chapters: List[CatalogLinovelibMobileChapter] = field(default_factory=list)
+class CatalogLinovelibVolume(CatalogBaseVolume):
+    chapters: List[CatalogLinovelibChapter] = field(default_factory=list)
 
 
 @dataclass
@@ -198,12 +199,24 @@ class LightNovelVolume:
     volume_id: int | str | None
     title: str = ''
     chapters: List[LightNovelChapter] = field(default_factory=list)
+    explicit_volume_cover: LightNovelImage | None = None
 
     @property
     def volume_cover(self) -> LightNovelImage | None:
+        """
+        卷封面的获取逻辑，按顺序优先级递减：
+        1. 网站已经明确提供卷封面，那就直接返回它；
+        2. 网站没有明确提供，那就从当前卷的插图集合中，取第一个视为卷封面返回；
+        3. 当前卷没有任何插图，那就返回None。
+        :return:
+        """
+        if self.explicit_volume_cover:
+            return self.explicit_volume_cover
+
         illustrations = self.get_illustrations()
         if illustrations:
             return illustrations[0]
+
         return None
 
     def _resolve_image_duplicate_checking_strategy(self) -> Type[ImageDuplicateCheckingStrategy]:
@@ -211,7 +224,10 @@ class LightNovelVolume:
             image_sample = self.chapters[0].illustrations[0]
             hostname = image_sample.hostname
             hostname_to_strategy = {
-                'w.linovelib.com': LinovelibMobileImageDuplicateCheckingStrategy,
+                # mobile
+                'www.bilinovel.com': LinovelibImageDuplicateCheckingStrategy,
+                # pc
+                'www.linovelib.com': LinovelibImageDuplicateCheckingStrategy,
                 'masiro.me': MasiroImageDuplicateCheckingStrategy,
                 'wenku8.net': Wenku8ImageDuplicateCheckingStrategy
             }

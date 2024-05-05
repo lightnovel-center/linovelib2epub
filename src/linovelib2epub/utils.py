@@ -219,3 +219,7 @@ def is_async(func: Callable[..., Any]) -> bool:
 def save_file(file_path: str, data: AnyStr):
     with open(file_path, 'w', encoding='utf-8') as fp:
         fp.write(data)
+
+def read_file(file_path: str):
+    with open(file_path, 'r', encoding='utf-8') as fp:
+        return fp.read()
