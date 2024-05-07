@@ -1,3 +1,4 @@
+import io
 import random
 import re
 import sys
@@ -9,8 +10,10 @@ from urllib.parse import urljoin
 
 import demjson3
 import inquirer
+import pytesseract
 import requests
 from DrissionPage import ChromiumOptions, WebPage
+from PIL import Image
 from bs4 import (BeautifulSoup)
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -331,6 +334,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             :param html:
             :return: html after anti-js obfuscation
             """
+            # see https://github.com/lightnovel-center/linovelib2epub/issues/46#issuecomment-2080431115
+            # take https://www.linovelib.com/novel/2356/83546_2.html as a case to analyze
             table = str.maketrans(self._mapping_dict)
             res = html.translate(table)
             return res
@@ -352,7 +357,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             for anouncement in anouncements:
                 anouncement.decompose()
 
-            return re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
+            res = re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
+            return res
 
         book_catalog_rs = None
         try:
@@ -527,6 +533,45 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                 # 抛异常，将当前这个url的抓取任务延迟到下一轮尝试
                 raise PageContentAbnormalException(msg)
 
+        def _patch_font_obfuscation(page, url):
+            js_check = """
+            const last_p = document.querySelector('#TextContent p:last-of-type')
+            const p_style = window.getComputedStyle(last_p)
+            const p_font_style = p_style.getPropertyValue('font-family')
+            if (p_font_style && p_font_style.includes('read')) {
+                return true;
+            }
+            return false;
+            """
+            try:
+                if not self.spider_settings['mobile']:
+                    has_font_obfuscation = page.run_js(js_check)
+                    if has_font_obfuscation:
+                        self.logger.debug(f'The page of {url} has font obfuscation.')
+                        last_p = page.ele('css:#TextContent p:last-of-type')
+                        last_p_utf16 = last_p.text.encode('unicode-escape')
+                        self.logger.debug(f'Font obfuscation UTF-16: {last_p_utf16}')
+
+                        # save artifacts if in debug mode
+                        # '诲。'
+                        # last_p.get_screenshot()
+                        # refer doc: https://www.drissionpage.cn/ChromiumPage/screen/#%EF%B8%8F%EF%B8%8F-%EF%B8%8F%EF%B8%8F-%E5%85%83%E7%B4%A0%E6%88%AA%E5%9B%BE
+                        bytes_str = last_p.get_screenshot(as_bytes='png')  # 返回截图二进制文本 `
+                        image = Image.open(io.BytesIO(bytes_str))
+                        text = pytesseract.image_to_string(image, lang='chi_sim+eng')
+
+                        # remove all white-spaces and line-break on each side
+                        new_text = text.replace(" ", "").strip()
+                        # https://www.drissionpage.cn/ChromiumPage/ele_operation/#%EF%B8%8F%EF%B8%8F-%E4%BF%AE%E6%94%B9%E5%85%83%E7%B4%A0
+                        # if new_text is None,then keep original text
+                        # Case: https://www.linovelib.com/novel/2356/83534_2.html 「…………」 => ''
+                        if new_text:
+                            last_p.set.innerHTML(new_text)
+                        self.logger.debug(f'The text of this patch is: {new_text}')
+            except Exception as e:
+                # maybe js execution error
+                pass
+
         request_count = 0
         # total requests num = self(1) + max_retries
         # if max_retries= 5, then total is 1+5=6
@@ -537,6 +582,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                 # interval=5 是重试间隔。这里因为 retry=0 因此也不关心网络请求的重试间隔
                 is_url_available = driver.get(url, retry=0, interval=5, timeout=10)
                 loaded = driver.wait.doc_loaded()
+                _patch_font_obfuscation(driver, url)
                 html = driver.html
 
                 if html:

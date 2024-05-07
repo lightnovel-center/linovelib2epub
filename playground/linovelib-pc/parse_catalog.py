@@ -2,6 +2,7 @@ from typing import List
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
+from rich import print as rprint
 
 from linovelib2epub.models import CatalogLinovelibChapter, CatalogLinovelibVolume
 from linovelib2epub.utils import read_file
@@ -37,4 +38,4 @@ if __name__ == '__main__':
             )
             _current_chapters.append(new_chapter)
 
-    print(catalog_list)
+    rprint(catalog_list)

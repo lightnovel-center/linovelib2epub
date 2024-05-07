@@ -10,7 +10,7 @@ import esprima
 from linovelib2epub.utils import aiohttp_get_with_retry
 
 
-class ParsedRuleResult:
+class ParsedRuleResultMobile:
     def __init__(self,
                  mapping_dict: Dict[str, Any],
                  content_id: str,
@@ -33,12 +33,12 @@ class LinovelibMobileRuleParser:
         result_set = self._parse_mapping(js_text)
         return result_set
 
-    def _parse_mapping(self, js_text) -> ParsedRuleResult:
+    def _parse_mapping(self, js_text) -> ParsedRuleResultMobile:
         if not self.traditional:
             content_id, replace_rules = self._parse_mapping_v2_zh(js_text)
         else:
             content_id, replace_rules = self._parse_mapping_v2_zh_tw(js_text)
-        parsed_rule_result = ParsedRuleResult(mapping_dict=replace_rules, content_id=content_id)
+        parsed_rule_result = ParsedRuleResultMobile(mapping_dict=replace_rules, content_id=content_id)
         return parsed_rule_result
 
     def _parse_mapping_v1(js_text) -> tuple:

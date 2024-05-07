@@ -1,5 +1,4 @@
-from DrissionPage import ChromiumOptions, SessionOptions
-from DrissionPage._pages.web_page import WebPage
+from DrissionPage import ChromiumOptions, SessionOptions, WebPage
 
 path = r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
 co = ChromiumOptions()
@@ -15,7 +14,7 @@ so.set_headers(headers=headers)
 # page = ChromiumPage()
 page = WebPage(chromium_options=None, session_or_options=None)
 
-url = 'https://www.bilinovel.com/novel/1030/42006.html'
+url = 'https://www.linovelib.com/novel/2356/83547_6.html'
 resp = page.get(url)
 
 # 问题:电脑端访问手机端网页会跳转到PC版本的网页。
