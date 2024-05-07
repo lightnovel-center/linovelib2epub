@@ -285,7 +285,6 @@ Don't need login, no threshold.
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
 - [ ] add installation alternatives: from pypi to git protocol
-- [ ] linovelib: strip "不要服务器采集" text from page body
 
 ## Under the hood
 
