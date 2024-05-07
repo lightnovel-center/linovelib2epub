@@ -158,7 +158,7 @@ if __name__ == '__main__':
     linovelib_epub.run()
 ```
 
-- Tune delay-related parameters[**optional **but **recommend**]
+- Tune delay-related parameters[**optional** but **recommend**]
 
 ```python
 from linovelib2epub import Linovelib2Epub
