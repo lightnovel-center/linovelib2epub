@@ -126,45 +126,119 @@ pip install linovelib2epub --upgrade
 > parameters as follows.
 > You can tune the delay parameters to fit your actual network environment.
 
-LinovelibMobile has two Chinese version(`zh/zh-CN` or `zh-TW/zh-HK`).
+LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two UI version(PC or mobile).
+
+So the target website has 2 x 2 = 4 choices.
+
+| website version        | visit method                                       | Support status | target_site                               |
+|------------------------|----------------------------------------------------|----------------|-------------------------------------------|
+| PC + `zh/zh-CN`        | www.linovelib.com + click [简体化]                    | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
+| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | WIP            | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❓*             | `TargetSite.LINOVELIB_MOBILE`             |
+| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❓*             | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+
+> ❓*: This emoji means there is a high probability that you may be banned by CloudFlare Challenge.
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
-You should specify what version you need:
+Example usages:
 
-- `zh/zh-CN` => use `target_site=TargetSite.LINOVELIB_MOBILE` or omit `target_site` parameter.
+- Specify target_site:
 
-  ```python
-  from linovelib2epub import Linovelib2Epub
-  
-  if __name__ == '__main__':
-      linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2)
-      linovelib_epub.run()
-  ```
-- `zh-TW/zh-HK` => use `target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL`.
+The code below takes PC + `zh/zh-CN` version as an example, adjust as needed if your target version is different.
 
-  ```python
-  from linovelib2epub import Linovelib2Epub, TargetSite
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
 
-  if __name__ == '__main__':
-      linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2,
-                                      target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL)
-      linovelib_epub.run()
-  ```
+if __name__ == '__main__':
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC)
+    # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_PC_TRADITIONAL)
+    # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE)
+    # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL)
+    linovelib_epub.run()
+```
 
-If you encounter some problems about browser, you should specify browser driver path(NOT browser path):
+- Tune delay-related parameters[**optional **but **recommend**]
 
 ```python
 from linovelib2epub import Linovelib2Epub
 
 if __name__ == '__main__':
-    # /path/to/chromedriver
-    # for example in Windows os
-    browser_driver_path = r'C:\Users\{YOUR_NAME}\.cache\selenium\chromedriver\win64\123.0.6312.86\chromedriver.exe'
-    linovelib_epub = Linovelib2Epub(book_id=3721, chapter_crawl_delay=3, page_crawl_delay=2,
-                                    browser_driver_path=browser_driver_path)
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC)
     linovelib_epub.run()
+```
 
+The default value of `chapter_crawl_delay` is 3(s) and `page_crawl_delay` is 2(s). You can tune them to other values as
+needed.
+
+The example code is as follows to increase the value of all delay parameters.
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+if __name__ == '__main__':
+    linovelib_epub = Linovelib2Epub(book_id=3721, target_site=TargetSite.LINOVELIB_PC,
+                                    chapter_crawl_delay=5, page_crawl_delay=3)
+    linovelib_epub.run()
+```
+
+- download only selected volume(s)[**optional**]
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+if __name__ == "__main__":
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC,
+                                    select_volume_mode=True
+                                    )
+    linovelib_epub.run()
+```
+
+- disable network proxy[**optional**]
+
+This project will disable any proxy settings when crawling. So you should manually activate it by `disable_proxy=False`
+if you want to use your local proxy.
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+if __name__ == "__main__":
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC,
+                                    disable_proxy=False,
+                                    )
+    linovelib_epub.run()
+```
+
+- view more details about crawling[**optional**]
+
+Due to time sensitivity or environmental differences, web crawlers are very prone to failure. You can view more of the
+underlying details if turn on debug mode.
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+if __name__ == "__main__":
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC,
+                                    log_level="DEBUG",
+                                    )
+    linovelib_epub.run()
+```
+
+---
+
+The following is a common crawler configuration that can be used as a reference.
+
+```python
+from linovelib2epub import Linovelib2Epub, TargetSite
+
+if __name__ == "__main__":
+    linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC,
+                                    chapter_crawl_delay=5, page_crawl_delay=3,
+                                    select_volume_mode=True,
+                                    # disable_proxy=False,
+                                    # log_level="DEBUG",
+                                    )
+    linovelib_epub.run()
 ```
 
 If it finished without errors, you can see the epub file is under the folder where your python file is located.
@@ -259,8 +333,8 @@ Don't need login, no threshold.
 | image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                 |
 | pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                         |
 | clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
-| chapter_crawl_delay     | number  | NO       | None                          | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
-| page_crawl_delay        | number  | NO       | None                          | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
+| chapter_crawl_delay     | number  | NO       | 3                             | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
+| page_crawl_delay        | number  | NO       | 2                             | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
 | custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
 | custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
 | custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
@@ -292,7 +366,7 @@ Here are some description about internal mechanism of this project.
 
 | Target Site          | pages downloading | page success condition | challenge CloudFlare when page downloading | images downloading | use browser? |
 |----------------------|-------------------|------------------------|--------------------------------------------|--------------------|--------------|
-| Bilinovel(linovelib) | serial[^1]        | desired tag found      | No[^2]                                     | parallel           | Selenium     |
+| Bilinovel(linovelib) | serial[^1]        | desired tag found      | No[^2]                                     | parallel           | DrissionPage |
 | Masiro               | parallel[^3]      | desired tag found      | Yes                                        | parallel           | DrissionPage |
 | Wenku8               | parallel          | simple status `200`    | N/A                                        | parallel           | aiohttp      |
 

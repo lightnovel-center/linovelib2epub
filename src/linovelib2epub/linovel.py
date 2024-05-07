@@ -334,8 +334,8 @@ class Linovelib2Epub:
                  log_level: str = "INFO",
                  browser_path: str | None = None,
                  browser_driver_path: str | None = None,
-                 chapter_crawl_delay: int | None = None,
-                 page_crawl_delay: int | None = None,
+                 chapter_crawl_delay: int | None = 3,
+                 page_crawl_delay: int | None = 2,
                  headless: bool = False
                  ):
         if book_id is None:
