@@ -130,12 +130,12 @@ LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two 
 
 So the target website has 2 x 2 = 4 choices.
 
-| website version        | visit method                                       | Support status | target_site                               |
-|------------------------|----------------------------------------------------|----------------|-------------------------------------------|
-| PC + `zh/zh-CN`        | www.linovelib.com + click [简体化]                    | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
-| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | WIP            | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❓*             | `TargetSite.LINOVELIB_MOBILE`             |
-| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❓*             | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+| website version        | visit method                                       | Support status     | target_site                               |
+|------------------------|----------------------------------------------------|--------------------|-------------------------------------------|
+| PC + `zh/zh-CN`        | www.linovelib.com + click [简体化]                    | ✅(recommend)       | `TargetSite.LINOVELIB_PC`                 |
+| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | WIP                | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❓*(default target) | `TargetSite.LINOVELIB_MOBILE`             |
+| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❓*                 | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
 > ❓*: This emoji means there is a high probability that you may be banned by CloudFlare Challenge.
 
@@ -152,8 +152,12 @@ from linovelib2epub import Linovelib2Epub, TargetSite
 
 if __name__ == '__main__':
     linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC)
+
     # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_PC_TRADITIONAL)
+
+    # linovelib_epub = Linovelib2Epub(book_id=2356)
     # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE)
+
     # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL)
     linovelib_epub.run()
 ```

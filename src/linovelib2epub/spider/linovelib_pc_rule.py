@@ -21,6 +21,6 @@ class LinovelibPCRuleParser:
 
     def generate_mapping_result(self) -> ParsedRuleResultPC:
         content_id = 'TextContent'
-        # 目前部分章节可能会出现末尾段落p CSS字体混淆。
+        # 目前是DrissionPage浏览器渲染，因此这里不需要手动JS反混淆。得到的网页已经是明文Text
         mapping_dict = {}
         return ParsedRuleResultPC(mapping_dict=mapping_dict, content_id=content_id)

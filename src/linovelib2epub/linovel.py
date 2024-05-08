@@ -360,7 +360,7 @@ class Linovelib2Epub:
 
         # traditional flag
         traditional = False
-        if target_site in (TargetSite.LINOVELIB_MOBILE_TRADITIONAL, target_site == TargetSite.LINOVELIB_PC_TRADITIONAL):
+        if target_site in (TargetSite.LINOVELIB_MOBILE_TRADITIONAL, TargetSite.LINOVELIB_PC_TRADITIONAL):
             traditional = True
         # mobile flag
         mobile = False

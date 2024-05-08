@@ -38,11 +38,11 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         mobile = self.spider_settings['mobile']
         # rule parsing cases：
         # - mobile
-        #   - zh => 解析1
-        #   - zh-hk/tw => 解析2
+        #   - zh => 解析 1
+        #   - zh-hk/tw => 解析 2
         # - pc
-        #    - zh => 解析3
-        #    - zh-hk/tw => 解析4 (目前和解析3一样)
+        #    - zh => 解析 3
+        #    - zh-hk/tw => 解析 4 (目前和解析 3 一样)
         if mobile:
             rule_parser = LinovelibMobileRuleParser(logger=self.logger,
                                                     traditional=traditional,
@@ -61,6 +61,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
 
+        self._is_driver_initialized = False
         self._driver = None
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
@@ -155,7 +156,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return None
 
     def _crawl_book_content_mobile(self, catalog_url) -> Optional[LightNovel]:
-        # 不要提取这类工具函数到上一层，因为mobile和pc的网页版本往往不一样，没法重用，不要过度设计。
+        # 不要提取这类工具函数到上一层，因为 mobile 和 pc 的网页版本往往不一样，没法重用，不要过度设计。
         def _anti_js_obfuscation_mobile(html):
             """
             recover original text of the novel content.
@@ -241,7 +242,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                         # retry until get the correct title & content body
                         while True:
                             try:
-                                # selenium -> drissionpage 仅仅是为了降低被CF识别的频率
+                                # selenium -> drissionpage 仅仅是为了降低被 CF 识别的频率
                                 page_resp = self._fetch_page(page_link,
                                                              max_retries=self.spider_settings['http_retries'])
                             except (Exception,):
@@ -498,14 +499,14 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return None
 
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
-        if not self._driver:
+        if not self._is_driver_initialized:
             self._init_drissionpage_driver()
 
         driver: WebPage = self._driver
 
         def _check_failed_pattern(html, url):
             # Determine whether the content of the page has the following tags(failed case):
-            failed_patterns = ['You are being rate limited', '抱歉，章节内容不支持该浏览器显示']
+            failed_patterns = ['You are being rate limited', ' 抱歉，章节内容不支持该浏览器显示 ']
             for pattern in failed_patterns:
                 match = re.search(pattern, html)
                 if match:
@@ -518,8 +519,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             if not new_title:
                 msg = f"page {url} => doesn't have the desired tag, maybe caught by cloudflare. Need retry."
                 self.logger.warning(msg)
-                # better: 检测是否遇到CF挑战. 如果遇到，必须在这里解决这次CF。
-                # 抛异常，将当前这个url的抓取任务延迟到下一轮尝试
+                # better: 检测是否遇到 CF 挑战. 如果遇到，必须在这里解决这次 CF。
+                # 抛异常，将当前这个 url 的抓取任务延迟到下一轮尝试
                 raise PageContentAbnormalException(msg)
 
         def _check_page_content_pc(html, url):
@@ -529,8 +530,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             if not (main_text and main_text.select_one('h1') and main_text.select_one('#TextContent')):
                 msg = f"page {url} => doesn't have the desired tag, maybe caught by cloudflare. Need retry."
                 self.logger.warning(msg)
-                # better: 检测是否遇到CF挑战. 如果遇到，必须在这里解决这次CF。
-                # 抛异常，将当前这个url的抓取任务延迟到下一轮尝试
+                # better: 检测是否遇到 CF 挑战. 如果遇到，必须在这里解决这次 CF。
+                # 抛异常，将当前这个 url 的抓取任务延迟到下一轮尝试
                 raise PageContentAbnormalException(msg)
 
         def _patch_font_obfuscation(page, url):
@@ -577,7 +578,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # if max_retries= 5, then total is 1+5=6
         while request_count <= max_retries:
             try:
-                # 参阅dp源码： DrissionPage._pages.session_page.SessionPage._make_response 函数
+                # 参阅 dp 源码： DrissionPage._pages.session_page.SessionPage._make_response 函数
                 # 它这个重试机制是固定时间间隔的实现，比较粗糙。如果想要自定义指数退避算法，应该自行实现重试
                 # interval=5 是重试间隔。这里因为 retry=0 因此也不关心网络请求的重试间隔
                 is_url_available = driver.get(url, retry=0, interval=5, timeout=10)
@@ -642,14 +643,15 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         if self.spider_settings['browser_driver_path']:
             from selenium.webdriver.chrome.service import Service
             # r'C:/path/to/chromedriver.exe' => NOT browser PATH
-            driver = webdriver.Chrome(options=chrome_options, service=Service(self.spider_settings['browser_path']))
+            driver = webdriver.Chrome(options=chrome_options,
+                                      service=Service(self.spider_settings['browser_driver_path']))
         else:
             driver = webdriver.Chrome(options=chrome_options)
 
-        # 'zh-CN'中文简体
-        # 'zh'中文
-        # 'zh-TW'中文（繁体）
-        # 'zh-HK'中文（中国香港特别行政区）
+        # 'zh-CN' 中文简体
+        # 'zh' 中文
+        # 'zh-TW' 中文（繁体）
+        # 'zh-HK' 中文（中国香港特别行政区）
         navigator_language = driver.execute_script("return navigator.language.toLowerCase()")
         self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
 
@@ -708,18 +710,19 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         page = WebPage(chromium_options=co)
 
-        # 'zh-CN'中文简体
-        # 'zh'中文
-        # 'zh-TW'中文（繁体）
-        # 'zh-HK'中文（中国香港特别行政区）
+        # 'zh-CN' 中文简体
+        # 'zh' 中文
+        # 'zh-TW' 中文（繁体）
+        # 'zh-HK' 中文（中国香港特别行政区）
         navigator_language = page.run_js(script="return navigator.language.toLowerCase();")
         self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
 
         # try requesting a page to detect if it's ok
-        # 目前linovelib不需要登录来查看内容
+        # 目前 linovelib 不需要登录来查看内容
 
-        self.logger.info(' 初始化 Driver 完毕...')
         self._driver = page
+        self._is_driver_initialized = True
+        self.logger.info(' 初始化 Driver 完毕...')
 
     def apply_crawl_delay(self, delay_name):
         crawl_delay = self.spider_settings.get(delay_name, None)
@@ -905,7 +908,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         catalog_list: List[CatalogLinovelibVolume] = []
 
         for idx, item in enumerate(volumes):
-            # 这里可以获取到明确的封面，应该明确写入对应CatalogXXXVolume的cover属性
+            # 这里可以获取到明确的封面，应该明确写入对应 CatalogXXXVolume 的 cover 属性
             cover_src = item.select_one('a.volume-cover > img').get('src')
             volume_title = item.select_one('.volume-info > .v-line').text
             chapters = item.select_one('.chapter-list').select('li a')
@@ -982,8 +985,13 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         return novel_whole
 
     def _fetch_pc(self):
+        if not self._is_driver_initialized:
+            self._init_drissionpage_driver()
+
         book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
         book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
+
+        self._convert_page_language_pc(book_url)
         create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
 
         book_basic_info = self._crawl_book_basic_info_pc(book_url)
@@ -1013,3 +1021,32 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         novel_whole.mark_basic_info_ready()
 
         return novel_whole
+
+    def _convert_page_language_pc(self, book_url):
+        page = self._driver
+        page.get(book_url)
+        translate_btn = page.ele('#GB_BIG')
+        # 显示【繁體化】，则当前页面是简体文本
+        # 显示【简体化】，则当前页面是繁体文本
+        current_text = translate_btn.text
+
+        # 定义繁为 True，简为 False
+        # 一共四种可能：
+        # 1 当前简体 (0)，请求简体 (0) => 跳过
+        # 2 当前繁体 (1)，请求繁体 (1) => 跳过
+        # 3 当前简体 (0)，请求繁体 (1) => 点击转化
+        # 4 当前繁体 (1)，请求简体 (0) => 点击转化
+        # 使用 XOR（异或操作）即可简化处理, 仅当 xor=1 时进行转化
+
+        current_lang = True if '简体'.strip() in current_text else False
+        require_lang = self.spider_settings['traditional']
+        current_lang_repr = "繁体".strip() if current_lang else "简体".strip()
+        require_lang_repr = "繁体".strip() if require_lang else "简体".strip()
+        self.logger.info(f'[LANGUAGE]current_lang={current_lang_repr},require_lang={require_lang_repr}.')
+
+        xor_result = require_lang ^ current_lang
+        if xor_result:
+            result = translate_btn.click()
+            self.logger.info(f'[LANGUAGE]Execute conversion: {current_lang_repr} => {require_lang_repr}.')
+        else:
+            self.logger.info(f'[LANGUAGE]No conversion is required: {current_lang_repr} => {require_lang_repr}.')
