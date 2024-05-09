@@ -1,4 +1,5 @@
 import io
+import time
 
 import pytesseract
 from DrissionPage import ChromiumPage
@@ -10,7 +11,11 @@ page = ChromiumPage()
 url = 'https://www.linovelib.com/novel/2356/83547_2.html'
 # no font obfuscation
 # url = 'https://www.linovelib.com/novel/2356/83547_3.html'
+page.set.load_mode.eager()
+time1 = time.perf_counter()
 resp = page.get(url)
+time2 = time.perf_counter()
+print(f'elapsed: {time2 - time1}')
 js_check = """
 const last_p = document.querySelector('#TextContent p:last-of-type')
 const p_style = window.getComputedStyle(last_p)
@@ -44,6 +49,8 @@ if has_font_obfuscation:
     # https://www.drissionpage.cn/ChromiumPage/ele_operation/#%EF%B8%8F%EF%B8%8F-%E4%BF%AE%E6%94%B9%E5%85%83%E7%B4%A0
     # patch this html by new_text
     last_p.set.innerHTML(new_text)
-    # print(last_p.text)
 else:
     print('No font obfuscation.')
+
+div = page.ele('#TextContent').text
+print(div)

@@ -234,8 +234,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                     # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
                     # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
                     url_next = self._expand_paginated_chapter_links_mobile(catalog_chapter, url_next)
-
-                    # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
                     for page_link in catalog_chapter.chapter_urls:
                         self.apply_crawl_delay('page_crawl_delay')
 
@@ -503,6 +501,8 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
             self._init_drissionpage_driver()
 
         driver: WebPage = self._driver
+        # speedup 1s to 0.3s per page averagely
+        driver.set.load_mode.eager()
 
         def _check_failed_pattern(html, url):
             # Determine whether the content of the page has the following tags(failed case):
