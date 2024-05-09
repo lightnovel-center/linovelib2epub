@@ -98,6 +98,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "sweetnotice",
+      "name": "Neco_arc",
+      "avatar_url": "https://avatars.githubusercontent.com/u/106159757?v=4",
+      "profile": "https://github.com/sweetnotice",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
