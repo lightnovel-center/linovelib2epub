@@ -133,11 +133,12 @@ So the target website has 2 x 2 = 4 choices.
 | website version        | visit method                                       | Support status     | target_site                               |
 |------------------------|----------------------------------------------------|--------------------|-------------------------------------------|
 | PC + `zh/zh-CN`        | www.linovelib.com + click [简体化]                    | ✅(recommend)       | `TargetSite.LINOVELIB_PC`                 |
-| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | WIP                | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❓*(default target) | `TargetSite.LINOVELIB_MOBILE`             |
-| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❓*                 | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | ✅                  | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❌*(default target) | `TargetSite.LINOVELIB_MOBILE`             |
+| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❌*                 | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
-> ❓*: This emoji means there is a high probability that you may be banned by CloudFlare Challenge.
+> ❌*: Updates[2024-05-14].Now drission page library can't visit www.bilinovel.com(mobile version) on PC. So it doesn't
+> work. No workaround now.
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
