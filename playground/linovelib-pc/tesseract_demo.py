@@ -2,7 +2,8 @@ import pytesseract
 from PIL import Image
 
 # Open the PNG image
-image_path = './p.jpg'
+# image_path = './p.jpg'
+image_path = './bookid_2407_prelude_1.png'
 image = Image.open(image_path)
 
 print(pytesseract.get_languages())
