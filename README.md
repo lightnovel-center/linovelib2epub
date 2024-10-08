@@ -99,9 +99,9 @@ py -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
-### install from pypi
+### ~~install from pypi~~
 
-> 注意: 由于爬虫程序对时效非常敏感，而 pypi 发布的版本非常缓慢和滞后，因此目前**强烈不推荐**这种安装方式。
+> 注意: 由于爬虫程序对时效非常敏感，而 pypi 发布形式目前不再更新，不要使用这种安装方式。
 
 1. Install this package from pypi:
 
@@ -115,9 +115,32 @@ pip install linovelib2epub
 pip install linovelib2epub --upgrade
 ```
 
+## Some issues you might encounter during installation
+
+> Microsoft Visual C++ 14.0 or greater is required
+
+See this link: [Which Microsoft Visual C++ compiler to use with a specific Python version ?](https://wiki.python.org/moin/WindowsCompilers#Which_Microsoft_Visual_C.2B-.2B-_compiler_to_use_with_a_specific_Python_version_.3F)
+
+| **Visual C++** | **CPython**          |
+| -------------- | -------------------- |
+| 14.x           | 3.5 - 3.12+          |
+| 10.0           | 3.3 - 3.4            |
+| 9.0            | 2.6 - 2.7, 3.0 - 3.2 |
+
+The key point is:
+- Install [Microsoft Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/). The version greater than 2019 may also can work.
+- In Build tools, install `C++ build tools` and ensure the latest versions of `MSVCv142 - VS 2019 C++ x64/x86 build tools` and `Windows 10 SDK` are checked.
+- The `setuptools` Python package version must be at least 34.4.0.
+
+---
+
+> Could not find function xmlCheckVersion in library libxml2. Is libxml2 installed?
+
+Rollback python version to 3.10.X can work. The exact root cause is unknown now.
+
 ## Usage
 
-### LinovelibMobile
+### Linovelib
 
 > target site: https://w.linovelib.com
 
@@ -125,6 +148,10 @@ pip install linovelib2epub --upgrade
 > In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay
 > parameters as follows.
 > You can tune the delay parameters to fit your actual network environment.
+> 
+> The Linovelib target requires OCR technique to recognize some paragraphs in html. You need 
+> to install [tesseract](https://github.com/UB-Mannheim/tesseract) on your local pc. Make sure the `tesseract` command works
+> in your pc by appending its location to system/user variables.
 
 LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two UI version(PC or mobile).
 
