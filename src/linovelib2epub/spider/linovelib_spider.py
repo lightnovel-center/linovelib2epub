@@ -1,3 +1,4 @@
+import html as builtin_html_lib
 import io
 import random
 import re
@@ -32,6 +33,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
     def __init__(self, spider_settings: Optional[Dict] = None):
         super().__init__(spider_settings)
+        self._debug_mode = self.spider_settings['log_level'].lower() == 'debug' or False
         self._init_http_client()
 
         traditional = self.spider_settings['traditional']
@@ -563,14 +565,29 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
                         # remove all white-spaces and line-break on each side
                         new_text = text.replace(" ", "").strip()
+                        self.logger.debug(f'The text of this patch is: {new_text}')
                         # https://www.drissionpage.cn/ChromiumPage/ele_operation/#%EF%B8%8F%EF%B8%8F-%E4%BF%AE%E6%94%B9%E5%85%83%E7%B4%A0
                         # if new_text is None,then keep original text
                         # Case: https://www.linovelib.com/novel/2356/83534_2.html 「…………」 => ''
                         if new_text:
-                            last_p.set.innerHTML(new_text)
-                        self.logger.debug(f'The text of this patch is: {new_text}')
+                            # 转义 HTML
+                            cleaned_html = re.sub(r'[\r\n]+', '<br>', new_text)
+                            # 转义 HTML 特殊字符
+                            escaped_html = builtin_html_lib.escape(cleaned_html)
+
+                            self.logger.debug(f'{escaped_html=}')
+                            # 这个 set 这一步有可能引发 browser 的 js execution error
+                            last_p.set.innerHTML(escaped_html)
+
+                        # 为了测量 OCR 的准确率，在 DEBUG 模式下，将【url，段落截图，OCR 识别结果，消毒 + 转义的结果】保存到相应的临时文件夹中。
+                        # 后续可能需要采用策略模式，更换不同的 OCR 引擎。
+                        if self._debug_mode:
+                            # create an image contains all these infos
+                            # url,screenshot,ocr_text,final_text
+                            pass
             except Exception as e:
                 # maybe js execution error
+                self.logger.error(f'Error occurred in _patch_font_obfuscation(): {e}')
                 pass
 
         request_count = 0
@@ -616,58 +633,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         return None
 
-    def _init_selenium_driver(self):
-        warnings.warn("Deprecated in the future.", category=DeprecationWarning)
-        chrome_options = Options()
-        # 无头模式
-        if self.spider_settings["headless"]:
-            chrome_options.add_argument("--headless")
-
-        if self.spider_settings['traditional']:
-            chrome_options.add_argument("--lang=zh-TW")
-
-        # 添加自定义 User-Agent
-        ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
-        chrome_options.add_argument(f"user-agent={ua}")
-
-        # [ERROR:ssl_client_socket_impl.cc(970)] handshake failed;
-        # => these arguments are NOT WORK
-        chrome_options.add_argument('--ignore-certificate-errors')
-        chrome_options.add_argument('--ignore-certificate-errors-spki-list')
-        chrome_options.add_argument('--ignore-ssl-errors')
-
-        # suppress logging < FATAL
-        # chrome_options.add_argument("log-level=3")
-
-        # 创建一个 Chrome 浏览器实例并传入选项
-        if self.spider_settings['browser_driver_path']:
-            from selenium.webdriver.chrome.service import Service
-            # r'C:/path/to/chromedriver.exe' => NOT browser PATH
-            driver = webdriver.Chrome(options=chrome_options,
-                                      service=Service(self.spider_settings['browser_driver_path']))
-        else:
-            driver = webdriver.Chrome(options=chrome_options)
-
-        # 'zh-CN' 中文简体
-        # 'zh' 中文
-        # 'zh-TW' 中文（繁体）
-        # 'zh-HK' 中文（中国香港特别行政区）
-        navigator_language = driver.execute_script("return navigator.language.toLowerCase()")
-        self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
-
-        # page timeout
-        timeout = self.spider_settings["http_timeout"] or 10
-        driver.set_page_load_timeout(timeout)
-
-        # hardcode one url is ok
-        url = 'https://www.bilinovel.com/'
-        driver.get(url)
-        # 这个刷新只需要初始化一次，是因为第一次 get 无法得到正常结果。后续的请求都不再需要刷新。
-        driver.refresh()
-        self.logger.info(' 初始化 Driver 完毕...')
-
-        self._driver = driver
-
     def _init_drissionpage_driver(self):
         co = ChromiumOptions()
         if self.spider_settings['browser_path']:
@@ -695,8 +660,6 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # user arguments
         if self.spider_settings["headless"]:
             co.set_argument("--headless")
-        if self.spider_settings['traditional']:
-            co.set_argument("--lang=zh-TW")
 
         # UA
         ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0'
@@ -716,9 +679,14 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         # 'zh-HK' 中文（中国香港特别行政区）
         navigator_language = page.run_js(script="return navigator.language.toLowerCase();")
         self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
+        self.logger.info('Make sure the language of your browser is set to [zh](NOT zh-TW).')
 
         # try requesting a page to detect if it's ok
-        # 目前 linovelib 不需要登录来查看内容
+        url = 'https://www.linovelib.com/'
+        page.get(url)
+        page.refresh()
+
+        # sys.exit(-1)
 
         self._driver = page
         self._is_driver_initialized = True

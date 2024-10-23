@@ -167,6 +167,13 @@ So the target website has 2 x 2 = 4 choices.
 > ❌*: Updates[2024-05-14].Now drission page library can't visit www.bilinovel.com(mobile version) on PC. So it doesn't
 > work. No workaround now.
 
+[Very important!]:
+Whether you are a Chinese Simplified or Chinese Traditional user, MUST set your chrome language to zh as the preferred language
+when you use this project.
+
+![](./docs/assets/set-browser-language-to-zh.png)
+
+
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
 Example usages:
@@ -387,10 +394,11 @@ Don't need login, no threshold.
 
 ## Todo
 
+- [ ] feat: add GOT-OCR2.0 engine alternative for linovelib site
+- [ ] feat: add epubcheck for output files. see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
-- [ ] add installation alternatives: from pypi to git protocol
 
 ## Under the hood
 
