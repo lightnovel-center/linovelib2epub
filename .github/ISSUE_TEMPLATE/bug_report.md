@@ -40,6 +40,7 @@ If applicable, add screenshots to help explain your problem.
 **Environment（软件环境）**
  - 网络环境: 代码是在地球的哪一个区域运行的？这个会影响到网站的自动重定向。
  - OS Verison:  例如：Windows 10 专业版10.0.19045
+ - 浏览器（非常重要）：详细说明你使用的浏览器以及版本号。获取方式：chrome通过 `chrome://version`，edge 通过`edge://version`
  - Python Version: `python --version`
  - Pip Version: `pip --version`
  - Python packages: `pip list`
