@@ -9,7 +9,7 @@ Crawl light novel from some websites and convert it to epub.
 
 | 指标分类             | 指标集                                                                                                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]() [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch) ![PyPI](https://img.shields.io/pypi/v/linovelib2epub)                                                                                                          |
+| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]() [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)                |
 | Code Style       | [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)                                                                                                                                                                                                                                                          |
 | Code Statistics  | ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub) ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)                                                                                                                                                                   |
 | Code Activity    | [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)                                                                    |
@@ -97,22 +97,6 @@ py -m pip install -r requirements.txt
 
 # install this package in local
 python -m pip install -e .
-```
-
-### ~~install from pypi~~
-
-> 注意: 由于爬虫程序对时效非常敏感，而 pypi 发布形式目前不再更新，不要使用这种安装方式。
-
-1. Install this package from pypi:
-
-```
-pip install linovelib2epub
-```
-
-2. update to the latest version:
-
-```
-pip install linovelib2epub --upgrade
 ```
 
 ## Some issues you might encounter during installation
@@ -390,12 +374,11 @@ Don't need login, no threshold.
 |--------------|--------|----------|---------|--------------------------------------------------|
 | http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。 |
 | http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。                          |
-| http_cookie  | string | NO       | ''      | 自定义 HTTP cookie。                                 |
 
 ## Todo
 
-- [ ] feat: add GOT-OCR2.0 engine alternative for linovelib site
-- [ ] feat: add epubcheck for output files. see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
+- [ ] feat: add GOT-OCR2.0 engine alternative for linovelib site, support disable ocr(keep encrypted text.)
+- [ ] feat: [option]add epubcheck for output files. see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体

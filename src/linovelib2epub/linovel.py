@@ -19,7 +19,7 @@ from . import settings
 from .exceptions import LinovelibException
 from .logger import Logger
 from .models import LightNovel, LightNovelVolume, LightNovelImage
-from .spider import ASYNCIO, LinovelibSpider  # type: ignore[attr-defined]
+from .spider import ASYNCIO, LinovelibSpiderMobile, LinovelibSpiderPC  # type: ignore[attr-defined]
 from .spider.masiro_spider import MasiroSpider
 from .spider.wenku8_spider import Wenku8Spider
 from .utils import (create_folder_if_not_exists, random_useragent,
@@ -90,7 +90,15 @@ class EpubWriter:
         if cover_filename is None:
             cover_filename = 'cover'
         _cover_file = cover_filename + '.' + cover_type
-        book.set_cover(_cover_file, open(cover_file, 'rb').read())
+        self.logger.debug(f'Cover file: {_cover_file}')
+        try:
+            book.set_cover(_cover_file, open(cover_file, 'rb').read())
+        except:
+            # MUST set cover file to avoid ebooklib error
+            width, height = 400, 569
+            cover_image_fallback = Image.new("RGB", (width, height), "gray")
+            book.set_cover(_cover_file, cover_image_fallback.tobytes())
+            self.logger.warning("Cover file is not found or can't be opened. => use empty cover.")
 
         book.spine = ["nav", ]
 
@@ -184,9 +192,10 @@ class EpubWriter:
 
         # COVER STYLE
         cover_html = book.get_item_with_id('cover')
-        self._set_default_cover_style(book, cover_html)
-        if self.epub_settings["custom_style_cover"]:
-            self._set_custom_cover_style(book, cover_html)
+        if cover_html:
+            self._set_default_cover_style(book, cover_html)
+            if self.epub_settings["custom_style_cover"]:
+                self._set_custom_cover_style(book, cover_html)
 
         # NAV STYLE
         nav_html = book.get_item_with_id('nav')
@@ -230,7 +239,7 @@ class EpubWriter:
             except (Exception,):
                 return
 
-            # why should we convert all images to jpeg format? => unify to JPEG => get better epub reader support
+            # unify to JPEG => get better epub reader support
             b = io.BytesIO()
             img = img.convert('RGB')
             img.save(b, 'jpeg')
@@ -264,7 +273,7 @@ class EpubWriter:
 
     @staticmethod
     def _get_default_chapter_style() -> EpubItem:
-        style_chapter = read_pkg_resource('./styles/chapter.css')
+        style_chapter = read_pkg_resource('styles', 'chapter.css')
         default_style_chapter = epub.EpubItem(uid="style_chapter", file_name="styles/chapter.css",
                                               media_type="text/css", content=style_chapter)
         return default_style_chapter
@@ -278,7 +287,7 @@ class EpubWriter:
 
     @staticmethod
     def _set_default_cover_style(book: EpubBook, cover_html: EpubHtml) -> None:
-        default_style_cover_content = read_pkg_resource('./styles/cover.css')
+        default_style_cover_content = read_pkg_resource('styles', 'cover.css')
         default_style_cover = epub.EpubItem(uid="style_cover", file_name="styles/cover.css", media_type="text/css",
                                             content=default_style_cover_content)
         cover_html.add_item(default_style_cover)
@@ -292,7 +301,7 @@ class EpubWriter:
 
     @staticmethod
     def _set_default_nav_style(book: EpubBook, nav_html: EpubHtml) -> None:
-        default_style_nav_content = read_pkg_resource('./styles/nav.css')
+        default_style_nav_content = read_pkg_resource('styles', 'nav.css')
         default_style_nav = epub.EpubItem(uid="style_nav", file_name="styles/nav.css",
                                           media_type="text/css", content=default_style_nav_content)
         nav_html.add_item(default_style_nav)
@@ -336,7 +345,8 @@ class Linovelib2Epub:
                  browser_driver_path: str | None = None,
                  chapter_crawl_delay: int | None = 3,
                  page_crawl_delay: int | None = 2,
-                 headless: bool = False
+                 headless: bool = False,
+                 image_download_max_epochs: int | None = None
                  ):
         if book_id is None:
             raise LinovelibException('book_id parameter must be set.')
@@ -344,12 +354,10 @@ class Linovelib2Epub:
         self.target_site = target_site
 
         site_to_base_url = {
-            # https://www.bilinovel.com => https://tw.linovelib.com/ or no changed?
             TargetSite.LINOVELIB_MOBILE: 'https://www.bilinovel.com',
             TargetSite.LINOVELIB_MOBILE_TRADITIONAL: 'https://www.bilinovel.com',
 
             TargetSite.LINOVELIB_PC: 'https://www.linovelib.com',
-            # 翻译版本位置：主页底部【简体化】按钮
             TargetSite.LINOVELIB_PC_TRADITIONAL: 'https://www.linovelib.com',
 
             TargetSite.MASIRO: 'https://masiro.me',
@@ -404,11 +412,15 @@ class Linovelib2Epub:
             'page_crawl_delay': page_crawl_delay,
             'headless': headless,
         }
+
+        if image_download_max_epochs is not None:
+            self.spider_settings.update({'image_download_max_epochs': image_download_max_epochs})
+
         site_to_spider = {
-            TargetSite.LINOVELIB_MOBILE: LinovelibSpider,
-            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: LinovelibSpider,
-            TargetSite.LINOVELIB_PC: LinovelibSpider,
-            TargetSite.LINOVELIB_PC_TRADITIONAL: LinovelibSpider,
+            TargetSite.LINOVELIB_MOBILE: LinovelibSpiderMobile,
+            TargetSite.LINOVELIB_MOBILE_TRADITIONAL: LinovelibSpiderMobile,
+            TargetSite.LINOVELIB_PC: LinovelibSpiderPC,
+            TargetSite.LINOVELIB_PC_TRADITIONAL: LinovelibSpiderPC,
             TargetSite.MASIRO: MasiroSpider,
             TargetSite.WENKU8: Wenku8Spider,
         }

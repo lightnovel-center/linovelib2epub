@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable, Optional, Callable, Awaitable, Union, Dict, Any, List
+from typing import Iterable, Optional, Callable, Awaitable, Union, Dict, Any, List, SupportsBytes
 
 import aiofiles
 import aiohttp as aiohttp
@@ -37,7 +37,9 @@ class BaseNovelWebsiteSpider(ABC):
                              log_filename=self.spider_settings["log_filename"]).get_logger()
 
         # in base class, http session is bare
-        self.session = requests.session()
+        self._session = requests.session()
+
+        self._image_download_max_epochs = self.spider_settings.get('image_download_max_epochs', 10)
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 2
 
@@ -47,7 +49,7 @@ class BaseNovelWebsiteSpider(ABC):
 
     def request_headers(self) -> Dict[str, Any]:
         """
-        Act as a common headers, 这个方法目前在base class中的用例为：下载图片时的默认请求头。
+        Act as a common headers, 这个方法目前在 base class 中的用例为：下载图片时的默认请求头。
         :return:
         """
         return {}
@@ -89,8 +91,8 @@ class BaseNovelWebsiteSpider(ABC):
 
         # url is valid and never downloaded
         try:
-            resp = self.session.get(download_url, headers=self.request_headers(),
-                                    timeout=self.spider_settings['http_timeout'], verify=False)
+            resp = self._session.get(download_url, headers=self.request_headers(),
+                                     timeout=self.spider_settings['http_timeout'], verify=False)
 
             expected_length = resp.headers and resp.headers.get('Content-Length')
             actual_length = resp.raw.tell()
@@ -124,9 +126,15 @@ class BaseNovelWebsiteSpider(ABC):
                                          name=image.download_url)
                      for image in light_novel_images}
             pending: set = tasks
+            self.logger.info(f'Pending task count: {len(pending)}')
             succeed_count = 0
 
-            while pending:
+            # 定义一个变量，表示图片下次的轮数
+            epoch = 0
+            # 定义一个变量，表示图片下载最大的尝试轮数
+            max_epochs = self._image_download_max_epochs
+
+            while pending and epoch < max_epochs:
                 done, pending = await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
                 # Note: This does not raise TimeoutError! Futures that aren't done when the timeout occurs
                 # are returned in the second set
@@ -134,6 +142,7 @@ class BaseNovelWebsiteSpider(ABC):
                 # 1. succeed => normal result in done(# HAPPY CASE)
                 # 2. Timeout => No TimeoutError, put timeout tasks in pending(SAD CASE(need retry))
                 # 3  Other Exception before timeout => (SAD CASE(need retry)
+                epoch += 1
 
                 for done_task in done:
                     exception = done_task.exception()
@@ -152,7 +161,13 @@ class BaseNovelWebsiteSpider(ABC):
                             name=task_url))
 
                 self.logger.info(f'SUCCEED_COUNT: {succeed_count}')
-                self.logger.info(f'[NEXT TURN]Pending task count: {len(pending)}')
+                self.logger.info(f'Image download epochs: {epoch}; [NEXT TURN]Pending task count: {len(pending)}')
+
+            if pending:
+                self.logger.info(f'Try to cancel all pending tasks...')
+                for task in pending:
+                    self.logger.info(f'Cancelling image download task of {task.get_name()}')
+                    task.cancel()
 
     async def _download_image(self, session: ClientSession, download_url: str, local_relative_path: str) -> None:
         if not is_valid_image_url(download_url):
@@ -168,6 +183,7 @@ class BaseNovelWebsiteSpider(ABC):
 
         timeout = aiohttp.ClientTimeout(total=30, connect=15)  # per request timeout
         async with session.get(download_url, headers=self.request_headers(), timeout=timeout) as resp:
+            # strict mode is 200 OK
             if resp.status < 400:
                 image = await resp.read()
 
@@ -313,7 +329,7 @@ class BaseNovelWebsiteSpider(ABC):
         page_url_set = {chapter.chapter_url for volume in catalog_list for chapter in volume.chapters}
         url_to_page = await self.download_pages(session, page_url_set)
 
-        # TODO 下面这部分代码提取到单独的func，不涉及网络请求，只是HTML解构解析
+        # TODO 下面这部分代码提取到单独的 func，不涉及网络请求，只是 HTML 解构解析
 
         #  Main goals:
         #  1. extract body and update dict

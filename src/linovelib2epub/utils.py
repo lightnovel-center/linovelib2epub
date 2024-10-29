@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import os
 import random
 import re
@@ -9,6 +10,7 @@ from typing import Any, Callable, Dict, NoReturn, AnyStr
 
 import aiohttp
 import importlib_resources
+import pkg_resources
 from fake_useragent import UserAgent
 
 
@@ -57,17 +59,17 @@ def requests_get_with_retry(client: Any,
         current_num_of_request += 1
         # 指数退避参考 https://cloud.google.com/memorystore/docs/redis/exponential-backoff?hl=zh-cn#example_algorithm
         # 具体逻辑：
-        # 1.向服务器特定API发出请求。
-        # 2.如果请求失败，请等待 1 + random_number_milliseconds 秒后再重试请求。
-        # 3.如果请求失败，请等待 2 + random_number_milliseconds 秒后再重试请求。
-        # 4.如果请求失败，请等待 4 + random_number_milliseconds 秒后再重试请求。
-        # 5.依此类推，等待时间上限为 maximum_backoff。
+        # 1. 向服务器特定 API 发出请求。
+        # 2. 如果请求失败，请等待 1 + random_number_milliseconds 秒后再重试请求。
+        # 3. 如果请求失败，请等待 2 + random_number_milliseconds 秒后再重试请求。
+        # 4. 如果请求失败，请等待 4 + random_number_milliseconds 秒后再重试请求。
+        # 5. 依此类推，等待时间上限为 maximum_backoff。
         # 等待时间达到上限后，您可以继续等待并重试，直到达到重试次数上限（但接下来的重试操作不会增加各次重试之间的等待时间）。
 
         # 等待时间为 min(((2^n)+random_number_seconds), maximum_backoff)，其中，n 会在每次迭代（请求）后增加 1。
         # 其中：
-        # - random_number_seconds 是小于1的秒数（随机值）。
-        # - maximum_backoff 设置为一个较大的容忍值，这里设置为10s。这是基于经验的估计。
+        # - random_number_seconds 是小于 1 的秒数（随机值）。
+        # - maximum_backoff 设置为一个较大的容忍值，这里设置为 10s。这是基于经验的估计。
         n = current_num_of_request
         random_number_seconds = round(random.uniform(0, 1), 2)  # 0.01-0.99s
         maximum_backoff = 10
@@ -190,9 +192,13 @@ def sanitize_pathname(pathname: str) -> str:
     return re.sub(r"[/\\:*?\"<>|]", "_", pathname)
 
 
-def read_pkg_resource(file_path: str) -> bytes:
-    # file_path example: "./styles/chapter.css"
-    return importlib_resources.open_text(__name__, file_path)
+def read_pkg_resource(folder_name, file_name: str) -> bytes:
+    content = None
+    package_name = __package__
+    with importlib.resources.path(f"{package_name}.{folder_name}", file_name) as path:
+        with open(path, 'rb') as f:
+            content = f.read()
+    return content
 
 
 def async_timed() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -219,6 +225,7 @@ def is_async(func: Callable[..., Any]) -> bool:
 def save_file(file_path: str, data: AnyStr):
     with open(file_path, 'w', encoding='utf-8') as fp:
         fp.write(data)
+
 
 def read_file(file_path: str):
     with open(file_path, 'r', encoding='utf-8') as fp:

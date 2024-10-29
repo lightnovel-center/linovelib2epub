@@ -5,8 +5,7 @@ import re
 import sys
 import textwrap
 import time
-import warnings
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from urllib.parse import urljoin
 
 import demjson3
@@ -16,8 +15,6 @@ import requests
 from DrissionPage import ChromiumOptions, WebPage
 from PIL import Image
 from bs4 import (BeautifulSoup)
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rule import LinovelibMobileRuleParser
@@ -29,7 +26,7 @@ from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
                      requests_get_with_retry)
 
 
-class LinovelibSpider(BaseNovelWebsiteSpider):
+class BaseLinovelibSpider(BaseNovelWebsiteSpider):
 
     def __init__(self, spider_settings: Optional[Dict] = None):
         super().__init__(spider_settings)
@@ -38,27 +35,21 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         traditional = self.spider_settings['traditional']
         mobile = self.spider_settings['mobile']
-        # rule parsing cases：
-        # - mobile
-        #   - zh => 解析 1
-        #   - zh-hk/tw => 解析 2
-        # - pc
-        #    - zh => 解析 3
-        #    - zh-hk/tw => 解析 4 (目前和解析 3 一样)
+        # rule parsing. maybe need to refactor these codes
         if mobile:
             rule_parser = LinovelibMobileRuleParser(logger=self.logger,
                                                     traditional=traditional,
                                                     disable_proxy=self.spider_settings["disable_proxy"])
-            self._mapping_result = rule_parser.generate_mapping_result()
+            mapping_result = rule_parser.generate_mapping_result()
         else:
             rule_parser = LinovelibPCRuleParser(logger=self.logger,
                                                 traditional=traditional,
                                                 disable_proxy=self.spider_settings["disable_proxy"])
-            self._mapping_result = rule_parser.generate_mapping_result()
+            mapping_result = rule_parser.generate_mapping_result()
 
-        self._html_content_id = self._mapping_result.content_id
+        self._html_content_id = mapping_result.content_id
         self.logger.info(f'_html_content_id={self._html_content_id}')
-        self._mapping_dict = self._mapping_result.mapping_dict
+        self._mapping_dict = mapping_result.mapping_dict
         self.logger.info(f'len(_mapping_dict)={len(self._mapping_dict.keys())}')
 
         self.FETCH_CHAPTER_CONCURRENCY_LEVEL = 1
@@ -67,6 +58,12 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         self._driver = None
 
     def request_headers(self, referer: str = '', random_ua: bool = True):
+        """
+        TODO 不要过度设计，这个方法可以置空，将实现推迟到子类。只有子类才知道该如何构造特定的 headers 来应对特定的场合（图片，或者页面文本）
+        :param referer:
+        :param random_ua:
+        :return:
+        """
         default_mobile_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0'
         default_referer = 'https://www.bilinovel.com'
         headers = {
@@ -81,9 +78,9 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
     def fetch(self) -> LightNovel:
         start = time.perf_counter()
         if self.spider_settings['mobile']:
-            novel_whole = self._fetch_mobile()
+            novel_whole = LinovelibSpiderMobile().fetch()
         else:
-            novel_whole = self._fetch_pc()
+            novel_whole = LinovelibSpiderPC().fetch()
         self.logger.info('(Perf metrics) Fetch Book took: {} seconds'.format(time.perf_counter() - start))
 
         return novel_whole
@@ -94,413 +91,22 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         Guideline: Don't move many concrete init logics to super class __init__()
         """
-        self.session = requests.Session()
+        self._session = requests.Session()
 
         if self.spider_settings["disable_proxy"]:
-            self.session.trust_env = False
+            self._session.trust_env = False
 
+        # Currently, not use this parameter as api
         # cookie example: PHPSESSID=...; night=0; jieqiUserInfo=...; jieqiVisitInfo=...
         if self.spider_settings["http_cookie"]:
             cookie_dict = cookiedict_from_str(self.spider_settings["http_cookie"])
             cookiejar = requests.utils.cookiejar_from_dict(cookie_dict)
-            self.session.cookies = cookiejar
-
-    def _crawl_book_basic_info_mobile(self, url) -> Tuple | None:
-        result = requests_get_with_retry(self.session,
-                                         url,
-                                         headers=self.request_headers(),
-                                         retry_max=self.spider_settings['http_retries'],
-                                         timeout=self.spider_settings["http_timeout"],
-                                         logger=self.logger)
-
-        if result and result.status_code == 200:
-            self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
-            soup = BeautifulSoup(result.text, 'lxml')
-
-            try:
-                book_title = soup.find('h1', {'class': 'book-title'}).text
-                author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
-                book_summary = soup.find('section', id="bookSummary").text
-                # see issue #10, strip invalid suffix characters after ? from cover url
-                book_cover_url = soup.find('img', {'class': 'book-cover'})['src'].split("?")[0]
-
-                self.logger.info(f'book name:《{book_title}》')
-                return book_title, author, book_summary, book_cover_url
-            except (Exception,):
-                self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
-
-        return None
-
-    def _crawl_book_basic_info_pc(self, url) -> Tuple | None:
-        result = requests_get_with_retry(self.session,
-                                         url,
-                                         headers=self.request_headers(),
-                                         retry_max=self.spider_settings['http_retries'],
-                                         timeout=self.spider_settings["http_timeout"],
-                                         logger=self.logger)
-
-        if result and result.status_code == 200:
-            self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
-            soup = BeautifulSoup(result.text, 'lxml')
-
-            try:
-                book_title = soup.find('h1', {'class': 'book-name'}).text
-                author = soup.find('div', {'class': 'au-name'}).text.strip()
-                book_summary = soup.find('div', {'class': 'book-dec'}).find('p').text
-                # see issue #10, strip invalid suffix characters after ? from cover url
-                book_cover_url = soup.find('div', {'class': 'book-img'}).find('img')['src'].split("?")[0]
-
-                self.logger.info(f'book name:《{book_title}》')
-                return book_title, author, book_summary, book_cover_url
-            except (Exception,):
-                self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
-
-        return None
-
-    def _crawl_book_content_mobile(self, catalog_url) -> Optional[LightNovel]:
-        # 不要提取这类工具函数到上一层，因为 mobile 和 pc 的网页版本往往不一样，没法重用，不要过度设计。
-        def _anti_js_obfuscation_mobile(html):
-            """
-            recover original text of the novel content.
-
-            :param html:
-            :return: html after anti-js obfuscation
-            """
-            table = str.maketrans(self._mapping_dict)
-            res = html.translate(table)
-            return res
-
-        def _sanitize_html_mobile(html: BeautifulSoup) -> str:
-            """
-            Strip useless script on body tag by reg or soup library method.
-            e.g. <script>zation();</script>
-
-            And remove all the content not needed.
-
-            :param html:
-            :return:
-            """
-            html_copy = BeautifulSoup(str(html), 'lxml')
-
-            # remove <p class="ca1"> 去掉一些公告声明
-            anouncements = html_copy.select(".ca1")
-            for anouncement in anouncements:
-                anouncement.decompose()
-
-            return re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
-
-        book_catalog_rs = None
-        try:
-            book_catalog_rs = requests_get_with_retry(self.session,
-                                                      catalog_url,
-                                                      headers=self.request_headers(),
-                                                      retry_max=self.spider_settings['http_retries'],
-                                                      timeout=self.spider_settings["http_timeout"],
-                                                      logger=self.logger)
-        except (Exception,):
-            self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
-
-        if book_catalog_rs and book_catalog_rs.status_code == 200:
-            self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
-
-            catalog_html = book_catalog_rs.text
-            catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list_mobile(catalog_html)
-            if self.spider_settings['select_volume_mode']:
-                catalog_list = self._handle_select_volume(catalog_list)
-
-            new_novel = LightNovel()
-            url_next = ''
-
-            volume_id = -1
-            for catalog_volume in catalog_list:
-                volume_id += 1
-
-                new_volume = LightNovelVolume(volume_id=volume_id)
-                new_volume.title = catalog_volume.volume_title
-                self.logger.info(f'volume: {catalog_volume.volume_title}')
-
-                chapter_id = -1
-                chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
-                for catalog_chapter in catalog_volume.chapters:
-                    self.apply_crawl_delay('chapter_crawl_delay')
-
-                    chapter_content = ''
-                    chapter_title = catalog_chapter.chapter_title
-                    chapter_id += 1
-
-                    light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
-                    light_novel_chapter.title = chapter_title
-                    chapter_illustrations: List[LightNovelImage] = []
-                    self.logger.info(f'chapter : {chapter_title}')
-
-                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
-                    # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
-                    url_next = self._expand_paginated_chapter_links_mobile(catalog_chapter, url_next)
-                    for page_link in catalog_chapter.chapter_urls:
-                        self.apply_crawl_delay('page_crawl_delay')
-
-                        # retry until get the correct title & content body
-                        while True:
-                            try:
-                                # selenium -> drissionpage 仅仅是为了降低被 CF 识别的频率
-                                page_resp = self._fetch_page(page_link,
-                                                             max_retries=self.spider_settings['http_retries'])
-                            except (Exception,):
-                                continue
-
-                            # double check if the title exists
-                            page_resp = page_resp or ''
-                            soup = BeautifulSoup(page_resp, 'lxml')
-                            new_title = soup.find(id='atitle')
-                            if new_title is not None:
-                                self.logger.debug(f'page({page_link}) size={len(page_resp)}')
-                                break
-
-                        # 分页判断过滤
-                        if not new_title.text.startswith(light_novel_chapter.title):
-                            # 目录：第二章 可爱如花的 N 孩
-                            # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
-                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于 new_title 可能带有分页信息，所以不能 ==
-                            self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title.text}]')
-                            light_novel_chapter.title = new_title.text
-
-                        images = soup.find_all('img')
-
-                        # solve dynamic id
-                        # <div id="acontent1" class="acontent">
-                        article_soup = soup.find(id=self._html_content_id)
-                        if not article_soup:
-                            hints = """
-                            This can happen for the following reasons:
-                            - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
-                            - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
-                             without specifying the target_site parameter. => Refer README document and set the target_site parameter.
-                            """
-                            dedent_hints = textwrap.dedent(hints)
-                            self.logger.fatal(
-                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
-                                f'{dedent_hints}')
-                            sys.exit(1)
-
-                        article = _sanitize_html_mobile(article_soup)
-                        for _, image in enumerate(images):
-                            # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
-                            # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
-                            html_image_src = re.search('(?<= src=").*?(?=")', str(image))
-                            image_lazyload_src = image.get("data-src")
-
-                            if image_lazyload_src:
-                                remote_src = re.search('(?<= data-src=").*?(?=")', str(image)).group()
-                            else:
-                                remote_src = image.get("src")
-
-                            light_novel_image = LightNovelImage(related_page_url=page_link, remote_src=remote_src,
-                                                                chapter_id=chapter_id, volume_id=volume_id,
-                                                                book_id=self.spider_settings["book_id"])
-
-                            image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
-                            local_image = str(image).replace(str(html_image_src.group()), image_local_src)
-                            article = article.replace(str(image), local_image)
-                            chapter_illustrations.append(light_novel_image)
-
-                        article = _anti_js_obfuscation_mobile(article)
-                        chapter_content += article
-
-                        self.logger.info(f'Processing page... {page_link}')
-
-                    light_novel_chapter.content = chapter_content
-                    light_novel_chapter.illustrations = chapter_illustrations
-                    chapter_list.append(light_novel_chapter)
-
-                self._remove_duplicate_images_in_html(chapter_list)
-
-                for chapter in chapter_list:
-                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
-                                           illustrations=chapter.illustrations)
-
-                new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
-
-            return new_novel
-
-        else:
-            self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
-
-        return None
-
-    def _crawl_book_content_pc(self, catalog_url):
-        def _anti_js_obfuscation_pc(html):
-            """
-            recover original text of the novel content.
-
-            :param html:
-            :return: html after anti-js obfuscation
-            """
-            # see https://github.com/lightnovel-center/linovelib2epub/issues/46#issuecomment-2080431115
-            # take https://www.linovelib.com/novel/2356/83546_2.html as a case to analyze
-            table = str.maketrans(self._mapping_dict)
-            res = html.translate(table)
-            return res
-
-        def _sanitize_html_pc(html: BeautifulSoup) -> str:
-            """
-            Strip useless script on body tag by reg or soup library method.
-            e.g. <div class="dag">...</div>
-
-            And remove all the content not needed.
-
-            :param html:
-            :return:
-            """
-            html_copy = BeautifulSoup(str(html), 'lxml')
-
-            # remove <div class="dag">...</div>
-            anouncements = html_copy.select("div.dag")
-            for anouncement in anouncements:
-                anouncement.decompose()
-
-            res = re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
-            return res
-
-        book_catalog_rs = None
-        try:
-            book_catalog_rs = requests_get_with_retry(self.session,
-                                                      catalog_url,
-                                                      headers=self.request_headers(),
-                                                      retry_max=self.spider_settings['http_retries'],
-                                                      timeout=self.spider_settings["http_timeout"],
-                                                      logger=self.logger)
-        except (Exception,):
-            self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
-
-        if book_catalog_rs and book_catalog_rs.status_code == 200:
-            self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
-
-            catalog_html = book_catalog_rs.text
-            catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list_pc(catalog_html)
-            if self.spider_settings['select_volume_mode']:
-                catalog_list = self._handle_select_volume(catalog_list)
-
-            new_novel = LightNovel()
-            url_next = ''
-
-            volume_id = -1
-            for catalog_volume in catalog_list:
-                volume_id += 1
-
-                new_volume = LightNovelVolume(volume_id=volume_id)
-                new_volume.title = catalog_volume.volume_title
-                new_volume.explicit_volume_cover = catalog_volume.volume_cover
-                self.logger.info(f'volume: {catalog_volume.volume_title}')
-
-                chapter_id = -1
-                chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
-                for catalog_chapter in catalog_volume.chapters:
-                    self.apply_crawl_delay('chapter_crawl_delay')
-
-                    chapter_content = ''
-                    chapter_title = catalog_chapter.chapter_title
-                    chapter_id += 1
-
-                    light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
-                    light_novel_chapter.title = chapter_title
-                    chapter_illustrations: List[LightNovelImage] = []
-                    self.logger.info(f'chapter : {chapter_title}')
-
-                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
-                    # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
-                    url_next = self._expand_paginated_chapter_links_pc(catalog_chapter, url_next)
-
-                    # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
-                    for page_link in catalog_chapter.chapter_urls:
-                        self.apply_crawl_delay('page_crawl_delay')
-
-                        while True:
-                            try:
-                                html_resp = self._fetch_page(page_link,
-                                                             max_retries=self.spider_settings['http_retries'])
-                            except (Exception,):
-                                continue
-
-                            # # double check if the title exists
-                            html_resp = html_resp or ''
-                            soup = BeautifulSoup(html_resp, 'lxml')
-                            main_text = soup.find(id='mlfy_main_text')
-                            if main_text and main_text.select_one('h1') and main_text.select_one('#TextContent'):
-                                new_title = main_text.select_one('h1').text
-                                self.logger.debug(f'page({page_link}) size={len(html_resp)}')
-                                break
-
-                        # 分页判断过滤
-                        if not new_title.startswith(light_novel_chapter.title):
-                            # 目录：第二章 可爱如花的 N 孩
-                            # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
-                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于 new_title 可能带有分页信息，所以不能 ==
-                            self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title}]')
-                            light_novel_chapter.title = new_title
-
-                        images = soup.find_all('img')
-                        article_soup = soup.find(id=self._html_content_id)
-                        if not article_soup:
-                            hints = """
-                                This can happen for the following reasons:
-                                - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
-                                - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
-                                 without specifying the target_site parameter. => Refer README document and set the target_site parameter.
-                                """
-                            dedent_hints = textwrap.dedent(hints)
-                            self.logger.fatal(
-                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
-                                f'{dedent_hints}')
-                            sys.exit(1)
-
-                        article = _sanitize_html_pc(article_soup)
-                        for _, image in enumerate(images):
-                            # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
-                            # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
-                            html_image_src = re.search('(?<= src=").*?(?=")', str(image))
-                            image_lazyload_src = image.get("data-src")
-
-                            if image_lazyload_src:
-                                remote_src = re.search('(?<= data-src=").*?(?=")', str(image)).group()
-                            else:
-                                remote_src = image.get("src")
-
-                            light_novel_image = LightNovelImage(related_page_url=page_link, remote_src=remote_src,
-                                                                chapter_id=chapter_id, volume_id=volume_id,
-                                                                book_id=self.spider_settings["book_id"])
-
-                            image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
-                            local_image = str(image).replace(str(html_image_src.group()), image_local_src)
-                            article = article.replace(str(image), local_image)
-                            chapter_illustrations.append(light_novel_image)
-
-                        article = _anti_js_obfuscation_pc(article)
-                        chapter_content += article
-
-                        self.logger.info(f'Processing page... {page_link}')
-
-                    light_novel_chapter.content = chapter_content
-                    light_novel_chapter.illustrations = chapter_illustrations
-                    chapter_list.append(light_novel_chapter)
-
-                self._remove_duplicate_images_in_html(chapter_list)
-
-                for chapter in chapter_list:
-                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
-                                           illustrations=chapter.illustrations)
-
-                new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
-
-            return new_novel
-
-        else:
-            self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
-
-        return None
+            self._session.cookies = cookiejar
 
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
         if not self._is_driver_initialized:
-            self._init_drissionpage_driver()
+            warm_up_url = 'https://www.bilinovel.com/'
+            self._init_drissionpage_driver(url)
 
         driver: WebPage = self._driver
         # speedup 1s to 0.3s per page averagely
@@ -633,7 +239,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
 
         return None
 
-    def _init_drissionpage_driver(self):
+    def _init_drissionpage_driver(self, warm_up_url: str):
         co = ChromiumOptions()
         if self.spider_settings['browser_path']:
             # path = r'D:\Chrome\Chrome.exe'
@@ -682,88 +288,18 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         self.logger.info('Make sure the language of your browser is set to [zh](NOT zh-TW).')
 
         # try requesting a page to detect if it's ok
-        url = 'https://www.linovelib.com/'
-        page.get(url)
+        page.get(warm_up_url)
         page.refresh()
-
-        # sys.exit(-1)
 
         self._driver = page
         self._is_driver_initialized = True
         self.logger.info(' 初始化 Driver 完毕...')
 
-    def apply_crawl_delay(self, delay_name):
+    def _apply_crawl_delay(self, delay_name):
         crawl_delay = self.spider_settings.get(delay_name, None)
         if crawl_delay:
             time.sleep(crawl_delay)
             self.logger.debug(f'Apply {delay_name}(s): {crawl_delay}')
-
-    def _expand_paginated_chapter_links_mobile(self, chapter: CatalogLinovelibChapter, url_next):
-        # fix broken links in place(catalog_lis) if exits
-        # - if chapter[1] is valid link, assign it to url_next
-        # - if chapter[1] is not a valid link,e.g. "javascript:cid(0)" etc. use url_next
-        if not self._is_valid_chapter_link(chapter.chapter_url):
-            # now the url_next value is the correct link of of chapter[1].
-            chapter.chapter_url = url_next
-        else:
-            url_next = chapter.chapter_url
-
-        # goal: solve all page links of a certain chapter
-        while True:
-            resp = requests_get_with_retry(self.session, url_next,
-                                           headers=self.request_headers(),
-                                           retry_max=self.spider_settings['http_retries'],
-                                           timeout=self.spider_settings["http_timeout"],
-                                           logger=self.logger)
-            if resp:
-                soup = BeautifulSoup(resp.text, 'lxml')
-            else:
-                raise Exception(f'[ERROR]: request {url_next} failed.')
-
-            first_script = soup.find("body", {"id": "aread"}).find("script")
-            first_script_text = first_script.text
-            # alternative: use split(':')[-1] to get read_params_text
-            read_params_text = first_script_text[len('var ReadParams='):]
-            read_params_json = demjson3.decode(read_params_text)
-            url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
-
-            if '_' in url_next:
-                chapter.add_expand_paginated_chapter_url(url_next)
-            else:
-                break
-
-        return url_next
-
-    def _expand_paginated_chapter_links_pc(self, chapter: CatalogLinovelibChapter, url_next):
-        if not self._is_valid_chapter_link(chapter.chapter_url):
-            chapter.chapter_url = url_next
-        else:
-            url_next = chapter.chapter_url
-
-        # goal: solve all page links of a certain chapter
-        while True:
-            resp = requests_get_with_retry(self.session, url_next,
-                                           headers=self.request_headers(),
-                                           retry_max=self.spider_settings['http_retries'],
-                                           timeout=self.spider_settings["http_timeout"],
-                                           logger=self.logger)
-            if resp:
-                soup = BeautifulSoup(resp.text, 'lxml')
-            else:
-                raise Exception(f'[ERROR]: request {url_next} failed.')
-
-            paging = soup.select_one('.mlfy_page')
-            links = paging.select('a')
-            links_has_href = [link for link in links if link.has_attr('href')]
-            url_next_href = links_has_href[-1].get('href')
-            url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', url_next_href)
-
-            if '_' in url_next:
-                chapter.add_expand_paginated_chapter_url(url_next)
-            else:
-                break
-
-        return url_next
 
     def _remove_duplicate_images_in_html(self, chapter_list):
         # removing duplicate images in the first chapter
@@ -792,7 +328,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
                                          chapter_list[0].content)
 
     @staticmethod
-    def _handle_select_volume(catalog_list: List[CatalogLinovelibVolume]):
+    def _handle_select_volume(catalog_list: List[CatalogLinovelibVolume]) -> List[Any]:
         def _reduce_catalog_by_selection(catalog_list: List[CatalogLinovelibVolume], selection_array):
             return [volume for volume in catalog_list if volume.vid in selection_array]
 
@@ -816,7 +352,255 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         catalog_list = _reduce_catalog_by_selection(catalog_list, answers[question_name])
         return catalog_list
 
-    def _convert_to_catalog_list_mobile(self, catalog_html) -> List[CatalogLinovelibVolume]:
+    @staticmethod
+    def _is_valid_chapter_link(href: str):
+        # normal link example: https://w.linovelib.com/novel/682/117077.html
+        # broken link example: javascript: cid(0)
+        # use https://regex101.com/ to debug regular expression
+        reg = r"\S+/novel/\d+/\S+\.html"
+        re_match = bool(re.match(reg, href))
+        return re_match
+
+    @staticmethod
+    def _extract_image_list(image_dict=None):
+        image_url_list = []
+        for volume_images in image_dict.values():
+            for index in range(0, len(volume_images)):
+                image_url_list.append(volume_images[index])
+
+        return image_url_list
+
+
+class LinovelibSpiderMobile(BaseLinovelibSpider):
+
+    def fetch(self):
+        book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
+        book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
+        create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
+
+        book_basic_info = self._crawl_book_basic_info(book_url)
+        if not book_basic_info:
+            raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
+
+        new_novel_with_content = self._crawl_book_content(book_catalog_url)
+        if not new_novel_with_content:
+            raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
+
+        # do better: use named tuple or class like NovelBasicInfoGroup
+        book_title, author, book_summary, book_cover = book_basic_info
+        novel_whole = new_novel_with_content
+        novel_whole.mark_volumes_content_ready()
+
+        # set book basic info
+        novel_whole.book_id = self.spider_settings['book_id']
+        novel_whole.book_title = book_title
+        novel_whole.author = author
+        novel_whole.description = book_summary
+        novel_whole.book_cover = LightNovelImage(related_page_url=book_url,
+                                                 remote_src=book_cover,
+                                                 book_id=self.spider_settings["book_id"],
+                                                 is_book_cover=True)
+        novel_whole.mark_basic_info_ready()
+
+        return novel_whole
+
+    def _crawl_book_basic_info(self, url) -> Tuple | None:
+        result = requests_get_with_retry(self._session,
+                                         url,
+                                         headers=self.request_headers(),
+                                         retry_max=self.spider_settings['http_retries'],
+                                         timeout=self.spider_settings["http_timeout"],
+                                         logger=self.logger)
+
+        if result and result.status_code == 200:
+            self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
+            soup = BeautifulSoup(result.text, 'lxml')
+
+            try:
+                book_title = soup.find('h1', {'class': 'book-title'}).text
+                author = soup.find('div', {'class': 'book-rand-a'}).text[:-2]
+                book_summary = soup.find('section', id="bookSummary").text
+                # see issue #10, strip invalid suffix characters after ? from cover url
+                book_cover_url = soup.find('img', {'class': 'book-cover'})['src'].split("?")[0]
+
+                self.logger.info(f'book name:《{book_title}》')
+                return book_title, author, book_summary, book_cover_url
+            except (Exception,):
+                self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
+
+        return None
+
+    def _crawl_book_content(self, catalog_url) -> Optional[LightNovel]:
+        # 不要提取这类工具函数到上一层，因为 mobile 和 pc 的网页版本往往不一样，没法重用，不要过度设计。
+        def _anti_js_obfuscation(html):
+            """
+            recover original text of the novel content.
+
+            :param html:
+            :return: html after anti-js obfuscation
+            """
+            table = str.maketrans(self._mapping_dict)
+            res = html.translate(table)
+            return res
+
+        def _sanitize_html(html: BeautifulSoup) -> str:
+            """
+            Strip useless script on body tag by reg or soup library method.
+            e.g. <script>zation();</script>
+
+            And remove all the content not needed.
+
+            :param html:
+            :return:
+            """
+            html_copy = BeautifulSoup(str(html), 'lxml')
+
+            # remove <p class="ca1"> 去掉一些公告声明
+            anouncements = html_copy.select(".ca1")
+            for anouncement in anouncements:
+                anouncement.decompose()
+
+            return re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
+
+        book_catalog_rs = None
+        try:
+            book_catalog_rs = requests_get_with_retry(self._session,
+                                                      catalog_url,
+                                                      headers=self.request_headers(),
+                                                      retry_max=self.spider_settings['http_retries'],
+                                                      timeout=self.spider_settings["http_timeout"],
+                                                      logger=self.logger)
+        except (Exception,):
+            self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
+
+        if book_catalog_rs and book_catalog_rs.status_code == 200:
+            self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+
+            catalog_html = book_catalog_rs.text
+            catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list(catalog_html)
+            if self.spider_settings['select_volume_mode']:
+                catalog_list = self._handle_select_volume(catalog_list)
+
+            new_novel = LightNovel()
+            url_next = ''
+
+            volume_id = -1
+            for catalog_volume in catalog_list:
+                volume_id += 1
+
+                new_volume = LightNovelVolume(volume_id=volume_id)
+                new_volume.title = catalog_volume.volume_title
+                self.logger.info(f'volume: {catalog_volume.volume_title}')
+
+                chapter_id = -1
+                chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
+                for catalog_chapter in catalog_volume.chapters:
+                    self._apply_crawl_delay('chapter_crawl_delay')
+
+                    chapter_content = ''
+                    chapter_title = catalog_chapter.chapter_title
+                    chapter_id += 1
+
+                    light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
+                    light_novel_chapter.title = chapter_title
+                    chapter_illustrations: List[LightNovelImage] = []
+                    self.logger.info(f'chapter : {chapter_title}')
+
+                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
+                    # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
+                    url_next = self._expand_paginated_chapter_links(catalog_chapter, url_next)
+                    for page_link in catalog_chapter.chapter_urls:
+                        self._apply_crawl_delay('page_crawl_delay')
+
+                        # retry until get the correct title & content body
+                        while True:
+                            try:
+                                page_resp = self._fetch_page(page_link,
+                                                             max_retries=self.spider_settings['http_retries'])
+                            except (Exception,):
+                                continue
+
+                            # double check if the title exists
+                            page_resp = page_resp or ''
+                            soup = BeautifulSoup(page_resp, 'lxml')
+                            new_title = soup.find(id='atitle')
+                            if new_title is not None:
+                                self.logger.debug(f'page({page_link}) size={len(page_resp)}')
+                                break
+
+                        # 分页判断过滤
+                        if not new_title.text.startswith(light_novel_chapter.title):
+                            # 目录：第二章 可爱如花的 N 孩
+                            # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
+                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于 new_title 可能带有分页信息，所以不能 ==
+                            self.logger.info(
+                                f'chapter : [{light_novel_chapter.title}] New Title= [{new_title.text}]')
+                            light_novel_chapter.title = new_title.text
+
+                        images = soup.find_all('img')
+
+                        # solve dynamic id
+                        # <div id="acontent1" class="acontent">
+                        article_soup = soup.find(id=self._html_content_id)
+                        if not article_soup:
+                            hints = """
+                            This can happen for the following reasons:
+                            - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                            - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
+                             without specifying the target_site parameter. => Refer README document and set the target_site parameter.
+                            """
+                            dedent_hints = textwrap.dedent(hints)
+                            self.logger.fatal(
+                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
+                                f'{dedent_hints}')
+                            sys.exit(1)
+
+                        article = _sanitize_html(article_soup)
+                        for _, image in enumerate(images):
+                            # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
+                            # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
+                            html_image_src = re.search('(?<= src=").*?(?=")', str(image))
+                            image_lazyload_src = image.get("data-src")
+
+                            if image_lazyload_src:
+                                remote_src = re.search('(?<= data-src=").*?(?=")', str(image)).group()
+                            else:
+                                remote_src = image.get("src")
+
+                            light_novel_image = LightNovelImage(related_page_url=page_link, remote_src=remote_src,
+                                                                chapter_id=chapter_id, volume_id=volume_id,
+                                                                book_id=self.spider_settings["book_id"])
+
+                            image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
+                            local_image = str(image).replace(str(html_image_src.group()), image_local_src)
+                            article = article.replace(str(image), local_image)
+                            chapter_illustrations.append(light_novel_image)
+
+                        article = _anti_js_obfuscation(article)
+                        chapter_content += article
+
+                        self.logger.info(f'Processing page... {page_link}')
+
+                    light_novel_chapter.content = chapter_content
+                    light_novel_chapter.illustrations = chapter_illustrations
+                    chapter_list.append(light_novel_chapter)
+
+                self._remove_duplicate_images_in_html(chapter_list)
+
+                for chapter in chapter_list:
+                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
+                                           illustrations=chapter.illustrations)
+
+                new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
+
+            return new_novel
+
+        else:
+            self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+
+        return None
+
+    def _convert_to_catalog_list(self, catalog_html) -> List[CatalogLinovelibVolume]:
         soup_catalog = BeautifulSoup(catalog_html, 'lxml')
         catalog_wrapper = soup_catalog.find('div', {'id': 'volumes'})
         catalog_volumes = catalog_wrapper.find_all('div', {'class': 'catalog-volume'})
@@ -868,7 +652,282 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume.chapters]
         return catalog_list
 
-    def _convert_to_catalog_list_pc(self, catalog_html) -> List[CatalogLinovelibVolume]:
+    def _expand_paginated_chapter_links(self, chapter: CatalogLinovelibChapter, url_next):
+        # fix broken links in place(catalog_lis) if exits
+        # - if chapter[1] is valid link, assign it to url_next
+        # - if chapter[1] is not a valid link,e.g. "javascript:cid(0)" etc. use url_next
+        if not self._is_valid_chapter_link(chapter.chapter_url):
+            # now the url_next value is the correct link of of chapter[1].
+            chapter.chapter_url = url_next
+        else:
+            url_next = chapter.chapter_url
+
+        # goal: solve all page links of a certain chapter
+        while True:
+            resp = requests_get_with_retry(self._session, url_next,
+                                           headers=self.request_headers(),
+                                           retry_max=self.spider_settings['http_retries'],
+                                           timeout=self.spider_settings["http_timeout"],
+                                           logger=self.logger)
+            if resp:
+                soup = BeautifulSoup(resp.text, 'lxml')
+            else:
+                raise Exception(f'[ERROR]: request {url_next} failed.')
+
+            first_script = soup.find("body", {"id": "aread"}).find("script")
+            first_script_text = first_script.text
+            # alternative: use split(':')[-1] to get read_params_text
+            read_params_text = first_script_text[len('var ReadParams='):]
+            read_params_json = demjson3.decode(read_params_text)
+            url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', read_params_json['url_next'])
+
+            if '_' in url_next:
+                chapter.add_expand_paginated_chapter_url(url_next)
+            else:
+                break
+
+        return url_next
+
+
+class LinovelibSpiderPC(BaseLinovelibSpider):
+
+    def fetch(self):
+        if not self._is_driver_initialized:
+            warm_up_url = 'https://www.linovelib.com/'
+            self._init_drissionpage_driver(warm_up_url)
+
+        book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
+        book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
+
+        self._convert_page_language(book_url)
+        create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
+
+        book_basic_info = self._crawl_book_basic_info(book_url)
+        if not book_basic_info:
+            raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
+
+        # do better: use named tuple or class like NovelBasicInfoGroup
+        book_title, author, book_summary, book_cover = book_basic_info
+        # print(book_title, author, book_summary, book_cover)
+
+        new_novel_with_content = self._crawl_book_content(book_catalog_url)
+        if not new_novel_with_content:
+            raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
+
+        novel_whole = new_novel_with_content
+        novel_whole.mark_volumes_content_ready()
+
+        # set book basic info
+        novel_whole.book_id = self.spider_settings['book_id']
+        novel_whole.book_title = book_title
+        novel_whole.author = author
+        novel_whole.description = book_summary
+        novel_whole.book_cover = LightNovelImage(related_page_url=book_url,
+                                                 remote_src=book_cover,
+                                                 book_id=self.spider_settings["book_id"],
+                                                 is_book_cover=True)
+        novel_whole.mark_basic_info_ready()
+
+        return novel_whole
+
+    def _crawl_book_basic_info(self, url) -> Tuple | None:
+        result = requests_get_with_retry(self._session,
+                                         url,
+                                         headers=self.request_headers(),
+                                         retry_max=self.spider_settings['http_retries'],
+                                         timeout=self.spider_settings["http_timeout"],
+                                         logger=self.logger)
+
+        if result and result.status_code == 200:
+            self.logger.info(f'Succeed to get the novel of book_id: {self.spider_settings["book_id"]}')
+            soup = BeautifulSoup(result.text, 'lxml')
+
+            try:
+                book_title = soup.find('h1', {'class': 'book-name'}).text
+                author = soup.find('div', {'class': 'au-name'}).text.strip()
+                book_summary = soup.find('div', {'class': 'book-dec'}).find('p').text
+                # see issue #10, strip invalid suffix characters after ? from cover url
+                book_cover_url = soup.find('div', {'class': 'book-img'}).find('img')['src'].split("?")[0]
+
+                self.logger.info(f'book name:《{book_title}》')
+                return book_title, author, book_summary, book_cover_url
+            except (Exception,):
+                self.logger.error(f'Failed to parse basic info of book_id: {self.spider_settings["book_id"]}')
+
+        return None
+
+    def _crawl_book_content(self, catalog_url):
+        def _anti_js_obfuscation(html):
+            """
+            recover original text of the novel content.
+
+            :param html:
+            :return: html after anti-js obfuscation
+            """
+            # see https://github.com/lightnovel-center/linovelib2epub/issues/46#issuecomment-2080431115
+            # take https://www.linovelib.com/novel/2356/83546_2.html as a case to analyze
+            table = str.maketrans(self._mapping_dict)
+            res = html.translate(table)
+            return res
+
+        def _sanitize_html(html: BeautifulSoup) -> str:
+            """
+            Strip useless script on body tag by reg or soup library method.
+            e.g. <div class="dag">...</div>
+
+            And remove all the content not needed.
+
+            :param html:
+            :return:
+            """
+            html_copy = BeautifulSoup(str(html), 'lxml')
+
+            # remove <div class="dag">...</div>
+            anouncements = html_copy.select("div.dag")
+            for anouncement in anouncements:
+                anouncement.decompose()
+
+            res = re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
+            return res
+
+        book_catalog_rs = None
+        try:
+            book_catalog_rs = requests_get_with_retry(self._session,
+                                                      catalog_url,
+                                                      headers=self.request_headers(),
+                                                      retry_max=self.spider_settings['http_retries'],
+                                                      timeout=self.spider_settings["http_timeout"],
+                                                      logger=self.logger)
+        except (Exception,):
+            self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
+
+        if book_catalog_rs and book_catalog_rs.status_code == 200:
+            self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+
+            catalog_html = book_catalog_rs.text
+            catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list(catalog_html)
+            if self.spider_settings['select_volume_mode']:
+                catalog_list = self._handle_select_volume(catalog_list)
+
+            new_novel = LightNovel()
+            url_next = ''
+
+            volume_id = -1
+            for catalog_volume in catalog_list:
+                volume_id += 1
+
+                new_volume = LightNovelVolume(volume_id=volume_id)
+                new_volume.title = catalog_volume.volume_title
+                new_volume.explicit_volume_cover = catalog_volume.volume_cover
+                self.logger.info(f'volume: {catalog_volume.volume_title}')
+
+                chapter_id = -1
+                chapter_list: List[LightNovelChapter] = []  # store all chapters of one volume
+                for catalog_chapter in catalog_volume.chapters:
+                    self._apply_crawl_delay('chapter_crawl_delay')
+
+                    chapter_content = ''
+                    chapter_title = catalog_chapter.chapter_title
+                    chapter_id += 1
+
+                    light_novel_chapter = LightNovelChapter(chapter_id=chapter_id)
+                    light_novel_chapter.title = chapter_title
+                    chapter_illustrations: List[LightNovelImage] = []
+                    self.logger.info(f'chapter : {chapter_title}')
+
+                    # 这个函数是含有状态的，必须及时覆盖 url_next 变量，否则状态机会失败。
+                    # 注意：由于这里并不关心页面内容是否正常，只收集页面链接，因此这里暂时不需要应用请求间隔延迟。
+                    url_next = self._expand_paginated_chapter_links(catalog_chapter, url_next)
+
+                    # for loop [chapter_index_url]+[all paginated chapters] links of one chapter
+                    for page_link in catalog_chapter.chapter_urls:
+                        self._apply_crawl_delay('page_crawl_delay')
+
+                        while True:
+                            try:
+                                html_resp = self._fetch_page(page_link,
+                                                             max_retries=self.spider_settings['http_retries'])
+                            except (Exception,):
+                                continue
+
+                            # # double check if the title exists
+                            html_resp = html_resp or ''
+                            soup = BeautifulSoup(html_resp, 'lxml')
+                            main_text = soup.find(id='mlfy_main_text')
+                            if main_text and main_text.select_one('h1') and main_text.select_one('#TextContent'):
+                                new_title = main_text.select_one('h1').text
+                                self.logger.debug(f'page({page_link}) size={len(html_resp)}')
+                                break
+
+                        # 分页判断过滤
+                        if not new_title.startswith(light_novel_chapter.title):
+                            # 目录：第二章 可爱如花的 N 孩
+                            # 文章页：第二章 可爱如花的女孩，第二章 可爱如花的女孩（2/3），......
+                            # 目录页部分文字会被隐藏，所以用文章中的标题代替 new_title。由于 new_title 可能带有分页信息，所以不能 ==
+                            self.logger.info(f'chapter : [{light_novel_chapter.title}] New Title= [{new_title}]')
+                            light_novel_chapter.title = new_title
+
+                        images = soup.find_all('img')
+                        article_soup = soup.find(id=self._html_content_id)
+                        if not article_soup:
+                            hints = """
+                                This can happen for the following reasons:
+                                - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                                - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
+                                 without specifying the target_site parameter. => Refer README document and set the target_site parameter.
+                                """
+                            dedent_hints = textwrap.dedent(hints)
+                            self.logger.fatal(
+                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
+                                f'{dedent_hints}')
+                            sys.exit(1)
+
+                        article = _sanitize_html(article_soup)
+                        for _, image in enumerate(images):
+                            # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
+                            # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
+                            html_image_src = re.search('(?<= src=").*?(?=")', str(image))
+                            image_lazyload_src = image.get("data-src")
+
+                            if image_lazyload_src:
+                                remote_src = re.search('(?<= data-src=").*?(?=")', str(image)).group()
+                            else:
+                                remote_src = image.get("src")
+
+                            light_novel_image = LightNovelImage(related_page_url=page_link, remote_src=remote_src,
+                                                                chapter_id=chapter_id, volume_id=volume_id,
+                                                                book_id=self.spider_settings["book_id"])
+
+                            image_local_src = f'{self.spider_settings["image_download_folder"]}/{light_novel_image.local_relative_path}'
+                            local_image = str(image).replace(str(html_image_src.group()), image_local_src)
+                            article = article.replace(str(image), local_image)
+                            chapter_illustrations.append(light_novel_image)
+
+                        article = _anti_js_obfuscation(article)
+                        chapter_content += article
+
+                        self.logger.info(f'Processing page... {page_link}')
+
+                    light_novel_chapter.content = chapter_content
+                    light_novel_chapter.illustrations = chapter_illustrations
+                    chapter_list.append(light_novel_chapter)
+
+                self._remove_duplicate_images_in_html(chapter_list)
+
+                for chapter in chapter_list:
+                    new_volume.add_chapter(cid=chapter.chapter_id, title=chapter.title, content=chapter.content,
+                                           illustrations=chapter.illustrations)
+
+                new_novel.add_volume(vid=new_volume.volume_id, title=new_volume.title, chapters=new_volume.chapters)
+
+            return new_novel
+
+        else:
+            self.logger.error(f'Failed to get the catalog of book_id: {self.spider_settings["book_id"]}')
+
+        return None
+
+    def _convert_to_catalog_list(self, catalog_html) -> List[CatalogLinovelibVolume]:
         soup = BeautifulSoup(catalog_html, 'lxml')
         volume_list_div = soup.select_one('#volume-list')
         volumes = volume_list_div.select('.volume')
@@ -903,94 +962,38 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         catalog_list = [catalog_volume for catalog_volume in catalog_list if catalog_volume.chapters]
         return catalog_list
 
-    @staticmethod
-    def _is_valid_chapter_link(href: str):
-        # normal link example: https://w.linovelib.com/novel/682/117077.html
-        # broken link example: javascript: cid(0)
-        # use https://regex101.com/ to debug regular expression
-        reg = r"\S+/novel/\d+/\S+\.html"
-        re_match = bool(re.match(reg, href))
-        return re_match
+    def _expand_paginated_chapter_links(self, chapter: CatalogLinovelibChapter, url_next):
+        if not self._is_valid_chapter_link(chapter.chapter_url):
+            chapter.chapter_url = url_next
+        else:
+            url_next = chapter.chapter_url
 
-    @staticmethod
-    def _extract_image_list(image_dict=None):
-        image_url_list = []
-        for volume_images in image_dict.values():
-            for index in range(0, len(volume_images)):
-                image_url_list.append(volume_images[index])
+        # goal: solve all page links of a certain chapter
+        while True:
+            resp = requests_get_with_retry(self._session, url_next,
+                                           headers=self.request_headers(),
+                                           retry_max=self.spider_settings['http_retries'],
+                                           timeout=self.spider_settings["http_timeout"],
+                                           logger=self.logger)
+            if resp:
+                soup = BeautifulSoup(resp.text, 'lxml')
+            else:
+                raise Exception(f'[ERROR]: request {url_next} failed.')
 
-        return image_url_list
+            paging = soup.select_one('.mlfy_page')
+            links = paging.select('a')
+            links_has_href = [link for link in links if link.has_attr('href')]
+            url_next_href = links_has_href[-1].get('href')
+            url_next = urljoin(f'{self.spider_settings["base_url"]}/novel', url_next_href)
 
-    def _fetch_mobile(self):
-        book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
-        book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
-        create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
+            if '_' in url_next:
+                chapter.add_expand_paginated_chapter_url(url_next)
+            else:
+                break
 
-        book_basic_info = self._crawl_book_basic_info_mobile(book_url)
-        if not book_basic_info:
-            raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
+        return url_next
 
-        new_novel_with_content = self._crawl_book_content_mobile(book_catalog_url)
-        if not new_novel_with_content:
-            raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
-
-        # do better: use named tuple or class like NovelBasicInfoGroup
-        book_title, author, book_summary, book_cover = book_basic_info
-        novel_whole = new_novel_with_content
-        novel_whole.mark_volumes_content_ready()
-
-        # set book basic info
-        novel_whole.book_id = self.spider_settings['book_id']
-        novel_whole.book_title = book_title
-        novel_whole.author = author
-        novel_whole.description = book_summary
-        novel_whole.book_cover = LightNovelImage(related_page_url=book_url,
-                                                 remote_src=book_cover,
-                                                 book_id=self.spider_settings["book_id"],
-                                                 is_book_cover=True)
-        novel_whole.mark_basic_info_ready()
-
-        return novel_whole
-
-    def _fetch_pc(self):
-        if not self._is_driver_initialized:
-            self._init_drissionpage_driver()
-
-        book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
-        book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
-
-        self._convert_page_language_pc(book_url)
-        create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
-
-        book_basic_info = self._crawl_book_basic_info_pc(book_url)
-        if not book_basic_info:
-            raise LinovelibException(f'Fetch book_basic_info of {self.spider_settings["book_id"]} failed.')
-
-        # do better: use named tuple or class like NovelBasicInfoGroup
-        book_title, author, book_summary, book_cover = book_basic_info
-        # print(book_title, author, book_summary, book_cover)
-
-        new_novel_with_content = self._crawl_book_content_pc(book_catalog_url)
-        if not new_novel_with_content:
-            raise LinovelibException(f'Fetch book_content of {self.spider_settings["book_id"]} failed.')
-
-        novel_whole = new_novel_with_content
-        novel_whole.mark_volumes_content_ready()
-
-        # set book basic info
-        novel_whole.book_id = self.spider_settings['book_id']
-        novel_whole.book_title = book_title
-        novel_whole.author = author
-        novel_whole.description = book_summary
-        novel_whole.book_cover = LightNovelImage(related_page_url=book_url,
-                                                 remote_src=book_cover,
-                                                 book_id=self.spider_settings["book_id"],
-                                                 is_book_cover=True)
-        novel_whole.mark_basic_info_ready()
-
-        return novel_whole
-
-    def _convert_page_language_pc(self, book_url):
+    def _convert_page_language(self, book_url):
         page = self._driver
         page.get(book_url)
         translate_btn = page.ele('#GB_BIG')
@@ -1015,6 +1018,7 @@ class LinovelibSpider(BaseNovelWebsiteSpider):
         xor_result = require_lang ^ current_lang
         if xor_result:
             result = translate_btn.click()
+            # do better: wait util see expected language text flag before leaving.
             self.logger.info(f'[LANGUAGE]Execute conversion: {current_lang_repr} => {require_lang_repr}.')
         else:
             self.logger.info(f'[LANGUAGE]No conversion is required: {current_lang_repr} => {require_lang_repr}.')
