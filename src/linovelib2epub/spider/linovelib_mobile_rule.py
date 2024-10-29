@@ -35,7 +35,8 @@ class LinovelibMobileRuleParser:
 
     def _parse_mapping(self, js_text) -> ParsedRuleResultMobile:
         if not self.traditional:
-            content_id, replace_rules = self._parse_mapping_v2_zh(js_text)
+            # content_id, replace_rules = self._parse_mapping_v2_zh(js_text)
+            content_id, replace_rules = self._parse_mapping_v2_zh_tw(js_text)
         else:
             content_id, replace_rules = self._parse_mapping_v2_zh_tw(js_text)
         parsed_rule_result = ParsedRuleResultMobile(mapping_dict=replace_rules, content_id=content_id)
@@ -166,8 +167,10 @@ class LinovelibMobileRuleParser:
         # https://w.linovelib.com/novel/2883/141634.html
 
         if not self.traditional:
-            url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
-            url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
+            # url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
+            # url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
+            url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
+            url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
             urls = [url1, url2]
         else:
             url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"

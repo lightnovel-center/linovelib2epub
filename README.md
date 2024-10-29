@@ -143,13 +143,14 @@ So the target website has 2 x 2 = 4 choices.
 
 | website version                     | visit method                                                      | support status | target_site                               |
 |-------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
-| [PC](www.linovelib.com)  简体         | click [简体化]                                                       | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
-| [PC](www.linovelib.com)  繁体         | click [繁體化]                                                       | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| ~~[Mobile](www.bilinovel.com)  简体~~ | browser set `zh/zh-CN` lang                                       | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
+| [PC](www.linovelib.com)  简体         | browser set `zh/zh-CN` lang + click [简体化]                         | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
+| [PC](www.linovelib.com)  繁体         | browser set `zh/zh-CN` lang + click [繁體化]                         | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| ~~[Mobile](www.bilinovel.com)  简体~~ | ~~browser set `zh/zh-CN` lang~~                                   | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
 | [Mobile](www.bilinovel.com)  繁体     | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
-> ❌*: Updates[2024-05-14].Now drission page library can't visit www.bilinovel.com(mobile version) on PC in Chinese Mainland network.
-> So `TargetSite.LINOVELIB_MOBILE` target doesn't work. No workaround now.
+> 1.❌*: [2024-10-29]Now drission page library can only visit [mobile traditional version](www.bilinovel.com).
+> 
+> 2.The Button "简体化" in mobile traditional version does not work. So `TargetSite.LINOVELIB_MOBILE` target doesn't work. No workaround now.
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
@@ -166,9 +167,6 @@ if __name__ == '__main__':
     linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC)
 
     # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_PC_TRADITIONAL)
-
-    # linovelib_epub = Linovelib2Epub(book_id=2356)
-    # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE)
 
     # linovelib_epub = Linovelib2Epub(book_id=2356,target_site=TargetSite.LINOVELIB_MOBILE_TRADITIONAL)
     linovelib_epub.run()
@@ -239,6 +237,8 @@ if __name__ == "__main__":
                                     )
     linovelib_epub.run()
 ```
+
+For more options, see the `Options` chapter below.
 
 ---
 
