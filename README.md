@@ -141,22 +141,15 @@ LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two 
 
 So the target website has 2 x 2 = 4 choices.
 
-| website version        | visit method                                       | Support status     | target_site                               |
-|------------------------|----------------------------------------------------|--------------------|-------------------------------------------|
-| PC + `zh/zh-CN`        | www.linovelib.com + click [简体化]                    | ✅(recommend)       | `TargetSite.LINOVELIB_PC`                 |
-| PC + `zh-TW/zh-HK`     | www.linovelib.com + click [繁體化]                    | ✅                  | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| Mobile + `zh/zh-CN`    | www.bilinovel.com + browser set `zh/zh-CN` lang    | ❌*(default target) | `TargetSite.LINOVELIB_MOBILE`             |
-| Mobile + `zh-TW/zh-HK` | www.bilinovel.com + browser set `zh-TW/zh-HK` lang | ❌*                 | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+| website version                     | visit method                                                      | support status | target_site                               |
+|-------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
+| [PC](www.linovelib.com)  简体         | click [简体化]                                                       | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
+| [PC](www.linovelib.com)  繁体         | click [繁體化]                                                       | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| ~~[Mobile](www.bilinovel.com)  简体~~ | browser set `zh/zh-CN` lang                                       | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
+| [Mobile](www.bilinovel.com)  繁体     | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
-> ❌*: Updates[2024-05-14].Now drission page library can't visit www.bilinovel.com(mobile version) on PC. So it doesn't
-> work. No workaround now.
-
-[Very important!]:
-Whether you are a Chinese Simplified or Chinese Traditional user, MUST set your chrome language to zh as the preferred language
-when you use this project.
-
-![](./docs/assets/set-browser-language-to-zh.png)
-
+> ❌*: Updates[2024-05-14].Now drission page library can't visit www.bilinovel.com(mobile version) on PC in Chinese Mainland network.
+> So `TargetSite.LINOVELIB_MOBILE` target doesn't work. No workaround now.
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
@@ -346,34 +339,30 @@ Don't need login, no threshold.
 
 ## Options
 
-| Parameters              | type    | required | default                       | description                                                |
-|-------------------------|---------|----------|-------------------------------|------------------------------------------------------------|
-| book_id                 | number  | YES      | None                          | 书籍 ID。                                                     |
-| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                        |
-| divide_volume           | boolean | NO       | False                         | 是否分卷                                                       |
-| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                    |
-| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                     |
-| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                 |
-| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                         |
-| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                         |
-| chapter_crawl_delay     | number  | NO       | 3                             | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。        |
-| page_crawl_delay        | number  | NO       | 2                             | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。 |
-| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                        |
-| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                          |
-| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                        |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。              |
-| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）      |
-| browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                      |
-| browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                       |
-| headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                   |
+| Parameters              | type    | required | default                       | description                                                         |
+|-------------------------|---------|----------|-------------------------------|---------------------------------------------------------------------|
+| book_id                 | number  | YES      | None                          | 书籍 ID。                                                              |
+| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                                 |
+| divide_volume           | boolean | NO       | False                         | 是否分卷                                                                |
+| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                             |
+| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                              |
+| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                          |
+| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                                  |
+| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                                  |
+| chapter_crawl_delay     | number  | NO       | 3                             | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。                 |
+| page_crawl_delay        | number  | NO       | 2                             | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。          |
+| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                                 |
+| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                                   |
+| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                                 |
+| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。                       |
+| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）               |
+| image_download_max_epochs | number | NO       | 10      | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                              |
+| browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                               |
+| browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                                |
+| headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                            |
+| http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于linovelib 页面。 |
+| http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于linovelib 页面。                         |
 
-需要重新分析和修订的参数：
-> 下面的参数暂时无效或者不可用，需要重新设计或者删除。
-
-| Parameters   | type   | required | default | description                                      |
-|--------------|--------|----------|---------|--------------------------------------------------|
-| http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。 |
-| http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。                          |
 
 ## Todo
 

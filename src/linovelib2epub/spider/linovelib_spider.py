@@ -277,7 +277,7 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         # 'zh-TW' 中文（繁体）
         # 'zh-HK' 中文（中国香港特别行政区）
         navigator_language = page.run_js(script="return navigator.language.toLowerCase();")
-        self.logger.info(f'[INFO]Browser language ={navigator_language}')
+        self.logger.info(f'Browser language ={navigator_language}')
 
         # try requesting a page to detect if it's ok
         page.get(warm_up_url)

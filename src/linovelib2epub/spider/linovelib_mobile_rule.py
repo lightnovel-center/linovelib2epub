@@ -196,6 +196,7 @@ class LinovelibMobileRuleParser:
                     self.logger.info('Fetching the file of js rule succeeded.')
                     return text
 
+        self.logger.error(f"Can't get any js file from {urls}.")
         return None
 
     def _fetch_js_text(self):
