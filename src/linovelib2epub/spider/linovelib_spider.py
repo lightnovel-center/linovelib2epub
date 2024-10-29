@@ -96,13 +96,6 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         if self.spider_settings["disable_proxy"]:
             self._session.trust_env = False
 
-        # Currently, not use this parameter as api
-        # cookie example: PHPSESSID=...; night=0; jieqiUserInfo=...; jieqiVisitInfo=...
-        if self.spider_settings["http_cookie"]:
-            cookie_dict = cookiedict_from_str(self.spider_settings["http_cookie"])
-            cookiejar = requests.utils.cookiejar_from_dict(cookie_dict)
-            self._session.cookies = cookiejar
-
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
         if not self._is_driver_initialized:
             warm_up_url = 'https://www.bilinovel.com/'
@@ -284,8 +277,7 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         # 'zh-TW' 中文（繁体）
         # 'zh-HK' 中文（中国香港特别行政区）
         navigator_language = page.run_js(script="return navigator.language.toLowerCase();")
-        self.logger.info(f'navigator.language.toLowerCase()={navigator_language}')
-        self.logger.info('Make sure the language of your browser is set to [zh](NOT zh-TW).')
+        self.logger.info(f'[INFO]Browser language ={navigator_language}')
 
         # try requesting a page to detect if it's ok
         page.get(warm_up_url)

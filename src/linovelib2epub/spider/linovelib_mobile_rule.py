@@ -162,7 +162,7 @@ class LinovelibMobileRuleParser:
 
     async def _probe_js_encrypted_file(self):
         # 候选的url请求数组进行竞速，取第一个成功返回的js，可能会随机变更，因此最好是根据经验请求多个js文件进行容错。
-        # better implementation: extract candidate urls from current chapter page
+        # better implementation: extract candidate urls from one chapter page
         # https://w.linovelib.com/novel/2883/141634.html
 
         if not self.traditional:

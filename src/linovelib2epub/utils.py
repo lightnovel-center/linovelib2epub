@@ -9,8 +9,6 @@ from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, NoReturn, AnyStr
 
 import aiohttp
-import importlib_resources
-import pkg_resources
 from fake_useragent import UserAgent
 
 
