@@ -8,7 +8,7 @@ from http.cookies import SimpleCookie
 from typing import Any, Callable, Dict, NoReturn, AnyStr
 
 import aiohttp
-import pkg_resources
+import importlib_resources
 from fake_useragent import UserAgent
 
 
@@ -192,7 +192,7 @@ def sanitize_pathname(pathname: str) -> str:
 
 def read_pkg_resource(file_path: str) -> bytes:
     # file_path example: "./styles/chapter.css"
-    return pkg_resources.resource_string(__name__, file_path)
+    return importlib_resources.open_text(__name__, file_path)
 
 
 def async_timed() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
