@@ -45,11 +45,17 @@ def requests_get_with_retry(client: Any,
     while current_num_of_request <= retry_max:
         try:
             response = client.get(url, headers=headers, timeout=timeout)
-            if response:
+            # status_code < 400
+            if response.ok:
                 return response
             else:
+                # 404 is no need to retry, return eagerly
+                if response.status_code == 404:
+                    return None
+
                 if logger:
-                    logger.warning(f'Request {url} succeed but data is empty, retry {current_num_of_request + 1} times')
+                    logger.warning(f'Request {url} succeed but response is empty, retry {current_num_of_request + 1} times')
+
         except (Exception,) as e:
             if logger:
                 logger.error(f'Request {url} failed. {e}.')

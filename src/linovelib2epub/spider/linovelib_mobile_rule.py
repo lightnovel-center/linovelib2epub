@@ -2,12 +2,12 @@ import asyncio
 import json
 import re
 from logging import Logger as LoggerAlias
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
-import aiohttp
 import esprima
+import requests
 
-from linovelib2epub.utils import aiohttp_get_with_retry
+from linovelib2epub.utils import requests_get_with_retry
 
 
 class ParsedRuleResultMobile:
@@ -29,9 +29,15 @@ class LinovelibMobileRuleParser:
         self.trust_env = not disable_proxy
 
     def generate_mapping_result(self):
-        js_text = self._fetch_js_text()
-        result_set = self._parse_mapping(js_text)
-        return result_set
+        url, js_text = self._fetch_js_text()
+        if js_text:
+            self.logger.info(f'[Text Mapping]Use the file of url({url}) to parse mapping ruleset.')
+            result_set = self._parse_mapping(js_text)
+            return result_set
+        else:
+            self.logger.info(f'[Text Mapping]Use the fallback mapping ruleset.')
+            rule = ParsedRuleResultMobile(mapping_dict={}, content_id='acontent1')
+            return rule
 
     def _parse_mapping(self, js_text) -> ParsedRuleResultMobile:
         if not self.traditional:
@@ -43,14 +49,14 @@ class LinovelibMobileRuleParser:
         return parsed_rule_result
 
     def _parse_mapping_v1(js_text) -> tuple:
-        # 第一代：在js中使用硬编码的RegExp进行text替换，很好解析，一切明文。这里留一个空实现，仅为记录历史。
+        # 第一代：在 js 中使用硬编码的 RegExp 进行 text 替换，很好解析，一切明文。这里留一个空实现，仅为记录历史。
         pass
 
     @staticmethod
     def _parse_mapping_v2_zh(js_text) -> tuple:
         """
         简体版网站
-        第二代：使用A110B90V45这种长字符串，将字符串按字母切割得到ascii codes，拼接对应字符得到js明文。
+        第二代：使用 A110B90V45 这种长字符串，将字符串按字母切割得到 ascii codes，拼接对应字符得到 js 明文。
 
         :param js_text:
         :return:
@@ -80,7 +86,7 @@ class LinovelibMobileRuleParser:
         # generate mapping rules
         replace_rules = {}
         for match in matches:
-            # 在python中不需要可以转义\
+            # 在 python 中不需要可以转义 \
             key = match[0]
             value = match[1]
             replace_rules[key] = value
@@ -117,14 +123,14 @@ class LinovelibMobileRuleParser:
         content_id = extract_contentid(ast)
 
         # generate mapping rules
-        # 目前繁体网站没有对正文进行js混淆，直接空对象即可
+        # 目前繁体网站没有对正文进行 js 混淆，直接空对象即可
         replace_rules = {}
 
         return content_id, replace_rules
 
     @staticmethod
     def _parse_mapping_v3(js_text) -> tuple:
-        # 第三代: 对js明文进行一次unicode解码，然后类似v2，只不过正则表达式有所区别，必须调整。
+        # 第三代: 对 js 明文进行一次 unicode 解码，然后类似 v2，只不过正则表达式有所区别，必须调整。
         decoded_s = js_text.encode('utf-8').decode('unicode_escape')
 
         # resolve content_id
@@ -151,7 +157,7 @@ class LinovelibMobileRuleParser:
         """
         file_path = "anti_obfuscation.json"
 
-        # 为了表示Unicode字符 \u201c，在JSON字符串中，需要写成 \\u201c，其中第一个反斜杠用于转义，第二个反斜杠才是实际字符 \。
+        # 为了表示 Unicode 字符 \u201c，在 JSON 字符串中，需要写成 \\u201c，其中第一个反斜杠用于转义，第二个反斜杠才是实际字符 \。
         def escape_unicode(char):
             return '\\u{:04x}'.format(ord(char))
 
@@ -161,47 +167,48 @@ class LinovelibMobileRuleParser:
         with open(file_path, 'w', encoding='utf-8') as json_file:
             json.dump(escaped_rules, json_file, ensure_ascii=False, indent=2)
 
-    async def _probe_js_encrypted_file(self):
-        # 候选的url请求数组进行竞速，取第一个成功返回的js，可能会随机变更，因此最好是根据经验请求多个js文件进行容错。
-        # better implementation: extract candidate urls from one chapter page
-        # https://w.linovelib.com/novel/2883/141634.html
-
-        if not self.traditional:
-            # url1 = "https://w.linovelib.com/themes/zhmb/js/hm.js"
-            # url2 = "https://w.linovelib.com/themes/zhmb/js/readtool.js"
-            url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
-            url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
-            urls = [url1, url2]
-        else:
-            url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
-            url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
-            urls = [url1, url2]
-
+    def _fetch_js_text(self):
         headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "accept-language": "zh,zh-HK;q=0.9,zh-TW;q=0.8,zh-CN;q=0.7,en-US;q=0.6,en;q=0.5,en-GB;q=0.4",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0",
-            "Origin": "https://www.linovelib.com" if not self.traditional else "https://tw.linovelib.com",
+            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+            "cache-control": "max-age=0",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
         }
 
-        timeout = aiohttp.ClientTimeout(total=30, connect=15)
-        conn = aiohttp.TCPConnector(ssl=False)
-        trust_env = self.trust_env
-        async with aiohttp.ClientSession(timeout=timeout, connector=conn, trust_env=trust_env) as session:
-            tasks = [asyncio.create_task(aiohttp_get_with_retry(session, url, headers=headers, logger=self.logger))
-                     for url in urls]
-            completed, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+        url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
+        url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
+        urls = [url1, url2]
 
-            # 获取第一个成功返回的任务结果
-            for task in completed:
-                text = task.result()
-                if text:
-                    self.logger.info('Fetching the file of js rule succeeded.')
-                    return text
+        file_racer = WebFileRacer(urls=urls, headers=headers)
+        url, text = asyncio.run(file_racer.fetch_file())
+        return url, text
 
-        self.logger.error(f"Can't get any js file from {urls}.")
-        return None
 
-    def _fetch_js_text(self):
-        js_file_text = asyncio.run(self._probe_js_encrypted_file())
-        return js_file_text
+class WebFileRacer:
+    def __init__(self, urls, headers):
+        self.urls = urls
+        self.headers = headers
+
+    def _fetch_with_retry(self, url) -> Tuple[str, str | None]:
+        resp = requests_get_with_retry(requests, url, headers=self.headers)
+        if resp:
+            return url, resp.text
+
+        return url, None
+
+    @staticmethod
+    async def _fetch_async(url, fetch_func):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, fetch_func, url)
+
+    async def fetch_file(self):
+        tasks = [asyncio.create_task(self._fetch_async(url, self._fetch_with_retry)) for url in self.urls]
+        completed, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+
+        for task in completed:
+            url, resp_text = task.result()
+            if resp_text:
+                return url, resp_text
+
+        # 没有任何一个 url 能返回文本
+        return None, None
