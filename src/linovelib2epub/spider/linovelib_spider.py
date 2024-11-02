@@ -14,12 +14,13 @@ import pytesseract
 import requests
 from DrissionPage import ChromiumOptions, WebPage
 from PIL import Image
-from bs4 import (BeautifulSoup)
+from bs4 import (BeautifulSoup, PageElement)
 
 from . import BaseNovelWebsiteSpider
 from .linovelib_mobile_rule import LinovelibMobileRuleParser
 from .linovelib_pc_rule import LinovelibPCRuleParser
-from ..exceptions import LinovelibException, PageContentAbnormalException
+from ..exceptions import LinovelibException, PageContentAbnormalException, EmptyTitleError, NotIntactTextError, \
+    EmptyArticleError
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibChapter, \
     CatalogLinovelibVolume
 from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
@@ -363,6 +364,7 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         return image_url_list
 
 
+
 class LinovelibSpiderMobile(BaseLinovelibSpider):
 
     def fetch(self):
@@ -435,7 +437,7 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
             res = html.translate(table)
             return res
 
-        def _sanitize_html(html: BeautifulSoup) -> str:
+        def _sanitize_html(html: PageElement) -> str:
             """
             Strip useless script on body tag by reg or soup library method.
             e.g. <script>zation();</script>
@@ -453,6 +455,48 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
                 anouncement.decompose()
 
             return re.sub(r'<script.+?</script>', '', str(html_copy), flags=re.DOTALL)
+
+        def _require_not_empty_article(soup, page_link):
+            article_soup = soup.find(id=self._html_content_id)
+            if article_soup is None:
+                hints = """
+                                This can happen for the following reasons:
+                                - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                                - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
+                                 without specifying the target_site parameter. => Refer README document and set the target_site parameter.
+                                """
+                dedent_hints = textwrap.dedent(hints)
+                self.logger.fatal(
+                    f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
+                    f'{dedent_hints}')
+
+                raise EmptyArticleError()
+
+        def _require_not_empty_title(soup: BeautifulSoup):
+            new_title = soup.find(id='atitle')
+            if new_title is None:
+                raise EmptyTitleError()
+
+            return new_title
+
+        def _require_intact_text_content(soup: BeautifulSoup):
+            article_page_element = soup.find(id=self._html_content_id)
+            article_text = article_page_element.text
+            error_keywords = [
+                "內容加載失敗",
+                "請重載",
+                "更換瀏覽器",
+                "相容性問題",
+                "不支持電腦端閱讀",
+                "請使用手機閱讀"
+            ]
+
+            threshold = 2
+            error_count = sum(1 for keyword in error_keywords if keyword in article_text)
+            if error_count >= threshold:
+                raise NotIntactTextError()
+
+            return article_page_element
 
         book_catalog_rs = None
         try:
@@ -504,21 +548,33 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
                     for page_link in catalog_chapter.chapter_urls:
                         self._apply_crawl_delay('page_crawl_delay')
 
-                        # retry until get the correct title & content body
+                        soup = None
+                        new_title = None
+                        article_page_element = None
                         while True:
                             try:
                                 page_resp = self._fetch_page(page_link,
                                                              max_retries=self.spider_settings['http_retries'])
-                            except (Exception,):
-                                continue
 
-                            # double check if the title exists
-                            page_resp = page_resp or ''
-                            soup = BeautifulSoup(page_resp, 'lxml')
-                            new_title = soup.find(id='atitle')
-                            if new_title is not None:
-                                self.logger.debug(f'page({page_link}) size={len(page_resp)}')
+                                page_resp = page_resp or ''
+                                soup = BeautifulSoup(page_resp, 'lxml')
+
+                                new_title = _require_not_empty_title(soup)
+                                _require_not_empty_article(soup, page_link)
+                                article_page_element = _require_intact_text_content(soup)
+
+                                # happy path
                                 break
+                            except (EmptyTitleError, NotIntactTextError) as ex:
+                                self.logger.error(f'url: {page_link}; {ex}')
+                                continue
+                            except EmptyArticleError as ex:
+                                self.logger.error(f'url: {page_link}; {ex}; Exit eagerly.')
+                                # very sad path
+                                sys.exit(-1)
+                            except (Exception,) as ex:
+                                self.logger.error(f'url: {page_link}; {ex}')
+                                continue
 
                         # 分页判断过滤
                         if not new_title.text.startswith(light_novel_chapter.title):
@@ -530,24 +586,7 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
                             light_novel_chapter.title = new_title.text
 
                         images = soup.find_all('img')
-
-                        # solve dynamic id
-                        # <div id="acontent1" class="acontent">
-                        article_soup = soup.find(id=self._html_content_id)
-                        if not article_soup:
-                            hints = """
-                            This can happen for the following reasons:
-                            - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
-                            - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
-                             without specifying the target_site parameter. => Refer README document and set the target_site parameter.
-                            """
-                            dedent_hints = textwrap.dedent(hints)
-                            self.logger.fatal(
-                                f'The content of {page_link} is Empty and content_id ={self._html_content_id}.'
-                                f'{dedent_hints}')
-                            sys.exit(1)
-
-                        article = _sanitize_html(article_soup)
+                        article = _sanitize_html(article_page_element)
                         for _, image in enumerate(images):
                             # <img class="imagecontent lazyload" data-src="https://img1.readpai.com/0/28/109869/146248.jpg" src="/images/photon.svg"/>
                             # <img border="0" class="imagecontent" src="https://img1.readpai.com/0/28/109869/146254.jpg"/>
