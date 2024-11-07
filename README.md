@@ -357,8 +357,7 @@ Don't need login, no threshold.
 | disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。                       |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）               |
 | image_download_max_epochs | number | NO       | 10      | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                              |
-| browser_path            | string  | NO       | None                          | 浏览器的本地路径。目前仅masiro支持。                                               |
-| browser_driver_path     | string  | NO       | None                          | 浏览器driver的本地路径。注意这个是驱动。目前仅linovel支持。                                |
+| browser_path            | string  | NO       | None                          | 浏览器的本地绝对路径。                                                         |
 | headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                            |
 | http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于linovelib 页面。 |
 | http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于linovelib 页面。                         |

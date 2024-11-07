@@ -76,6 +76,7 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         }
         return headers
 
+    # 名存实亡，没有被调用，而是直接调用子类的同名方法
     def fetch(self) -> LightNovel:
         start = time.perf_counter()
         if self.spider_settings['mobile']:
@@ -97,9 +98,73 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
         if self.spider_settings["disable_proxy"]:
             self._session.trust_env = False
 
+
+    def _fetch_catalog(self, url: str, max_retries: int = 5) -> str | None:
+        """
+        这个是专门用于处理目录页的爬取。因为这一页的元素检测和爬取正文页不太一致。
+        :param url:
+        :param max_retries:
+        :return:
+        """
+        driver: WebPage = self._driver
+        driver.set.load_mode.eager()
+
+        def _check_failed_pattern(html, url):
+            # Determine whether the content of the page has the following tags(failed case):
+            failed_patterns = ['You are being rate limited', ' 抱歉，章节内容不支持该浏览器显示 ']
+            for pattern in failed_patterns:
+                match = re.search(pattern, html)
+                if match:
+                    raise PageContentAbnormalException(f'The page content of {url} is not desired. Reason: {pattern}')
+
+        def _check_page_content_mobile(html, url):
+            pass
+
+        def _check_page_content_pc(html, url):
+            pass
+
+        request_count = 0
+        # total requests num = self(1) + max_retries
+        # if max_retries= 5, then the max try count is 0,1,2,3,4,5 = 6 times
+        while request_count <= max_retries:
+            try:
+                is_url_available = driver.get(url, retry=0, interval=5, timeout=10)
+                loaded = driver.wait.doc_loaded()
+                html = driver.html
+
+                if html:
+                    _check_failed_pattern(html, url)
+                    # TODO handle cloudflare turnstile. => CAN copy masiro logic
+                    if self.spider_settings['mobile']:
+                        _check_page_content_mobile(html, url)
+                    else:
+                        _check_page_content_pc(html, url)
+
+                    self.logger.info(f'page {url} => ok.')
+                    return html
+                else:
+                    # ...... => should retry
+                    self.logger.error(f'page {url} => should retry.')
+                    raise LinovelibException(f'fetch page url {url} failed with error status ?.')
+            except PageContentAbnormalException as e:
+                self.logger.warn(f"{e}")
+            except Exception as e:
+                self.logger.warn(f"{url} encountered {e.__class__.__name__}.")
+
+            request_count += 1
+            n = request_count
+            random_number_seconds = round(random.uniform(0, 1), 2)  # 0.01-0.99s
+            maximum_backoff = 10
+            retry_interval = min(round(((2 ** (n - 1)) + random_number_seconds), 2), maximum_backoff)
+
+            self.logger.warning(
+                f'Retrying {url}...({request_count}/{max_retries}); retry_interval: {retry_interval}(s)')
+            time.sleep(retry_interval)
+
+        return None
+
     def _fetch_page(self, url: str, max_retries: int = 5) -> str | None:
         if not self._is_driver_initialized:
-            warm_up_url = 'https://www.bilinovel.com/'
             self._init_drissionpage_driver(url)
 
         driver: WebPage = self._driver
@@ -217,7 +282,7 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
                     self.logger.error(f'page {url} => should retry.')
                     raise LinovelibException(f'fetch page url {url} failed with error status ?.')
             except PageContentAbnormalException as e:
-                self.logger.warn(f"{e.message}")
+                self.logger.warn(f"{e}")
             except Exception as e:
                 self.logger.warn(f"{url} encountered {e.__class__.__name__}.")
 
@@ -368,6 +433,10 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
 class LinovelibSpiderMobile(BaseLinovelibSpider):
 
     def fetch(self):
+        if not self._is_driver_initialized:
+            warm_up_url = 'https://www.bilinovel.com/'
+            self._init_drissionpage_driver(warm_up_url)
+
         book_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}.html'
         book_catalog_url = f'{self.spider_settings["base_url"]}/novel/{self.spider_settings["book_id"]}/catalog'
         create_folder_if_not_exists(self.spider_settings['pickle_temp_folder'])
@@ -500,19 +569,13 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
 
         book_catalog_rs = None
         try:
-            book_catalog_rs = requests_get_with_retry(self._session,
-                                                      catalog_url,
-                                                      headers=self.request_headers(),
-                                                      retry_max=self.spider_settings['http_retries'],
-                                                      timeout=self.spider_settings["http_timeout"],
-                                                      logger=self.logger)
+            book_catalog_rs = self._fetch_catalog(catalog_url, max_retries=self.spider_settings['http_retries'])
         except (Exception,):
             self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
-        if book_catalog_rs and book_catalog_rs.status_code == 200:
+        if book_catalog_rs:
             self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
-
-            catalog_html = book_catalog_rs.text
+            catalog_html = book_catalog_rs
             catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list(catalog_html)
             if self.spider_settings['select_volume_mode']:
                 catalog_list = self._handle_select_volume(catalog_list)
@@ -823,19 +886,14 @@ class LinovelibSpiderPC(BaseLinovelibSpider):
 
         book_catalog_rs = None
         try:
-            book_catalog_rs = requests_get_with_retry(self._session,
-                                                      catalog_url,
-                                                      headers=self.request_headers(),
-                                                      retry_max=self.spider_settings['http_retries'],
-                                                      timeout=self.spider_settings["http_timeout"],
-                                                      logger=self.logger)
+            book_catalog_rs = self._fetch_catalog(catalog_url, max_retries=self.spider_settings['http_retries'])
         except (Exception,):
             self.logger.error(f'Failed to get normal response of {catalog_url}. It may be a network issue.')
 
-        if book_catalog_rs and book_catalog_rs.status_code == 200:
+        if book_catalog_rs:
             self.logger.info(f'Succeed to get the catalog of book_id: {self.spider_settings["book_id"]}')
 
-            catalog_html = book_catalog_rs.text
+            catalog_html = book_catalog_rs
             catalog_list: List[CatalogLinovelibVolume] = self._convert_to_catalog_list(catalog_html)
             if self.spider_settings['select_volume_mode']:
                 catalog_list = self._handle_select_volume(catalog_list)
