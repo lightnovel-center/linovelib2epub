@@ -171,7 +171,9 @@ class LinovelibMobileRuleParser:
         }
 
         sample_page_url = 'https://tw.linovelib.com/novel/4126/236335.html'
-        html_source = requests_get_with_retry(requests, sample_page_url, headers=headers).text or ''
+        resp = requests_get_with_retry(requests, sample_page_url, headers=headers)
+        html_source = resp.text if resp else ''
+
         fresh_js_link = self._parse_js_link(html_source, 'readtools.js')
         fallback_js_link = 'https://tw.linovelib.com/themes/zhmb/js/readtools.js?v1011a2'
         urls = [fresh_js_link] if fresh_js_link else [fallback_js_link]
