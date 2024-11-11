@@ -349,6 +349,7 @@ Don't need login, no threshold.
 | image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                          |
 | pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                                  |
 | clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                                  |
+| crawling_contentid     | string  | NO       | None                          | 用户自定义的正文内容的id，用于快速响应网页结构变化，[如何获取?](docs/inspect-linovelib-contentid-as-a-regular-user.md)。目前仅适用于linovelib。               |
 | chapter_crawl_delay     | number  | NO       | 3                             | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。                 |
 | page_crawl_delay        | number  | NO       | 2                             | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。          |
 | custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                                 |
@@ -356,11 +357,12 @@ Don't need login, no threshold.
 | custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                                 |
 | disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。                       |
 | image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）               |
-| image_download_max_epochs | number | NO       | 10      | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                              |
+| image_download_max_epochs | number  | NO       | 10                            | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                              |
 | browser_path            | string  | NO       | None                          | 浏览器的本地绝对路径。                                                         |
 | headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                            |
-| http_timeout | number | NO       | 10      | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于linovelib 页面。 |
-| http_retries | number | NO       | 10      | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于linovelib 页面。                         |
+| http_timeout | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于linovelib 页面。 |
+| http_retries | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于linovelib 页面。                         |
+
 
 
 ## Todo
