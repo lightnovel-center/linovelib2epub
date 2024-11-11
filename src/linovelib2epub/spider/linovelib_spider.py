@@ -531,7 +531,10 @@ class LinovelibSpiderMobile(BaseLinovelibSpider):
             if article_soup is None:
                 hints = """
                                 This can happen for the following reasons:
-                                - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                                - The html structure of bilinovel website has changed. 
+                                   => Firstly, You can try specifying the ID manually by `crawling_contentid` parameter.
+                                      See https://github.com/lightnovel-center/linovelib2epub?tab=readme-ov-file#options for more details.
+                                   => Secondly, You can submit a github issue to remind the maintainer.
                                 - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
                                  without specifying the target_site parameter. => Refer README document and set the target_site parameter.
                                 """
@@ -962,7 +965,10 @@ class LinovelibSpiderPC(BaseLinovelibSpider):
                         if not article_soup:
                             hints = """
                                 This can happen for the following reasons:
-                                - The html structure of bilinovel website has changed. => You can submit a github issue to remind the maintainer.
+                                - The html structure of bilinovel website has changed. 
+                                   => Firstly, You can try specifying the ID manually by `crawling_contentid` parameter.
+                                      See https://github.com/lightnovel-center/linovelib2epub?tab=readme-ov-file#options for more details.
+                                   => Secondly, You can submit a github issue to remind the maintainer.
                                 - You are on a network outside of Chinese mainland, and want to request the traditional Chinese version of the website
                                  without specifying the target_site parameter. => Refer README document and set the target_site parameter.
                                 """

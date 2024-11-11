@@ -106,23 +106,19 @@ class LinovelibMobileRuleParser:
             cleaned_code = re.sub(pattern, "", js_code, flags=re.MULTILINE)
             return cleaned_code
 
-        def extract_contentid(ast) -> str:
+        def extract_contentid(js_code: str) -> str:
             try:
-                properties = ast.body[0].declarations[0].init.properties
-                iterator = filter(lambda x: x.key.name == 'contentid', properties)
-                list = [item for item in iterator]
-                contentid_val = list[0].value.value
-                self.logger.info(f'Parse contentid succeeded, contentid={contentid_val}')
-                return contentid_val
+                finder = ASTPropertyFinder(js_code, logger=self.logger)
+                expr_property = finder.find_expr_property('ReadTools', 'contentid')
+                self.logger.info(f'Parse contentid succeeded, contentid={expr_property}')
+                return expr_property
             except:
                 fallback_contentid = 'acontent1'
                 self.logger.warning(f'Use fallback contentid: {fallback_contentid}')
                 return fallback_contentid
 
         cleaned_js = remove_comments(js_text)
-        ast = esprima.parse(cleaned_js)
-        content_id = extract_contentid(ast)
-        # 目前繁体网站没有对正文进行 js 混淆，直接空对象
+        content_id = extract_contentid(cleaned_js)
         replace_rules = {}
 
         return content_id, replace_rules
@@ -181,6 +177,72 @@ class LinovelibMobileRuleParser:
         file_racer = WebFileRacer(urls=urls, headers=headers)
         url, text = asyncio.run(file_racer.fetch_file())
         return url, text
+
+
+class ASTPropertyFinder:
+    def __init__(self,
+                 js_code: str,
+                 logger: Any = None
+                 ):
+        self.ast = esprima.parse(js_code)
+        self.logger = logger
+
+    def find_expr_property(self, expr_name, object_property_name):
+        """在 AST 中查找指定表达式名称并进一步查找指定对象属性"""
+        return self._find_expr_name(self.ast, expr_name, object_property_name)
+
+    def _find_expr_name(self, node, expr_name, object_property_name):
+        """递归查找表达式名称的辅助方法"""
+        if isinstance(node, esprima.nodes.Node):
+            if node.type == 'Program':
+                for statement in node.body:
+                    result = self._find_expr_name(statement, expr_name, object_property_name)
+                    if result is not None:
+                        return result
+            elif node.type == 'VariableDeclaration':
+                for decl in node.declarations:
+                    if decl.id.name == expr_name:
+                        exprs = decl.init
+                        return self._find_object_property(exprs, object_property_name)
+        elif isinstance(node, list):
+            for item in node:
+                result = self._find_expr_name(item, expr_name, object_property_name)
+                if result is not None:
+                    return result
+
+        return None
+
+    def _find_object_property(self, expr, object_property_name):
+        """在对象表达式中查找指定的对象属性"""
+        if isinstance(expr, esprima.nodes.Node):
+            if expr.type == 'ObjectExpression':
+                for prop in expr.properties:
+                    if prop.key.name == object_property_name:
+                        value = getattr(prop, 'value', None)
+                        final_value = getattr(value, 'value', None)
+                        if final_value is not None:
+                            self.logger.info(f"Found '{object_property_name}' with value: {final_value}")
+                        else:
+                            self.logger.info(f"Found '{object_property_name}' but value is None or nested")
+                        return final_value
+            elif expr.type in ('CallExpression', 'LogicalExpression', 'MemberExpression'):
+                # 递归查找表达式的子节点，左值优先
+                left_result = self._find_object_property(expr.left if hasattr(expr, 'left') else expr.callee,
+                                                         object_property_name)
+                if left_result is not None:
+                    return left_result
+
+                right_result = self._find_object_property(expr.right if hasattr(expr, 'right') else expr.arguments,
+                                                          object_property_name)
+                if right_result is not None:
+                    return right_result
+        elif isinstance(expr, list):
+            for item in expr:
+                result = self._find_object_property(item, object_property_name)
+                if result is not None:
+                    return result
+
+        return None
 
 
 class WebFileRacer:
