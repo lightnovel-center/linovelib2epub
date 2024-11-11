@@ -114,7 +114,7 @@ class LinovelibMobileRuleParser:
                 return expr_property
             except:
                 fallback_contentid = 'acontent1'
-                self.logger.warning(f'Use fallback contentid: {fallback_contentid}')
+                self.logger.info(f'Use fallback contentid: {fallback_contentid}')
                 return fallback_contentid
 
         cleaned_js = remove_comments(js_text)
@@ -170,13 +170,25 @@ class LinovelibMobileRuleParser:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
         }
 
-        url1 = "https://tw.linovelib.com/themes/zhmb/js/hm.js"
-        url2 = "https://tw.linovelib.com/themes/zhmb/js/readtool.js"
-        urls = [url1, url2]
+        sample_page_url = 'https://tw.linovelib.com/novel/4126/236335.html'
+        html_source = requests_get_with_retry(requests, sample_page_url, headers=headers).text or ''
+        fresh_js_link = self._parse_js_link(html_source, 'readtools.js')
+        fallback_js_link = 'https://tw.linovelib.com/themes/zhmb/js/readtools.js?v1011a2'
+        urls = [fresh_js_link] if fresh_js_link else [fallback_js_link]
+        self.logger.info(f'Readtools js urls: {urls}')
 
         file_racer = WebFileRacer(urls=urls, headers=headers)
         url, text = asyncio.run(file_racer.fetch_file())
         return url, text
+
+    @staticmethod
+    def _parse_js_link(html_source: str, filename: str) -> str | None:
+        matches = re.findall(r'<script(?:\s+type=["\']text/javascript["\'])?\s+src=["\'](.*?)["\']', html_source)
+        filtered_links = [link for link in matches if filename in link]
+        if filtered_links:
+            return filtered_links[0]
+
+        return None
 
 
 class ASTPropertyFinder:
@@ -221,9 +233,9 @@ class ASTPropertyFinder:
                         value = getattr(prop, 'value', None)
                         final_value = getattr(value, 'value', None)
                         if final_value is not None:
-                            self.logger.info(f"Found '{object_property_name}' with value: {final_value}")
+                            self.logger.debug(f"Found '{object_property_name}' with value: {final_value}")
                         else:
-                            self.logger.info(f"Found '{object_property_name}' but value is None or nested")
+                            self.logger.debug(f"Found '{object_property_name}' but value is None or nested")
                         return final_value
             elif expr.type in ('CallExpression', 'LogicalExpression', 'MemberExpression'):
                 # 递归查找表达式的子节点，左值优先
