@@ -5,6 +5,7 @@ var jieqiUserInfo = {
   jieqiUserPassword: '',
   jieqiUserToken: '',
   jieqiUserGroup: 0,
+  jieqiUserHonorId: 0,
   jieqiNewMessage: 0,
   jieqiCodeLogin: 0,
   jieqiCodePost: 0
@@ -31,8 +32,10 @@ if (document.cookie.indexOf('jieqiUserInfo') >= 0) {
   }
 }
 
-//是否允許點擊翻頁
-var usePageMode = ('columnWidth' in document.documentElement.style || 'MozColumnWidth' in document.documentElement.style || 'WebkitColumnWidth' in document.documentElement.style || 'OColumnWidth' in document.documentElement.style || 'msColumnWidth' in document.documentElement.style) ? false : false;
+var maxWidth = 760;
+
+// 是否允許點擊翻頁
+var usePageMode = (('columnWidth' in document.documentElement.style || 'MozColumnWidth' in document.documentElement.style || 'WebkitColumnWidth' in document.documentElement.style || 'OColumnWidth' in document.documentElement.style || 'msColumnWidth' in document.documentElement.style) && jieqiUserInfo.jieqiUserHonorId > 2) ? true : false;
 
 //顯示閱讀工具
 var ReadTools = {
@@ -51,7 +54,7 @@ var ReadTools = {
   pagemid: 0,
   ttimer: null,
   tiptime: 3000,
-  contentid: 'acontent1',
+  contentid: 'acontentl',
   pageid: 'aread',
   showtools: false,
 
@@ -134,44 +137,61 @@ var ReadTools = {
 	}
   },
   SetPagem: function (id) {
-    if (usePageMode && ReadTools.pagemid != id){
-      if (ReadTools.pagemid != id) Storage.set('read_pagemid', id);
-      ReadTools.pagemid = id;
-      var lis = document.getElementById('pagemode').getElementsByTagName('li');
-      for (i = 0; i < lis.length; i++) {
-        if (id == i) lis[i].className = 'selected';
-        else lis[i].className = '';
-      }
-      if (ReadTools.pagemid == 1) {
-        ReadPages.MakePages();
-
-        // 隐藏id=pinglun的元素
-        var pinglunElement = document.getElementById('pinglun');
-        if (pinglunElement) {
-          pinglunElement.style.display = 'none';
-        }
-      }
-      else {
-        ReadPages.RestorePages();
-
-        // 恢复id=pinglun的元素
-        var pinglunElement = document.getElementById('pinglun');
-        if (pinglunElement) {
-          pinglunElement.style.display = '';
-        }
-      }
-      ReadTools.CallHide();
-    }
+	if (usePageMode && ReadTools.pagemid != id){
+	  if (ReadTools.pagemid != id) Storage.set('read_pagemid', id);
+	  ReadTools.pagemid = id;
+	  var lis = document.getElementById('pagemode').getElementsByTagName('li');
+	  for (i = 0; i < lis.length; i++) {
+		if (id == i) lis[i].className = 'selected';
+		else lis[i].className = '';
+	  }
+	  // if (ReadTools.pagemid == 1) ReadPages.MakePages();
+	  // else ReadPages.RestorePages();
+	  // ReadTools.CallHide();
+	  if (ReadTools.pagemid == 1) {
+		localStorage.setItem('禁用章評','true');  // 禁用章評
+		ReadPages.MakePages();
+		// 隱藏id=pinglun的元素
+		var pinglunElement = document.getElementById('pinglun');
+		if (pinglunElement) {
+		  pinglunElement.style.display = 'none';
+		}
+	  } else {
+		localStorage.removeItem('禁用章評');  // 啓用章評
+		ReadPages.RestorePages();
+		// 恢復id=pinglun的元素
+		var pinglunElement = document.getElementById('pinglun');
+		if (pinglunElement) {
+		  pinglunElement.style.display = '';
+		}
+		location.reload();
+	  }
+	  ReadTools.CallHide();
+	}
   },
   ahToggle: function (){
 	if(localStorage.getItem('禁用章評') === null){
 	  localStorage.setItem('禁用章評','true')
-	  location.reload()
+	  location.reload();
 	}else{
 	  localStorage.removeItem('禁用章評')
-	  location.reload()
+	  location.reload();
 	}
   },
+  showimages: function () {
+  var showImagesSetting = localStorage.getItem('顯示插圖');
+  var hiddenImages = document.getElementById('hidden-images');
+
+  if (showImagesSetting === 'true') {
+	hiddenImages.style.display = 'none';
+	localStorage.setItem('顯示插圖', 'false');
+	location.reload();
+  } else {
+	hiddenImages.style.display = 'block';
+	localStorage.setItem('顯示插圖', 'true');
+	location.reload();
+  }
+},
   AddBookcase: function () {
 	if (jieqiUserInfo.jieqiUserId) {
 	  Ajax.Request('/modules/article/addbookcase.php?bid=' + ReadParams.articleid + '&cid=' + ReadParams.chapterid + '&pid=' + ReadParams.page, {
@@ -216,23 +236,24 @@ var ReadTools = {
 	var isdisplay = ReadTools.showtools ? '' : 'none';
 
 	output += '<div id="toptools" class="toptools cf" style="display:' + isdisplay + ';">\
-		<a href="javascript: window.location.href = ReadParams.url_articleinfo;" class="iconfont fl">&#xee69;</a>\
+		<a href="javascript: window.location.href = ReadParams.url_index;" class="iconfont fl">&#xee69;</a>\
 		<a href="javascript: window.location.href = ReadParams.url_home;" class="iconfont fr">&#xee27;</a>\
 		<a href="javascript: ReadTools.CallShow(\'readset\');" class="iconfont fr">&#xee26;</a>\
 		<!--<a href="javascript: ReadTools.CallShow(\'givetip\');" class="iconfont fr">&#xee42;</a>-->\
 		<a href="/bookcase.php" class="iconfont fr">&#xee43;</a>\
 		<a href="javascript: ReadTools.AddBookcase();" class="iconfont fr">&#xee53;</a>\
 		<!--<a href="javascript: ReadTools.CallShow(\'addreview\');" class="iconfont fr">&#xee3a;</a>-->\
-		<a href="javascript: ReadTools.UserVote();" class="iconfont fr">&#xee5d;</a>\
+		<!--<a href="javascript: ReadTools.UserVote();" class="iconfont fr">&#xee5d;</a>-->\
 </div>';
 
 	output += '<div id="bottomtools" class="bottomtools cf" style="display:' + isdisplay + ';">\
-		<ul>\
+	<!--<script>anra();</script>-->\
+		<div class="hairline-bottom"><ul>\
 	<li onclick="window.location.href = ReadParams.url_previous;"><p class="iconfont f_l">&#xee68;</p><p>上一頁</p></li>\
-	<li onclick="window.location.href = ReadParams.url_index;"><p class="iconfont f_l">&#xee32;</p><p>目錄</p></li>\
+	<li onclick="event.stopPropagation(); window.location.href = ReadParams.url_index;"><p class="iconfont f_l">&#xee32;</p><p>目錄</p></li>\
 	<li onclick="window.location.href = ReadParams.url_articleinfo;"><p class="iconfont f_l">&#xee50;</p><p>書頁</p></li>\
 	<li onclick="window.location.href = ReadParams.url_next;"><p class="iconfont f_l">&#xee67;</p><p>下一頁</p></li>\
-	</ul>\
+	</ul></div>\
 </div>';
 
 	output += '<div id="readset" class="readset" style="display:none;">\
@@ -269,6 +290,10 @@ var ReadTools = {
 	output += '</ul></div>\
 				<div class="setblock"><p>章評</p><ul id="nameless" class="cf">\
 				<li onclick="ReadTools.ahToggle()">開啓</li><li onclick="ReadTools.ahToggle()">關閉</li>'
+	//添加插圖開關
+	output += '</ul></div>\
+				<div class="setblock"><p><ruby>插圖<rt>(專頁)</rt></ruby></p><ul id="showimages" class="cf">\
+				<li onclick="ReadTools.showimages()">劇透</li><li onclick="ReadTools.showimages()">隱藏</li>'
 	output += '</ul></div>\
 		</div>';
 	output += '<div id="addreview" class="addreview" style="display:none;"><form name="frmreview" id="frmreview" method="post" action="/modules/article/reviews.php?aid=' + ReadParams.articleid + '">\
@@ -317,6 +342,19 @@ var ReadTools = {
 	}else{
 	  nameless.children[1].className='selected'
 	}
+
+	//給插圖開關添加selected類
+	var showImagesSetting = localStorage.getItem('顯示插圖');
+	var hiddenImages = document.getElementById('hidden-images');
+	if (showImagesSetting === 'true') {
+	  if (hiddenImages) hiddenImages.style.display = 'block';
+	  showimages.children[0].className = 'selected';
+	  showimages.children[1].className = '';
+	} else {
+	  if (hiddenImages) hiddenImages.style.display = 'none';
+	  showimages.children[0].className = '';
+	  showimages.children[1].className = 'selected';
+	}
   },
   ShowLogin: function (jumpurl) {
 	ReadTools.ShowTip('請點擊 <a class="fsl fwb" href="/login.php?jumpurl=' + encodeURIComponent(jumpurl) + '">登錄</a> 後使用本功能！');
@@ -359,9 +397,20 @@ var ReadPages = {
   PageClick: function () {
 	if (ReadTools.pagemid == 1) {
 	  var e = window.event ? window.event : getEvent();
-	  if (e.clientX < ReadPages.pageWidth * 0.333) ReadPages.ShowPage('previous');
-	  else if (e.clientX > ReadPages.pageWidth * 0.666) ReadPages.ShowPage('next');
-	  else ReadTools.CallTools();
+	  var clientWidth = document.documentElement.clientWidth;
+	  var pageWidth = clientWidth > maxWidth ? maxWidth : clientWidth;
+	  var margin = (clientWidth - pageWidth) / 2;
+
+	  // 校正點擊位置，使之相對於內容區域而不是整個屏幕
+	  var adjustedClickX = e.clientX - margin;
+
+	if (adjustedClickX < pageWidth * 0.333) {
+		ReadPages.ShowPage('previous');
+	  } else if (adjustedClickX > pageWidth * 0.666) {
+		ReadPages.ShowPage('next');
+	  } else {
+		ReadTools.CallTools();
+	  }
 	}
   },
   RestorePages: function () {
@@ -388,22 +437,23 @@ var ReadPages = {
   },
   MakePages: function () {
 	if (usePageMode && ReadTools.pagemid == 1) {
-	  ReadPages.pageWidth = document.documentElement.clientWidth; //頁寬
-	  ReadPages.pageHeight = document.documentElement.clientHeight; //頁高
+	  var clientWidth = document.documentElement.clientWidth;
+	  ReadPages.pageWidth = clientWidth > maxWidth ? maxWidth : clientWidth; // 如果屏幕寬度超過720px，則限制為720px
+	  ReadPages.pageHeight = document.documentElement.clientHeight;
 
 	  var footlink = $_('footlink');
 	  if (footlink) footlink.setStyle('display', 'none');
 
 	  var abox = $_('abox');
 	  abox.setStyle('overflow', 'hidden');
-	  abox.setStyle('margin', ReadPages.pageGapY + 'px ' + ReadPages.pageGapX + 'px');
-	  abox.setStyle('width', (ReadPages.pageWidth - ReadPages.pageGapX * 2) + 'px');
+	  abox.setStyle('margin', ReadPages.pageGapY + 'px ' + (clientWidth - ReadPages.pageWidth) / 2 + 'px'); // 添加左右邊距以居中內容
+	  abox.setStyle('width', ReadPages.pageWidth + 'px');
 	  abox.setStyle('height', (ReadPages.pageHeight - ReadPages.pageGapY * 2) + 'px');
 
 	  var apage = $_('apage');
 	  apage.setStyle('position', 'relative');
 	  apage.setStyle('height', (ReadPages.pageHeight - ReadPages.pageGapY * 2) + 'px');
-	  apage.setStyle('columnWidth', (ReadPages.pageWidth - ReadPages.pageGapX * 2) + 'px', true);
+	  apage.setStyle('columnWidth', ReadPages.pageWidth + 'px', true);
 	  apage.setStyle('columnGap', '0', true);
 
 	  var pagecount = Math.ceil(apage.scrollWidth / apage.clientWidth);
@@ -488,10 +538,8 @@ ReadTools.DoBefore();
 addEvent(window, 'load', ReadPages.MakePages);
 addEvent(window, 'resize', ReadPages.MakePages);
 document.getElementById(ReadTools.pageid).onclick = ReadPages.PageClick;
-document.getElementById(ReadTools.contentid).onclick =  ReadTools.ContentClick;
+document.getElementById(ReadTools.contentid).onclick = ReadTools.ContentClick;
 
-//图片懒加载
-//;eval(function(p,a,c,k,e,r){e=function(c){return c.toString(36)};if('0'.replace(0,e)==0){while(c--)r[e(c)]=k[c];k=[function(e){return r[e]||e}];e=function(){return'[1-6a-oq-s]'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('6.k(\'DOMContentLoaded\',4(){1 a=6.getElementById(\'acontent1\');1 2=Array.from(a.getElementsByTagName(\'p\'));1 b=[];c(2.3>30){1 l=[2.3-7,2.3-8,2.3-9,2.3-15,2.3-16];l.m(4(n){1 5=2[n];c(5){1 d=5.nextSibling;b.push({o:5.q,d:d});a.removeChild(5)}})}1 g=0;1 h=i;1 e=i;window.k(\'scroll\',4(){1 f=Date.f();1 r=f-g;g=f;c(r>100&&6.hasFocus()&&!e){e=s;setTimeout(4(){c(!h&&b.3>0){b.m(4(j){1 p=6.createElement(\'p\');p.q=j.o;a.insertBefore(p,j.d)});h=s}e=i},2000)}})});',[],29,'|var|paragraphs|length|function|paragraph|document||||acontentzDiv|hiddenParagraphsData|if|refNode|scrollTriggered|now|lastScrollTime|contentLoaded|false|data|addEventListener|hiddenIndexes|forEach|index|content||innerHTML|timeSinceLastScroll|true'.split('|'),0,{}));
 
 /*
 //禁止選擇複製
@@ -513,8 +561,20 @@ document.onselect = function () {
 document.oncopy = function () {
   window.getSelection ? window.getSelection().empty() : document.selection.empty();
 };
-*/
 
+function anra() {
+  var ua=navigator.userAgent
+  if (ua.indexOf('BiliNovel')===-1 && ua.indexOf('Android') > -1) {
+	document.writeln(
+	  "<div class='hairlie-top'><div><img alt='嗶哩輕小說 客戶端' src='/logo.png'></div><div class='fx-f1'><p>安裝嗶哩輕小說客戶端</p><p>獲得更好的閱讀體驗</p></div><div><a class='btn-primary-small' href='https://cdn.a.ln.yodu.app#chapter'>點擊下載</a></div></div><style>.hairlie-top{display:flex;}.hairlie-top>div:first-child{padding:10px 10px 0 10px;}.hairlie-top>div:first-child img{width:40px;height:40px;}.fx-f1{-webkit-box-flex:1;box-flex:1;-webkit-flex:1;flex:1;padding-top:10px;}.hairlie-top>div:nth-child(2) p:last-child{font-size:12px;opacity:.6;}.hairlie-top>div:last-child{padding:10px 10px 0 10px;}.btn-primary-small{display:inline-block;line-height:2.25rem;padding-left:2ch;padding-right:2ch;background-color:#ff3955;color:#fff;font-size:.875rem;border-radius:99px;text-align:center;}</style>"
+	);
+  }
+}
+*/
 //把2個英文空格換成1個全角空格
 //addEvent(window, 'load', function(){document.getElementById('acontent').innerHTML = document.getElementById('acontent').innerHTML.replace(/&nbsp;&nbsp;/g, '&emsp;');});
+
+
+//圖片懶加載
+
 

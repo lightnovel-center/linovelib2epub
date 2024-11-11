@@ -1,7 +1,7 @@
 import esprima
 
 # 读取原始 JavaScript 文件
-original_js = 'cleaned.js'
+original_js = 'tw.readtool.js'
 with open(original_js, 'r', encoding='utf-8') as file:
     original_code = file.read()
 
@@ -20,4 +20,5 @@ def extract_contentid(ast) -> str:
         return 'acontent1'
 
 
-extract_contentid(ast)
+contentid = extract_contentid(ast)
+print(contentid)

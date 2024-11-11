@@ -32,12 +32,12 @@ class LinovelibMobileRuleParser:
         url, js_text = self._fetch_js_text()
         if js_text:
             self.logger.info(f'[Text Mapping]Use the file of url({url}) to parse mapping ruleset.')
-            result_set = self._parse_mapping(js_text)
-            return result_set
+            rule = self._parse_mapping(js_text)
         else:
             self.logger.info(f'[Text Mapping]Use the fallback mapping ruleset.')
             rule = ParsedRuleResultMobile(mapping_dict={}, content_id='acontent1')
-            return rule
+
+        return rule
 
     def _parse_mapping(self, js_text) -> ParsedRuleResultMobile:
         if not self.traditional:
@@ -93,8 +93,7 @@ class LinovelibMobileRuleParser:
 
         return content_id, replace_rules
 
-    @staticmethod
-    def _parse_mapping_v2_zh_tw(js_text) -> tuple:
+    def _parse_mapping_v2_zh_tw(self, js_text) -> tuple:
         """
         繁体版网站
         :param js_text:
@@ -113,17 +112,17 @@ class LinovelibMobileRuleParser:
                 iterator = filter(lambda x: x.key.name == 'contentid', properties)
                 list = [item for item in iterator]
                 contentid_val = list[0].value.value
+                self.logger.info(f'Parse contentid succeeded, contentid={contentid_val}')
                 return contentid_val
             except:
-                # fallback
-                return 'acontent1'
+                fallback_contentid = 'acontent1'
+                self.logger.warning(f'Use fallback contentid: {fallback_contentid}')
+                return fallback_contentid
 
         cleaned_js = remove_comments(js_text)
         ast = esprima.parse(cleaned_js)
         content_id = extract_contentid(ast)
-
-        # generate mapping rules
-        # 目前繁体网站没有对正文进行 js 混淆，直接空对象即可
+        # 目前繁体网站没有对正文进行 js 混淆，直接空对象
         replace_rules = {}
 
         return content_id, replace_rules

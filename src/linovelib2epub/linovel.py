@@ -339,6 +339,7 @@ class Linovelib2Epub:
                  custom_style_chapter: str | None = None,
                  disable_proxy: bool = settings.DISABLE_PROXY,
                  image_download_strategy: str = ASYNCIO,
+                 crawling_contentid: Optional[str] = None,
                  log_level: str = "INFO",
                  browser_path: str | None = None,
                  browser_driver_path: str | None = None,
@@ -409,6 +410,7 @@ class Linovelib2Epub:
             'chapter_crawl_delay': chapter_crawl_delay,
             'page_crawl_delay': page_crawl_delay,
             'headless': headless,
+            'crawling_contentid': crawling_contentid
         }
 
         if image_download_max_epochs is not None:

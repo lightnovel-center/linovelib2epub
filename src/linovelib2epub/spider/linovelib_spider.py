@@ -23,8 +23,7 @@ from ..exceptions import LinovelibException, PageContentAbnormalException, Empty
     EmptyArticleError
 from ..models import LightNovel, LightNovelChapter, LightNovelVolume, LightNovelImage, CatalogLinovelibChapter, \
     CatalogLinovelibVolume
-from ..utils import (cookiedict_from_str, create_folder_if_not_exists,
-                     requests_get_with_retry)
+from ..utils import (create_folder_if_not_exists, requests_get_with_retry)
 
 
 class BaseLinovelibSpider(BaseNovelWebsiteSpider):
@@ -47,6 +46,10 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
                                                 traditional=traditional,
                                                 disable_proxy=self.spider_settings["disable_proxy"])
             mapping_result = rule_parser.generate_mapping_result()
+
+        # user overrides crawling contentid
+        if self.spider_settings['crawling_contentid'] is not None:
+            mapping_result.content_id = self.spider_settings['crawling_contentid']
 
         self._html_content_id = mapping_result.content_id
         self.logger.info(f'_html_content_id={self._html_content_id}')
@@ -97,7 +100,6 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
 
         if self.spider_settings["disable_proxy"]:
             self._session.trust_env = False
-
 
     def _fetch_catalog(self, url: str, max_retries: int = 5) -> str | None:
         """
@@ -427,7 +429,6 @@ class BaseLinovelibSpider(BaseNovelWebsiteSpider):
                 image_url_list.append(volume_images[index])
 
         return image_url_list
-
 
 
 class LinovelibSpiderMobile(BaseLinovelibSpider):
