@@ -9,7 +9,7 @@ Crawl light novel from some websites and convert it to epub.
 
 | 指标分类             | 指标集                                                                                                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]() [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)                |
+| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]()[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)                                                                                                                                                                 |
 | Code Style       | [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)                                                                                                                                                                                                                                                          |
 | Code Statistics  | ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub) ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)                                                                                                                                                                   |
 | Code Activity    | [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)                                                                    |
@@ -38,8 +38,10 @@ Crawl light novel from some websites and convert it to epub.
 ## 使用注意事项
 
 在愉快的自动化爬虫之前，有必要进行声明。
-网页Web端总会存在请求错误，请求延迟，还需要不断手动来点击【下一页】按钮来浏览阅读，这无疑打断了正常的阅读[心流](https://zh.wikipedia.org/wiki/心流理論)。
-此项目的初衷正是为了**构造良好流畅、不间断的轻小说本地阅读体验**。
+网页 Web
+端总会存在请求错误，请求延迟，还需要不断手动来点击【下一页】按钮来浏览阅读，这无疑打断了正常的阅读 [心流](https://zh.wikipedia.org/wiki/
+心流理論)。
+此项目的初衷正是为了 ** 构造良好流畅、不间断的轻小说本地阅读体验 **。
 
 但是，这不应该成为加重目标网站运行负载的理由。请正常使用本项目，请勿用于线性探测下载，或无限遍历下载。
 
@@ -47,20 +49,20 @@ Crawl light novel from some websites and convert it to epub.
 
 ## Supported  Websites (plan)
 
-| 序号  | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                                   |
-|-----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|--------------------------------------------------------|
-| 1   | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 文本混淆 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` `限流` |
-| 2   | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                                    |
-| 3   | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                                      |
-| 4   | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | N/A                                                    |
-| 5   | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            | 无                                                      |
-| 6   | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                                    |
-| 7   | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 ` `CF turnstile` `限流`         |
-| 8   | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | 搁置                                           | `可选[登录]` ` 一章一页 `            | ` 付费章节需要登录 ` ` coin 购买 `                               |
+| 序号 | 网站名称                                         | 语言    | 爬虫难度 | 支持进度                                         | 备注                           | 技术难点                                                     |
+|----|----------------------------------------------|-------|------|----------------------------------------------|------------------------------|----------------------------------------------------------|
+| 1  | [哔哩轻小说（Mobile）](https://w.linovelib.com/)    | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章多页 `            | `JS 文本混淆 ` `JS 文件随机 ` ` 章节链接破损 ` `Cloudflare 保护 ` ` 限流 ` |
+| 2  | ~~[哔哩轻小说（Web）](https://www.linovelib.com/)~~ | 简 / 繁 | 中😰  | <img src="./tearlaments-ban.png" width="36"> | 资源同 Mobile，没必要。              | N/A                                                      |
+| 3  | ~~[轻之国度](https://www.lightnovel.us/)~~       | 简 / 繁 | 高🤣  | <img src="./tearlaments-ban.png" width="36"> | ` 需要登录 `                     | ` 轻币门槛 ` ` 导航混乱 `                                        |
+| 4  | ~~[无限轻小说](https://www.8novel.com/)~~         | 繁     | 中😰  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章多页 `            | N/A                                                      |
+| 5  | [轻小说文库](https://www.wenku8.net/)             | 简 / 繁 | 低😆  | <img src="./merrli.png" width="36">          | ` 不用登录 ` ` 一章一页 `            | 无                                                        |
+| 6  | ~~[轻小说百科](https://lnovel.org/)~~             | 简 / 繁 | 低😆  | <img src="./tearlaments-ban.png" width="36"> | ` 不用登录 ` ` 一章一页 ` ` 插图清晰度低 ` | N/A                                                      |
+| 7  | [真白萌](https://masiro.me/admin/novels)        | 简 / 繁 | 中😰  | <img src="./merrli.png" width="36">          | ` 一章一页 `                     | ` 需要登录 ` ` 积分购买 ` ` 等级限制 ` `CF turnstile` ` 限流 `         |
+| 8  | [百合会新站](https://www.yamibo.com/site/novel)   | 简 / 繁 | 中😰  | 搁置                                           | ` 可选 [登录]` ` 一章一页 `          | ` 付费章节需要登录 ` ` coin 购买 `                                 |
 
 爬虫友好度有两个重要指标：
 
-1. 访问门槛。是否需要登陆、积分/代币购买，等级限制。
+1. 访问门槛。是否需要登陆、积分 / 代币购买，等级限制。
 2. 页面结构。一章多页，或者一章一页。
 
 优质的轻小说目标源标准：资源丰富，更新迅速，插图清晰，爬虫门槛合理。可以在 issue 发起补充。
@@ -103,17 +105,21 @@ python -m pip install -e .
 
 > Microsoft Visual C++ 14.0 or greater is required
 
-See this link: [Which Microsoft Visual C++ compiler to use with a specific Python version ?](https://wiki.python.org/moin/WindowsCompilers#Which_Microsoft_Visual_C.2B-.2B-_compiler_to_use_with_a_specific_Python_version_.3F)
+See this
+link: [Which Microsoft Visual C++ compiler to use with a specific Python version ?](https://wiki.python.org/moin/WindowsCompilers#Which_Microsoft_Visual_C.2B-.2B-_compiler_to_use_with_a_specific_Python_version_.3F)
 
 | **Visual C++** | **CPython**          |
-| -------------- | -------------------- |
+|----------------|----------------------|
 | 14.x           | 3.5 - 3.12+          |
 | 10.0           | 3.3 - 3.4            |
 | 9.0            | 2.6 - 2.7, 3.0 - 3.2 |
 
 The key point is:
-- Install [Microsoft Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/). The version greater than 2019 may also can work.
-- In Build tools, install `C++ build tools` and ensure the latest versions of `MSVCv142 - VS 2019 C++ x64/x86 build tools` and `Windows 10 SDK` are checked.
+
+- Install [Microsoft Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/). The
+  version greater than 2019 may also can work.
+- In Build tools, install `C++ build tools` and ensure the latest versions of
+  `MSVCv142 - VS 2019 C++ x64/x86 build tools` and `Windows 10 SDK` are checked.
 - The `setuptools` Python package version must be at least 34.4.0.
 
 ---
@@ -132,25 +138,27 @@ Rollback python version to 3.10.X can work. The exact root cause is unknown now.
 > In order to decrease the probability of being banned by Linovelib, it is highly recommended to set the delay
 > parameters as follows.
 > You can tune the delay parameters to fit your actual network environment.
-> 
-> The Linovelib target requires OCR technique to recognize some paragraphs in html. You need 
-> to install [tesseract](https://github.com/UB-Mannheim/tesseract) on your local pc. Make sure the `tesseract` command works
+>
+> The Linovelib target requires OCR technique to recognize some paragraphs in html. You need
+> to install [tesseract](https://github.com/UB-Mannheim/tesseract) on your local pc. Make sure the `tesseract` command
+> works
 > in your pc by appending its location to system/user variables.
 
 LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two UI version(PC or mobile).
 
 So the target website has 2 x 2 = 4 choices.
 
-| website version                     | visit method                                                      | support status | target_site                               |
-|-------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
-| [PC](www.linovelib.com)  简体         | browser set `zh/zh-CN` lang + click [简体化]                         | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
-| [PC](www.linovelib.com)  繁体         | browser set `zh/zh-CN` lang + click [繁體化]                         | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| ~~[Mobile](www.bilinovel.com)  简体~~ | ~~browser set `zh/zh-CN` lang~~                                   | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
-| [Mobile](www.bilinovel.com)  繁体     | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+| website version                      | visit method                                                      | support status | target_site                               |
+|--------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
+| [PC](www.linovelib.com)  简体          | browser set `zh/zh-CN` lang + click [简体化]                         | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
+| [PC](www.linovelib.com)  繁体          | browser set `zh/zh-CN` lang + click [繁體化]                         | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| ~~[Mobile](www.bilinovel.com)  简体 ~~ | ~~browser set `zh/zh-CN` lang~~                                   | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
+| [Mobile](www.bilinovel.com)  繁体      | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
 > 1.❌*: [2024-10-29]Now drission page library can only visit [mobile traditional version](www.bilinovel.com).
-> 
-> 2.The Button "简体化" in mobile traditional version does not work. So `TargetSite.LINOVELIB_MOBILE` target doesn't work. No workaround now.
+>
+> 2.The Button "简体化" in mobile traditional version does not work. So `TargetSite.LINOVELIB_MOBILE` target doesn't
+> work. No workaround now.
 
 Create a python file(e.g. `usage_demo.py`) and edit the content as follows:
 
@@ -338,36 +346,35 @@ Don't need login, no threshold.
 
 ## Options
 
-| Parameters              | type    | required | default                       | description                                                         |
-|-------------------------|---------|----------|-------------------------------|---------------------------------------------------------------------|
-| book_id                 | number  | YES      | None                          | 书籍 ID。                                                              |
-| target_site             | Enum    | NO       | `TargetSite.LINOVELIB_MOBILE` | 其他可用值参阅 TargetSite python 枚举类以及使用文档                                 |
-| divide_volume           | boolean | NO       | False                         | 是否分卷                                                                |
-| select_volume_mode      | boolean | NO       | False                         | 选择卷模式，它为 True 时 divide_volume 强制为 True。                             |
-| has_illustration        | boolean | NO       | True                          | 是否下载插图                                                              |
-| image_download_folder   | string  | NO       | "novel_images"                | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                          |
-| pickle_temp_folder      | string  | NO       | "pickle"                      | pickle 临时数据保存的文件夹。                                                  |
-| clean_artifacts         | boolean | NO       | True                          | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                                  |
-| crawling_contentid     | string  | NO       | None                          | 用户自定义的正文内容的id，用于快速响应网页结构变化，[如何获取?](docs/inspect-linovelib-contentid-as-a-regular-user.md)。目前仅适用于linovelib。               |
-| chapter_crawl_delay     | number  | NO       | 3                             | 爬取每个章的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。                 |
-| page_crawl_delay        | number  | NO       | 2                             | 对于特定章，爬取每个页面的延迟秒数(s)。合理设置此参数可以降低被限流系统限制的频率。目前仅linovelib支持。          |
-| custom_style_cover      | string  | NO       | ''                            | 自定义 cover.xhtml 的样式                                                 |
-| custom_style_nav        | string  | NO       | ''                            | 自定义 nav.xhtml 的样式                                                   |
-| custom_style_chapter    | string  | NO       | ''                            | 自定义每章 (?.xhtml) 的样式                                                 |
-| disable_proxy           | boolean | NO       | True                          | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。                       |
-| image_download_strategy | string  | NO       | 'ASYNCIO'                     | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）               |
-| image_download_max_epochs | number  | NO       | 10                            | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                              |
-| browser_path            | string  | NO       | None                          | 浏览器的本地绝对路径。                                                         |
-| headless                | boolean | NO       | False                         | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                            |
-| http_timeout | number  | NO       | 10                            | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于linovelib 页面。 |
-| http_retries | number  | NO       | 10                            | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于linovelib 页面。                         |
-
-
+| Parameters                | type    | required | default        | description                                                                                                  |
+|---------------------------|---------|----------|----------------|--------------------------------------------------------------------------------------------------------------|
+| book_id                   | number  | YES      | None           | 书籍 ID。                                                                                                       |
+| chapter_crawl_delay       | number  | YES      | None           | 爬取每个章的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数。                                                 |
+| page_crawl_delay          | number  | YES      | None           | 对于特定章，爬取每个页面的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数 。                                         |
+| target_site               | Enum    | YES      | None           | 参阅 TargetSite python 枚举类以及使用文档。                                                                              |
+| divide_volume             | boolean | NO       | False          | 是否分卷                                                                                                         |
+| select_volume_mode        | boolean | NO       | False          | 选择卷模式，它为 True 时 divide_volume 强制为 True。                                                                      |
+| has_illustration          | boolean | NO       | True           | 是否下载插图                                                                                                       |
+| image_download_folder     | string  | NO       | "novel_images" | 图片下载临时文件夹. 不允许以相对路径../ 开头。                                                                                   |
+| pickle_temp_folder        | string  | NO       | "pickle"       | pickle 临时数据保存的文件夹。                                                                                           |
+| clean_artifacts           | boolean | NO       | True           | 是否删除临时数据 / 工件，指的是 pickle 和下载的图片文件。                                                                           |
+| crawling_contentid        | string  | NO       | None           | 用户自定义的正文内容的 id，用于快速响应网页结构变化，[如何获取?](docs/inspect-linovelib-contentid-as-a-regular-user.md)。目前仅适用于 linovelib。 |
+| custom_style_cover        | string  | NO       | ''             | 自定义 cover.xhtml 的样式                                                                                          |
+| custom_style_nav          | string  | NO       | ''             | 自定义 nav.xhtml 的样式                                                                                            |
+| custom_style_chapter      | string  | NO       | ''             | 自定义每章 (?.xhtml) 的样式                                                                                          |
+| disable_proxy             | boolean | NO       | True           | 是否禁用所在的代理环境，默认禁用。如果你在本地使用网络代理，请务必留意是否应该设置该参数。                                                                |
+| image_download_strategy   | string  | NO       | 'ASYNCIO'      | 枚举值："ASYNCIO"、"MULTIPROCESSING"、"MULTITHREADING"（未实现）                                                        |
+| image_download_max_epochs | number  | NO       | 10             | 图片下载的最大尝试轮数。超过这个值则认为是网络中断或者源图片缺失，自动放弃。                                                                       |
+| browser_path              | string  | NO       | None           | 浏览器的本地绝对路径。                                                                                                  |
+| headless                  | boolean | NO       | False          | 是否显示浏览器窗口，默认为 False，即默认显示。目前仅哔哩轻小说支持该参数。                                                                     |
+| http_timeout              | number  | NO       | 10             | 一个 HTTP 请求的超时等待时间 (秒)。代表 connect 和 read timeout。目前仅应用于 linovelib 页面。                                         |
+| http_retries              | number  | NO       | 10             | 当一个 HTTP 请求失败后，重试的最大次数。 目前仅应用于 linovelib 页面。                                                                 |
 
 ## Todo
 
-- [ ] feat: add GOT-OCR2.0 engine alternative for linovelib site, support disable ocr(keep encrypted text.)
-- [ ] feat: [option]add epubcheck for output files. see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
+- [] feat: add GOT-OCR2.0 engine alternative for linovelib site, support disable ocr(keep encrypted text.)
+- [] feat: [option]add epubcheck for output files.
+  see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
 - [ ] masiro 繁体 <=> 简体
