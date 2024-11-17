@@ -7,7 +7,7 @@ aiohttp==3.10.2
 brotli==1.1.0
 bs4==0.0.1
 demjson3==3.0.5
-DrissionPage==4.0.4.5
+DrissionPage==4.0.4.23
 dynaconf==3.2.3
 EbookLib==0.17.1
 esprima==4.0.1

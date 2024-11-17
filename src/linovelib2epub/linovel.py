@@ -320,6 +320,16 @@ class TargetSite(Enum):
     MASIRO = 'masiro'
     WENKU8 = 'wenku8'
 
+def is_linovelib(target: TargetSite):
+    return target in [
+        TargetSite.LINOVELIB_MOBILE,
+        TargetSite.LINOVELIB_MOBILE_TRADITIONAL,
+        TargetSite.LINOVELIB_PC,
+        TargetSite.LINOVELIB_PC_TRADITIONAL
+    ]
+
+def check_if_non_negative_number(number):
+    return isinstance(number, (int, float)) and number >= 0
 
 class Linovelib2Epub:
 
@@ -343,13 +353,24 @@ class Linovelib2Epub:
                  log_level: str = "INFO",
                  browser_path: str | None = None,
                  browser_driver_path: str | None = None,
-                 chapter_crawl_delay: int | None = 3,
-                 page_crawl_delay: int | None = 2,
+                 chapter_crawl_delay: int | None = None,
+                 page_crawl_delay: int | None = None,
                  headless: bool = False,
                  image_download_max_epochs: int | None = None
                  ):
+        # common mandatory parameters check
         if book_id is None:
-            raise LinovelibException('book_id parameter must be set.')
+            raise ValueError('The book_id parameter must be set.')
+
+        # specified parameters check for linovelib target
+        if is_linovelib(target_site):
+            if chapter_crawl_delay is None or page_crawl_delay is None:
+                raise ValueError('The chapter_crawl_delay and page_crawl_delay parameters must be set for any LINOVELIB target.')
+            if not check_if_non_negative_number(chapter_crawl_delay):
+                raise ValueError(f'The chapter_crawl_delay should be a non negative number but got {chapter_crawl_delay}.')
+            if not check_if_non_negative_number(page_crawl_delay):
+                raise ValueError(f'The page_crawl_delay should be a non negative number but got {page_crawl_delay}.')
+
 
         self.target_site = target_site
 

@@ -172,7 +172,7 @@ if __name__ == '__main__':
     linovelib_epub.run()
 ```
 
-- Tune delay-related parameters[**optional** but **recommend**]
+- Set delay-related parameters[**mandatory**]
 
 ```python
 from linovelib2epub import Linovelib2Epub
@@ -182,17 +182,16 @@ if __name__ == '__main__':
     linovelib_epub.run()
 ```
 
-The default value of `chapter_crawl_delay` is 3(s) and `page_crawl_delay` is 2(s). You can tune them to other values as
-needed.
+The default value of `chapter_crawl_delay` and `page_crawl_delay` are None. You MUST set them to reasonable values.
 
-The example code is as follows to increase the value of all delay parameters.
+The example code is as follows to set the value of all delay parameters.
 
 ```python
 from linovelib2epub import Linovelib2Epub, TargetSite
 
 if __name__ == '__main__':
     linovelib_epub = Linovelib2Epub(book_id=3721, target_site=TargetSite.LINOVELIB_PC,
-                                    chapter_crawl_delay=5, page_crawl_delay=3)
+                                    chapter_crawl_delay=5, page_crawl_delay=5)
     linovelib_epub.run()
 ```
 
@@ -249,7 +248,7 @@ from linovelib2epub import Linovelib2Epub, TargetSite
 
 if __name__ == "__main__":
     linovelib_epub = Linovelib2Epub(book_id=2356, target_site=TargetSite.LINOVELIB_PC,
-                                    chapter_crawl_delay=5, page_crawl_delay=3,
+                                    chapter_crawl_delay=5, page_crawl_delay=5,
                                     select_volume_mode=True,
                                     # disable_proxy=False,
                                     # log_level="DEBUG",
