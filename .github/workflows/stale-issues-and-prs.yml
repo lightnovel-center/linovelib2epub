@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/stale@v9
         with:
+          any-of-labels: 'keep-open,hold'
           stale-issue-message: 'This issue is stale because it has been open 60 days with no activity. Remove stale label or comment or this will be closed in 0 days.'
           stale-pr-message: 'This PR is stale because it has been open 60 days with no activity. It will not be automatically closed, only tagged.'
           close-issue-message: 'This issue was closed because it has been stalled for 0 days with no activity.'
