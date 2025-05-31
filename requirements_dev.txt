@@ -1,10 +1,12 @@
 -r requirements.txt
 
 # dev
+# 最终没有采纳这个交互选择库
 InquirerPy==0.3.3
-# manual installation
-# python -m pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
-paddleocr==3.0.0
+# cpu-only version
+paddlepaddle==2.6.2
+# not use 3.x version
+paddleocr==2.10.0
 
 # typings
 mypy

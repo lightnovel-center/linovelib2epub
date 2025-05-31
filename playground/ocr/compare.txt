@@ -1,4 +1,4 @@
-- tesseract
-- paddleocr
-- rapidocr 这个是 paddleocr onnxruntime
-- GOT-OCR2.0
+- tesseract 安装复杂，OCR效果最差
+- paddleocr 旧的 2.x cpu版本部署简单，效果不错，3.0版本目前是大坑
+- rapidocr 这个是 paddleocr onnxruntime，部署简单，效果不错
+- GOT-OCR2.0 部署复杂，效果可以

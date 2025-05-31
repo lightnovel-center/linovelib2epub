@@ -1,8 +1,6 @@
 import pytesseract
 from PIL import Image
 
-# Open the PNG image
-# image_path = './p.jpg'
 image_path = './sample/sample2.png'
 image = Image.open(image_path)
 
