@@ -1,0 +1,4 @@
+- tesseract
+- paddleocr
+- rapidocr 这个是 paddleocr onnxruntime
+- GOT-OCR2.0

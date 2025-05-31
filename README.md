@@ -7,14 +7,17 @@
 
 Crawl light novel from some websites and convert it to epub.
 
-| 指标分类             | 指标集                                                                                                                                                                                                                                                                                                                                                           |
-|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]()[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)                                                                                                                                                                 |
-| Code Style       | [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)                                                                                                                                                                                                                                                          |
-| Code Statistics  | ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub) ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)                                                                                                                                                                   |
-| Code Activity    | [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)                                                                    |
+| 指标分类             | 指标集                                                                                                                                                                                                                                                                                                                                                          |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Software Version | [![Python Version](https://img.shields.io/badge/python>=3.10-blue)]()[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg?style=flat)](https://github.com/pypa/hatch)                                                                                                                                                          |
+| Code Style       | [![flake8](https://img.shields.io/badge/linter-flake8-brightgreen)](https://github.com/PyCQA/flake8)                                                                                                                                                                                                                                                         |
+| Code Statistics  | ![Lines of code](https://www.aschey.tech/tokei/github/lightnovel-center/linovelib2epub) ![PyPI - Downloads](https://img.shields.io/pypi/dm/linovelib2epub?color=blue&label=PyPI%20Download)                                                                                                                                                                  |
+| Code Activity    | [![Hits-of-Code](https://hitsofcode.com/github/lightnovel-center/linovelib2epub?branch=main)](https://hitsofcode.com/github/lightnovel-center/linovelib2epub/view?branch=main) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/lightnovel-center/linovelib2epub)                                                                   |
 | Code Quality     | [![Maintainability](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/maintainability)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/c1a9eb78a26e8ffb1fdf/test_coverage)](https://codeclimate.com/github/lightnovel-center/linovelib2epub/test_coverage) |
-| CI Status        | [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)                                                                                                                        |
+| CI Status        | [![Build and Publish](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml/badge.svg?branch=main)](https://github.com/lightnovel-center/linovelib2epub/actions/workflows/build-and-publish.yml)                                                                                                                       |
+
+！该项目可能会用到OCR引擎来识别网页上混淆的文本片段，但是目前市面上很多OCR引擎对python新版本的跟进非常滞后，因此推荐取下限而不是上限。
+对于该项目，推荐锁定**python 3.10**版本。
 
 ## preview
 
@@ -40,7 +43,7 @@ Crawl light novel from some websites and convert it to epub.
 在愉快的自动化爬虫之前，有必要进行声明。
 网页 Web
 端总会存在请求错误，请求延迟，还需要不断手动来点击【下一页】按钮来浏览阅读，这无疑打断了正常的阅读 [心流](https://zh.wikipedia.org/wiki/
-心流理論)。
+心流理論 )。
 此项目的初衷正是为了 ** 构造良好流畅、不间断的轻小说本地阅读体验 **。
 
 但是，这不应该成为加重目标网站运行负载的理由。请正常使用本项目，请勿用于线性探测下载，或无限遍历下载。
@@ -148,12 +151,12 @@ LinovelibMobile has two language versions(`zh/zh-CN` or `zh-TW/zh-HK`)  and two 
 
 So the target website has 2 x 2 = 4 choices.
 
-| website version                      | visit method                                                      | support status | target_site                               |
-|--------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
-| [PC](www.linovelib.com)  简体          | browser set `zh/zh-CN` lang + click [简体化]                         | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
-| [PC](www.linovelib.com)  繁体          | browser set `zh/zh-CN` lang + click [繁體化]                         | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
-| ~~[Mobile](www.bilinovel.com)  简体 ~~ | ~~browser set `zh/zh-CN` lang~~                                   | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
-| [Mobile](www.bilinovel.com)  繁体      | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
+| website version                    | visit method                                                      | support status | target_site                               |
+|------------------------------------|-------------------------------------------------------------------|----------------|-------------------------------------------|
+| [PC](www.linovelib.com)  简体        | browser set `zh/zh-CN` lang + click [简体化]                         | ✅(recommend)   | `TargetSite.LINOVELIB_PC`                 |
+| [PC](www.linovelib.com)  繁体        | browser set `zh/zh-CN` lang + click [繁體化]                         | ✅              | `TargetSite.LINOVELIB_PC_TRADITIONAL`     |
+| ~~[Mobile 简体](www.bilinovel.com)~~ | ~~browser set `zh/zh-CN` lang~~                                   | ❌              | `TargetSite.LINOVELIB_MOBILE`             |
+| [Mobile](www.bilinovel.com)  繁体    | browser set `zh-TW/zh-HK` lang or not in Chinese Mainland network | ✅*(recommend)  | `TargetSite.LINOVELIB_MOBILE_TRADITIONAL` |
 
 > 1.❌*: [2024-10-29]Now drission page library can only visit [mobile traditional version](www.bilinovel.com).
 >
@@ -349,9 +352,9 @@ Don't need login, no threshold.
 | Parameters                | type    | required | default        | description                                                                                                  |
 |---------------------------|---------|----------|----------------|--------------------------------------------------------------------------------------------------------------|
 | book_id                   | number  | YES      | None           | 书籍 ID。                                                                                                       |
-| chapter_crawl_delay       | number  | YES      | None           | 爬取每个章的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数。                                                 |
-| page_crawl_delay          | number  | YES      | None           | 对于特定章，爬取每个页面的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数 。                                         |
 | target_site               | Enum    | YES      | None           | 参阅 TargetSite python 枚举类以及使用文档。                                                                              |
+| chapter_crawl_delay       | number  | YES*     | None           | 爬取每个章的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数。                                                 |
+| page_crawl_delay          | number  | YES*     | None           | 对于特定章，爬取每个页面的延迟秒数 (s)。合理设置此参数可以降低被限流系统限制的频率。目标是 linovelib 时必须设置此参数 。                                         |
 | divide_volume             | boolean | NO       | False          | 是否分卷                                                                                                         |
 | select_volume_mode        | boolean | NO       | False          | 选择卷模式，它为 True 时 divide_volume 强制为 True。                                                                      |
 | has_illustration          | boolean | NO       | True           | 是否下载插图                                                                                                       |
@@ -377,7 +380,6 @@ Don't need login, no threshold.
   see https://epubcheck.readthedocs.io/en/latest/readme.html#using-epubcheck-as-a-python-library
 - [ ] quality: setup pytest and codecov
 - [ ] quality: setup more formatter and linter for maintainability
-- [ ] masiro 繁体 <=> 简体
 
 ## Under the hood
 

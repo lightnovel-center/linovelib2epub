@@ -14,7 +14,7 @@ git clone https://github.com/Ucas-HaoranWei/GOT-OCR2.0.git
 ```
 2. cd to project home foldler
 ```
-cd git clone https://github.com/Ucas-HaoranWei/GOT-OCR2.0.git
+cd GOT-OCR-2.0-master
 ```
 3. new a conda env with specific python version and install project dependencies
 ```
@@ -27,14 +27,14 @@ Note:
 - `pip install -e .` 这一步安装的是Torch的cpu版本，如果你本地具备了NVIDIA CUDA兼容的显卡，建议卸载cpu版本并安装GPU版本。
 
 4. [可选] uninstall torch cpu version and reinstall torch GPU version
-```
+```bash
 pip uninstall torch torchvision torchaudio
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 ```
 Note:
 - 这里 cu124 表示CUDA 12.4.X版本，写此文章时，pytorch官网文档推荐的最新CUDA版本就是 12.4。 [参考](https://pytorch.org/get-started/locally/)。
 - 这个 安装的 CUDA 版本取决于你本地 NVIDIA 显卡的CUDA Toolkit驱动版本。可以通过下面的命令示例进行确认。
-```
+```bash
 (got) PS D:\Code\OtherGithubProjects\GOT-OCR2.0\GOT-OCR-2.0-master> nvcc -V
 nvcc: NVIDIA (R) Cuda compiler driver
 Copyright (c) 2005-2024 NVIDIA Corporation
@@ -111,7 +111,7 @@ pip install ninja
 7. download weights
 
 原项目的文档在 GOT Weights 章节给出了三个下载方式，这里使用Google Drive方式将其下载，并解压到 GOT-OCR-2.0-master 文件下，参考目录结构如下：
-```
+```bash
 (got) PS D:\Code\OtherGithubProjects\GOT-OCR2.0\GOT-OCR-2.0-master\GOT_weights> ls
 
 
@@ -131,7 +131,7 @@ Mode                 LastWriteTime         Length Name
 
 8. it's ready to test demo
 
-```
+```bash
 python GOT/demo/run_ocr_2.0.py  --model-name  ./GOT_weights/  --image-file  /an/image/file.png  --type ocr
 ```
 Note:
@@ -140,11 +140,11 @@ Note:
 下面是一个例子：
 ![screenshot-of-google-drive](./assets/Screenshot-1.png)
 
-```
+```bash
 python GOT/demo/run_ocr_2.0.py  --model-name  ./GOT_weights/  --image-file ..\Screenshot-1.png  --type ocr
 ```
 运行时间取决于显卡算力和flash-attn是否被正确应用，结果如下。
-```
+```bash
 <|im_start|>system
 You should follow the instructions carefully and explain your answers in detail.<|im_end|><|im_start|>user
 <img><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad><imgpad></img>
